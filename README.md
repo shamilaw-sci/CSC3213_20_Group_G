@@ -8,7 +8,7 @@ First, clone the repository to your local machine:
 
 ```bash
 git clone https://github.com/your-org/kcc-digital-suite.git
-cd kcc-digital-suite
+cd kandyan-cultural-center-web
 ```
 
 ---
