@@ -6,6 +6,9 @@ import Link from 'next/link';
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Temporary state for demonstration - in a real app, this comes from your Cart Context
+  const [cartCount] = useState(0);
+
   // Helper function to close menu when a link is clicked
   const closeMenu = () => setIsMobileMenuOpen(false);
 
@@ -37,8 +40,19 @@ export default function Header() {
           <Link href="/facilities" className="text-slate-300 hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">Venues</Link>
         </nav>
 
-        {/* Desktop CTA Button */}
-        <div className="hidden lg:block">
+        {/* Desktop CTA Button & cart */}
+        <div className="hidden lg:flex items-center gap-6">
+          {/* Cart Button */}
+          <Link href="/cart" className="relative p-2 text-slate-300 hover:text-amber-400 transition-colors group">
+            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+            </svg>
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-rose-600 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-slate-950">
+                {cartCount}
+              </span>
+            )}
+          </Link>
           <Link 
             href="/#contact" 
             className="bg-rose-700 hover:bg-rose-600 text-white px-6 py-2.5 rounded-lg font-bold transition-all duration-300 shadow-[0_0_15px_rgba(190,18,60,0.3)] hover:shadow-[0_0_25px_rgba(190,18,60,0.6)] border border-rose-500/50"
@@ -47,24 +61,35 @@ export default function Header() {
           </Link>
         </div>
 
-        {/* Mobile Menu Toggle Button */}
-        <button 
-          className="lg:hidden text-slate-300 hover:text-white p-2"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          aria-label="Toggle Menu"
-        >
-          {isMobileMenuOpen ? (
-            // X (Close) Icon
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+        {/* Mobile Menu Toggle & Cart */}
+        <div className="flex lg:hidden items-center gap-4">
+          {/* Cart Icon for Mobile */}
+          <Link href="/cart" className="relative p-2 text-slate-300">
+            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
             </svg>
-          ) : (
-            // Hamburger Icon
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
-            </svg>
-          )}
-        </button>
+            {cartCount > 0 && (
+              <span className="absolute top-0 right-0 bg-rose-600 text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
+                {cartCount}
+              </span>
+            )}
+          </Link>
+          <button 
+            className="text-slate-300 hover:text-white p-2"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle Menu"
+          >
+            {isMobileMenuOpen ? (
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            ) : (
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu Dropdown (Animated) */}
@@ -79,6 +104,7 @@ export default function Header() {
           <Link href="/shop" onClick={closeMenu} className="text-lg font-medium text-slate-300 hover:text-white">Crafts Shop</Link>
           <Link href="/workshops" onClick={closeMenu} className="text-lg font-medium text-slate-300 hover:text-white">Shows & Workshops</Link>
           <Link href="/facilities" onClick={closeMenu} className="text-lg font-medium text-slate-300 hover:text-white">Venues</Link>
+          <Link href="/cart" onClick={closeMenu} className="text-lg font-medium text-slate-300">My Cart</Link>
           
           <div className="pt-6 border-t border-white/10">
             <Link 
