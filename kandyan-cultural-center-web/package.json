@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@netlify/functions": "^5.2.0",
+    "@supabase/supabase-js": "^2.104.0",
     "next": "16.1.7",
     "postcss": "^8.5.10",
     "react": "19.2.3",
