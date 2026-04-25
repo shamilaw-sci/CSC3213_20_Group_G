@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useCart } from '@/context/CartContext';
+import CartDrawer from './CartDrawer';
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Temporary state for demonstration - in a real app, this comes from your Cart Context
-  const [cartCount] = useState(0);
+  // Update: Moved cart state and drawer logic to CartContext for better separation of concerns and easier access across components
+  const { cartCount, setIsDrawerOpen } = useCart();
 
   // Helper function to close menu when a link is clicked
   const closeMenu = () => setIsMobileMenuOpen(false);
@@ -42,21 +44,24 @@ export default function Header() {
 
         {/* Desktop CTA Button & cart */}
         <div className="hidden lg:flex items-center gap-6">
-          {/* Cart Button */}
-          <Link href="/cart" className="relative p-2 text-slate-300 hover:text-amber-400 transition-colors group">
+          
+          <button 
+            onClick={() => setIsDrawerOpen(true)} 
+            className="relative p-2 text-slate-300 hover:text-amber-400 transition-colors group cursor-pointer border-none bg-transparent">
             <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
             </svg>
+            
             {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-rose-600 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-slate-950">
+              <span className="absolute -top-1 -right-1 bg-kandyan-maroon text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-slate-950">
                 {cartCount}
               </span>
             )}
-          </Link>
+          </button>
+
           <Link 
             href="/#contact" 
-            className="bg-rose-700 hover:bg-rose-600 text-white px-6 py-2.5 rounded-lg font-bold transition-all duration-300 shadow-[0_0_15px_rgba(190,18,60,0.3)] hover:shadow-[0_0_25px_rgba(190,18,60,0.6)] border border-rose-500/50"
-          >
+            className="bg-rose-700 hover:bg-rose-600 text-white px-6 py-2.5 rounded-lg font-bold transition-all duration-300 shadow-[0_0_15px_rgba(190,18,60,0.3)] hover:shadow-[0_0_25px_rgba(190,18,60,0.6)] border border-rose-500/50">
             Contact Us
           </Link>
         </div>
@@ -117,6 +122,7 @@ export default function Header() {
           </div>
         </nav>
       </div>
+      <CartDrawer />
     </header>
   );
 }

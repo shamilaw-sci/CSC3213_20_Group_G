@@ -178,7 +178,7 @@ git push origin feature/isuru/ecommerce-cart-logic
 main (Production / Vercel Deployments ONLY)
 └── dev (Main integration branch)
     ├── feature/isuru-s/ecommerce-cart-logic
-    ├── feature/isuru-d/workshop-booking-engine
+    ├── feature/isuru-d/feature/auth-n-userProfiles
     ├── feature/pathum/pos-hardware-scanner
     ├── feature/kushan/admin-dashboard-ui
     ├── bugfix/isuru-s/cart-state-clearing

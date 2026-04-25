@@ -36,8 +36,12 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
 
     // 2. Sort
     result.sort((a, b) => {
-      if (sortBy === 'price-low') return a.price - b.price;
-      if (sortBy === 'price-high') return b.price - a.price;
+      // Using discounted_price if available for sorting
+      const priceA = a.discounted_price || a.price;
+      const priceB = b.discounted_price || b.price;
+
+      if (sortBy === 'price-low') return priceA - priceB;
+      if (sortBy === 'price-high') return priceB - priceA;
       if (sortBy === 'name') return a.name.localeCompare(b.name);
       return 0; // Default: newest/database order
     });
@@ -85,16 +89,16 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
         <div className="relative w-full overflow-hidden rounded-xl">
           <div 
             ref={categoryScrollRef}
-            className="flex overflow-x-auto pb-2 gap-3 w-full snap-x scroll-smooth custom-scrollbar pr-16"
+            className="flex overflow-x-auto pb-2 gap-3 w-full snap-x scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pr-16"
           >
             {categories.map((category) => (
               <button
                 key={category}
                 onClick={() => handleFilterChange('category', category)}
-                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 border flex-shrink-0 snap-start ${
+                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 border flex-shrink-0 snap-start cursor-pointer ${
                   selectedCategory === category
                     ? 'bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-200'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-amber-500 hover:text-amber-600'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-kandyan-gold hover:text-kandyan-gold'
                 }`}
               >
                 {category}
@@ -106,7 +110,7 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
           <button 
             onClick={scrollCategoriesRight}
             aria-label="Scroll categories right"
-            className="absolute right-0 top-0 bottom-2 w-16 bg-gradient-to-l from-[#FAFAFA] via-[#FAFAFA]/90 to-transparent flex items-center justify-end hover:from-slate-100 transition-colors cursor-pointer"
+            className="absolute right-0 top-0 bottom-2 w-16 bg-gradient-to-l from-kandyan-bg via-kandyan-bg/90 to-transparent flex items-center justify-end hover:from-slate-100 transition-colors cursor-pointer"
           >
             <svg className="w-6 h-6 text-slate-600 mr-1 hover:text-slate-900 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path>
@@ -120,7 +124,7 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
           <select 
             value={sortBy}
             onChange={(e) => handleFilterChange('sort', e.target.value)}
-            className="bg-white border border-slate-200 text-slate-900 text-sm font-bold rounded-xl px-4 py-2 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 outline-none cursor-pointer shadow-sm hover:border-slate-300 transition-all"
+            className="bg-white border border-slate-200 text-slate-900 text-sm font-bold rounded-xl px-4 py-2 focus:ring-1 focus:ring-kandyan-gold focus:border-kandyan-gold outline-none cursor-pointer shadow-sm hover:border-slate-300 transition-all"
           >
             <option value="newest">Newest Arrivals</option>
             <option value="price-low">Price: Low to High</option>
@@ -141,48 +145,68 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
             {visibleArtifacts.map((artifact) => (
               <div 
                 key={artifact.id} 
-                className="group bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-all duration-500 flex flex-col"
+                className="group bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-kandyan-hover transition-all duration-500 flex flex-col"
               >
                 {/* Image Container & Badges */}
                 <div className="aspect-[4/5] w-full relative overflow-hidden bg-slate-50">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={artifact.image_url}
                     alt={artifact.name}
                     className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-700"
                     loading="lazy"
                   />
-                  <div className="absolute top-4 left-4">
+                  <div className="absolute top-4 left-4 flex flex-col gap-2">
+                    {/* Stock Badges */}
                     {artifact.stock === 0 ? (
-                      <span className="bg-rose-700 text-white text-[9px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm">
+                      <span className="bg-slate-900 text-white text-[9px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm">
                         Sold Out
                       </span>
                     ) : artifact.stock < 5 ? (
-                      <span className="bg-amber-500 text-slate-950 text-[9px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm">
+                      <span className="bg-kandyan-gold text-white text-[9px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm">
                         Limited Stock
                       </span>
                     ) : null}
+                    
+                    {/* Sale Badge */}
+                    {artifact.discounted_price && artifact.discounted_price < artifact.price && (
+                      <span className="bg-kandyan-maroon text-white text-[9px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm self-start">
+                        Sale
+                      </span>
+                    )}
                   </div>
                 </div>
                 
                 {/* Card Content */}
                 <div className="p-6 flex flex-col flex-grow">
-                  <span className="text-[10px] font-bold text-rose-700 uppercase tracking-widest mb-2">
+                  <span className="text-[10px] font-bold text-kandyan-maroon uppercase tracking-widest mb-2">
                     {artifact.category}
                   </span>
-                  <h3 className="text-lg font-extrabold text-slate-900 mb-4 line-clamp-1 group-hover:text-amber-600 transition-colors">
+                  <h3 className="text-lg font-extrabold text-slate-900 mb-4 line-clamp-1 group-hover:text-kandyan-gold transition-colors">
                     {artifact.name}
                   </h3>
                   
                   {/* Price & Action */}
                   <div className="mt-auto flex items-center justify-between gap-4 border-t border-slate-50 pt-4">
                     <div>
-                      <span className="text-xl font-black text-slate-900">
-                        Rs. {artifact.price.toLocaleString()}
-                      </span>
+                      {artifact.discounted_price && artifact.discounted_price < artifact.price ? (
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-slate-400 line-through">
+                            Rs. {artifact.price.toLocaleString()}
+                          </span>
+                          <span className="text-xl font-black text-slate-900">
+                            Rs. {artifact.discounted_price.toLocaleString()}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-xl font-black text-slate-900">
+                          Rs. {artifact.price.toLocaleString()}
+                        </span>
+                      )}
                     </div>
                     <Link 
                       href={`/shop/${artifact.id}`}
-                      className="bg-slate-950 hover:bg-rose-700 text-white p-3 rounded-2xl transition-all duration-300 shadow-md flex items-center justify-center group/btn"
+                      className="bg-slate-950 hover:bg-kandyan-maroon text-white p-3 rounded-2xl transition-all duration-300 shadow-md flex items-center justify-center group/btn"
                     >
                       <svg className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
@@ -198,16 +222,16 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
           {totalPages > 1 && (
             <div className="mt-16 flex items-center justify-center gap-2">
               
-              {/* Previous Button - FIXED */}
+              {/* Previous Button */}
               <button
                 onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
               >
                 &laquo; Previous
               </button>
 
-              {/* Desktop Page Numbers (Already working) */}
+              {/* Desktop Page Numbers */}
               <div className="hidden sm:flex items-center gap-2">
                 {Array.from({ length: totalPages }).map((_, idx) => {
                   const pageNum = idx + 1;
@@ -215,9 +239,9 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
                     <button
                       key={pageNum}
                       onClick={() => handlePageChange(pageNum)}
-                      className={`w-10 h-10 rounded-lg border flex items-center justify-center transition-all ${
+                      className={`w-10 h-10 rounded-lg border flex items-center justify-center transition-all cursor-pointer ${
                         currentPage === pageNum
-                          ? 'border-rose-700 text-rose-700 font-bold bg-rose-50 shadow-sm'
+                          ? 'border-kandyan-maroon text-kandyan-maroon font-bold bg-rose-50 shadow-sm'
                           : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 font-medium'
                       }`}
                     >
@@ -232,11 +256,11 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
                 Page {currentPage} of {totalPages}
               </span>
 
-              {/* Next Button - FIXED */}
+              {/* Next Button */}
               <button
                 onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
-                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
               >
                 Next &raquo;
               </button>
