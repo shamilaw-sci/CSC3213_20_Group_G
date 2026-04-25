@@ -1,1 +1,20 @@
 @import "tailwindcss";
+
+@theme {
+  /* Brand Colors */
+  --color-kandyan-gold: var(--color-amber-600);
+  --color-kandyan-gold-dark: var(--color-amber-700);
+  --color-kandyan-maroon: var(--color-rose-700);
+  --color-kandyan-maroon-dark: var(--color-rose-800);
+  --color-kandyan-bg: #FAFAFA;
+
+  /* Custom Box Shadows based on your code */
+  --shadow-kandyan-soft: 0 8px 30px rgba(0, 0, 0, 0.04);
+  --shadow-kandyan-hover: 0 20px 40px rgba(0, 0, 0, 0.08);
+  --shadow-kandyan-button: 0 8px 20px rgba(159, 18, 57, 0.2);
+}
+
+body {
+  background-color: var(--color-kandyan-bg);
+  color: var(--color-slate-900);
+}
