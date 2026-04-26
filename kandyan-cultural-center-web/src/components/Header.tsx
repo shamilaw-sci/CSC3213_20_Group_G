@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import UserMenu from './UserMenu';
 import { useCart } from '@/context/CartContext';
-import CartDrawer from './CartDrawer';
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -64,7 +63,7 @@ export default function Header() {
 
         {/* Mobile Menu Toggle & Cart */}
         <div className="flex lg:hidden items-center gap-4">
-          <Link href="/cart" className="relative p-2 text-slate-300">
+          <Link href="/checkout" className="relative p-2 text-slate-300">
             <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
             </svg>
@@ -104,7 +103,6 @@ export default function Header() {
           <Link href="/shop" onClick={closeMenu} className="text-lg font-medium text-slate-300 hover:text-white">Crafts Shop</Link>
           <Link href="/workshops" onClick={closeMenu} className="text-lg font-medium text-slate-300 hover:text-white">Shows & Workshops</Link>
           <Link href="/facilities" onClick={closeMenu} className="text-lg font-medium text-slate-300 hover:text-white">Venues</Link>
-          <Link href="/cart" onClick={closeMenu} className="text-lg font-medium text-slate-300">My Cart</Link>
           
           <div className="pt-6 border-t border-white/10">
             <Link 
@@ -120,7 +118,6 @@ export default function Header() {
           </div>
         </nav>
       </div>
-      <CartDrawer />
     </header>
   );
 }

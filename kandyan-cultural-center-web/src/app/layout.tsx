@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import BackToTop from "@/components/BackToTop";
 import { CartProvider } from "@/context/CartContext";
+import CartDrawer from "@/components/CartDrawer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,6 +24,7 @@ export default function RootLayout({
       <body className={`${inter.className} bg-stone-50 text-stone-900 flex flex-col min-h-screen`}>
         <CartProvider>
         <Header />
+        <CartDrawer />
         {/* Main content takes up the remaining vertical space */}
         <main className="flex-grow">
           {children}

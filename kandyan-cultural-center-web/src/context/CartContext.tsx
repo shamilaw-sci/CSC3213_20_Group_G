@@ -12,7 +12,7 @@ interface CartItem {
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (item: CartItem) => void;
+  addToCart: (item: CartItem, openDrawer?: boolean) => void;
   removeFromCart: (id: string) => void;
   cartCount: number;
   isDrawerOpen: boolean;
@@ -25,7 +25,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  const addToCart = (newItem: CartItem) => {
+  const addToCart = (newItem: CartItem, openDrawer = true) => {
     setCart((prev) => {
       const existing = prev.find((i) => i.id === newItem.id);
       if (existing) {
@@ -33,7 +33,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       return [...prev, newItem];
     });
-    setIsDrawerOpen(true); // Open drawer automatically when item is added
+    if (openDrawer) {
+      setIsDrawerOpen(true); // Open drawer automatically when item is added
+    }
   };
 
   const removeFromCart = (id: string) => {
