@@ -2,16 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import UserMenu from './UserMenu';
 import { useCart } from '@/context/CartContext';
 import CartDrawer from './CartDrawer';
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  // Update: Moved cart state and drawer logic to CartContext for better separation of concerns and easier access across components
   const { cartCount, setIsDrawerOpen } = useCart();
-
-  // Helper function to close menu when a link is clicked
   const closeMenu = () => setIsMobileMenuOpen(false);
 
   return (
@@ -42,18 +39,16 @@ export default function Header() {
           <Link href="/facilities" className="text-slate-300 hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">Venues</Link>
         </nav>
 
-        {/* Desktop CTA Button & cart */}
+        {/* Desktop Actions (Cart + CTA + User) */}
         <div className="hidden lg:flex items-center gap-6">
-          
           <button 
             onClick={() => setIsDrawerOpen(true)} 
             className="relative p-2 text-slate-300 hover:text-amber-400 transition-colors group cursor-pointer border-none bg-transparent">
             <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
             </svg>
-            
             {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-kandyan-maroon text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-slate-950">
+              <span className="absolute -top-1 -right-1 bg-rose-700 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-slate-950">
                 {cartCount}
               </span>
             )}
@@ -64,11 +59,11 @@ export default function Header() {
             className="bg-rose-700 hover:bg-rose-600 text-white px-6 py-2.5 rounded-lg font-bold transition-all duration-300 shadow-[0_0_15px_rgba(190,18,60,0.3)] hover:shadow-[0_0_25px_rgba(190,18,60,0.6)] border border-rose-500/50">
             Contact Us
           </Link>
+          <UserMenu />
         </div>
 
         {/* Mobile Menu Toggle & Cart */}
         <div className="flex lg:hidden items-center gap-4">
-          {/* Cart Icon for Mobile */}
           <Link href="/cart" className="relative p-2 text-slate-300">
             <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
@@ -97,7 +92,7 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown (Animated) */}
+      {/* Mobile Menu Dropdown */}
       <div 
         className={`lg:hidden absolute top-20 left-0 w-full bg-slate-950/95 backdrop-blur-xl border-b border-white/10 shadow-2xl transition-all duration-300 ease-in-out origin-top ${
           isMobileMenuOpen ? 'opacity-100 scale-y-100 visible' : 'opacity-0 scale-y-0 invisible'
@@ -119,6 +114,9 @@ export default function Header() {
             >
               Contact Us
             </Link>
+          </div>
+          <div className="pt-4">
+            <UserMenu />
           </div>
         </nav>
       </div>
