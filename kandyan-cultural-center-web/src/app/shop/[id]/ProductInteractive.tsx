@@ -2,10 +2,14 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import Button from '@/components/Button';
+import { useCart } from '@/context/CartContext';
 
 export default function ProductInteractive({ artifact }: { artifact: any }) {
   const allImages = [artifact.image_url, ...(artifact.gallery_images || [])].filter(Boolean);
+  const { addToCart } = useCart();
+  const router = useRouter();
   const [mainImage, setMainImage] = useState(allImages[0]);
   const [quantity, setQuantity] = useState(1);
   const [copied, setCopied] = useState(false);
@@ -35,6 +39,28 @@ export default function ProductInteractive({ artifact }: { artifact: any }) {
       setTimeout(() => setCopied(false), 2000);
     }
   };
+
+  // Add to Cart Handler
+  const handleAddToCart = () => {
+  addToCart({
+    id: artifact.id,
+    name: artifact.name,
+    price: hasDiscount ? artifact.discounted_price : artifact.price,
+    image_url: artifact.image_url,
+    quantity: quantity
+  });
+};
+
+const handleBuyNow = () => {
+  addToCart({
+      id: artifact.id,
+      name: artifact.name,
+      price: hasDiscount ? artifact.discounted_price : artifact.price,
+      image_url: artifact.image_url,
+      quantity: quantity
+    }, false); // <-- FALSE prevents the drawer from opening
+  router.push('/checkout'); // Immediately redirect to the checkout page
+};
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-6">
@@ -132,8 +158,8 @@ export default function ProductInteractive({ artifact }: { artifact: any }) {
             </div>
 
             <div className="flex gap-4">
-              <Button variant="outline" className="grow">Add to Cart</Button>
-              <Button variant="primary" className="grow">Buy Now</Button>
+              <Button variant="outline" className="grow" onClick={handleAddToCart}>Add to Cart</Button>
+              <Button variant="primary" className="grow" onClick={handleBuyNow}>Buy Now</Button>
             </div>
           </div>
         )}
