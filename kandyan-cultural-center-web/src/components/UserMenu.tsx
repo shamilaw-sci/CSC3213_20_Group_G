@@ -111,7 +111,7 @@ export default function UserMenu() {
               onClick={() => setOpen(false)}
               className="block px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-[var(--color-kandyan-maroon)] transition-colors"
             >
-              My Profile & Orders
+              Dashboard
             </Link>
           </div>
 
