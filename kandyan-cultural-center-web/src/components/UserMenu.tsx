@@ -47,7 +47,7 @@ export default function UserMenu() {
   if (!user) {
     return (
       <Link 
-        href="/login"
+        href="/login" 
         className="bg-[var(--color-kandyan-maroon)] hover:bg-[var(--color-kandyan-maroon-dark)] text-white px-5 py-2.5 rounded-xl font-bold shadow-[var(--shadow-kandyan-button)] transition-all whitespace-nowrap text-sm"
       >
         Sign in / Sign up
@@ -112,13 +112,6 @@ export default function UserMenu() {
               className="block px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-[var(--color-kandyan-maroon)] transition-colors"
             >
               My Profile & Orders
-            </Link>
-            <Link
-              href="/profile-setup"
-              onClick={() => setOpen(false)}
-              className="block px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-[var(--color-kandyan-maroon)] transition-colors"
-            >
-              Account Settings
             </Link>
           </div>
 
