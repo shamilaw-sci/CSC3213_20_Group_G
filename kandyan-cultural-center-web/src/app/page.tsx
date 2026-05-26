@@ -1,14 +1,59 @@
 import Link from "next/link";
 import HeroSlider from "@/components/HeroSlider";
 import Button from "@/components/Button";
+import FeaturedCarousel from "@/components/FeaturedCarousel";
+import { supabase } from "@/lib/supabase";
 
-export default function Home() {
+export default async function Home() {
+  // 1. Fetch the featured items from Supabase BEFORE the page loads
+  const { data: featuredArtifacts, error } = await supabase
+    .from('artifacts')
+    .select('*')
+    .limit(6); // Grabs 6 items for your carousel
+
+  // 2. Handle any potential database errors gracefully
+  if (error) {
+    console.error("Error fetching featured artifacts:", error);
+  }
   return (
     <div className="w-full bg-kandyan-bg">
-      {/* 1. NEW DYNAMIC HERO SLIDER */}
+      {/* NEW DYNAMIC HERO SLIDER */}
       <HeroSlider />
 
-      {/* 2. HISTORY & ABOUT SECTION (Modern Overlap Layout) */}
+      {/* E-COMMERCE TEASER SECTION  */}
+      <section className="py-24 bg-white relative border-t border-slate-100 overflow-hidden">
+        {/* Decorative Background Element */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-kandyan-gold/10 rounded-full blur-[100px] pointer-events-none -mt-20 -mr-20"></div>
+        
+        <div className="container mx-auto px-4 max-w-7xl relative z-10">
+          
+          {/* Section Header */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+            <div className="max-w-2xl">
+              <h2 className="text-kandyan-gold font-bold tracking-widest uppercase text-sm flex items-center gap-4 mb-4">
+                <span className="w-12 h-px bg-kandyan-gold"></span> Authentic Collection
+              </h2>
+              <h3 className="text-4xl md:text-5xl font-extrabold text-slate-900 leading-tight">
+                Handcrafted <br className="hidden sm:block"/> <span className="text-kandyan-maroon">Masterpieces</span>
+              </h3>
+            </div>
+            
+            <div className="shrink-0">
+              <Button href="/shop" variant="outline" className="w-full md:w-auto">
+                Discover Full Collection
+              </Button>
+            </div>
+          </div>
+
+          {/* Carousel */}
+          <div className="-mx-4 md:mx-0">
+            <FeaturedCarousel artifacts={featuredArtifacts || []} />
+          </div>
+
+        </div>
+      </section>
+
+      {/* HISTORY & ABOUT SECTION (Modern Overlap Layout) */}
       <section className="py-24 bg-white relative">
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -55,7 +100,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3. CORE MODULES TEASER GRID (Hover-focused Cards) */}
+      {/* CORE MODULES TEASER GRID (Hover-focused Cards) */}
       <section className="py-24 bg-kandyan-bg">
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="text-center mb-20">
@@ -109,7 +154,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 4. CONTACT US SECTION (Clean Light Theme with Map) */}
+      {/* CONTACT US SECTION (Clean Light Theme with Map) */}
       <section id="contact" className="py-24 bg-white relative overflow-hidden border-t border-slate-100">
         {/* Soft Decorative Background Orbs */}
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-rose-50/50 rounded-full blur-[100px] pointer-events-none"></div>

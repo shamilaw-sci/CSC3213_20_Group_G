@@ -1,23 +1,27 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 
-interface CartItem {
+// 1. Updated Interface: Added discounted_price
+export interface CartItem {
   id: string;
   name: string;
   price: number;
+  discounted_price?: number; 
   image_url: string;
   quantity: number;
+  stock?: number;
 }
 
+// 2. Updated Context Type: Added updateQuantity
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (item: CartItem, openDrawer?: boolean) => void;
+  addToCart: (item: CartItem) => void;
   removeFromCart: (id: string) => void;
-  clearCart: () => void; // <-- NEW: Added to interface
+  updateQuantity: (id: string, quantity: number) => void;
   cartCount: number;
   isDrawerOpen: boolean;
-  setIsDrawerOpen: (open: boolean) => void;
+  setIsDrawerOpen: (isOpen: boolean) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -25,66 +29,74 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false); // <-- NEW: Safety flag
 
-  // --- 1. INITIAL LOAD FROM CACHE ---
+  // Load from localStorage on initial render
   useEffect(() => {
-    try {
-      const savedCart = localStorage.getItem('kcc_cart');
-      if (savedCart) {
+    const savedCart = localStorage.getItem('kcc_cart');
+    if (savedCart) {
+      try {
         setCart(JSON.parse(savedCart));
+      } catch (error) {
+        console.error('Failed to parse cart from local storage', error);
       }
-    } catch (error) {
-      console.error('Failed to load cart from cache:', error);
-    } finally {
-      setIsLoaded(true); // Mark as loaded whether we found data or not
     }
-  }, []); // Empty dependency array means this runs ONCE when the app starts
+  }, []);
 
-  // --- 2. SAVE TO CACHE ON CHANGE ---
+  // Save to localStorage whenever cart changes
   useEffect(() => {
-    // Only save if the initial load has finished so we don't accidentally save an empty array over the user's data!
-    if (isLoaded) {
-      localStorage.setItem('kcc_cart', JSON.stringify(cart));
-    }
-  }, [cart, isLoaded]); // This runs every time the 'cart' changes
+    localStorage.setItem('kcc_cart', JSON.stringify(cart));
+  }, [cart]);
 
-  const addToCart = (newItem: CartItem, openDrawer = true) => {
-    setCart((prev) => {
-      const existing = prev.find((i) => i.id === newItem.id);
-      if (existing) {
-        return prev.map((i) => i.id === newItem.id ? { ...i, quantity: i.quantity + newItem.quantity } : i);
+  const addToCart = (item: CartItem) => {
+    setCart((prevCart) => {
+      const existingItem = prevCart.find((cartItem) => cartItem.id === item.id);
+      if (existingItem) {
+        return prevCart.map((cartItem) =>
+          cartItem.id === item.id
+            ? { ...cartItem, quantity: cartItem.quantity + (item.quantity || 1) }
+            : cartItem
+        );
       }
-      return [...prev, newItem];
+      return [...prevCart, { ...item, quantity: item.quantity || 1 }];
     });
-    
-    if (openDrawer) {
-      setIsDrawerOpen(true);
-    }
   };
 
   const removeFromCart = (id: string) => {
-    setCart((prev) => prev.filter((item) => item.id !== id));
+    setCart((prevCart) => prevCart.filter((item) => item.id !== id));
   };
 
-  // --- 3. CLEAR CART FUNCTION ---
-  const clearCart = () => {
-    setCart([]);
-    // Because 'cart' changed to [], the save useEffect above will automatically update localStorage!
-    localStorage.removeItem('kcc_cart'); // Forcefully and immediately wipes the cache!
+  // 3. New Function: Allows users to change quantity inside the drawer
+  const updateQuantity = (id: string, quantity: number) => {
+    setCart((prevCart) =>
+      prevCart.map((item) =>
+        item.id === id ? { ...item, quantity: Math.max(1, quantity) } : item
+      )
+    );
   };
 
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, cartCount, isDrawerOpen, setIsDrawerOpen }}>
+    <CartContext.Provider 
+      value={{ 
+        cart, 
+        addToCart, 
+        removeFromCart, 
+        updateQuantity, 
+        cartCount, 
+        isDrawerOpen, 
+        setIsDrawerOpen 
+      }}
+    >
       {children}
     </CartContext.Provider>
   );
 }
 
-export const useCart = () => {
+export function useCart() {
   const context = useContext(CartContext);
-  if (!context) throw new Error('useCart must be used within CartProvider');
+  if (context === undefined) {
+    throw new Error('useCart must be used within a CartProvider');
+  }
   return context;
-};
+}

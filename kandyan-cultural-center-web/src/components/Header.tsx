@@ -88,7 +88,7 @@ export default function Header() {
               Kandyan
             </span>
             <span className="text-[10px] font-medium tracking-[0.2em] text-slate-400 uppercase leading-none mt-1">
-              Art Association
+              Cultural Center
             </span>
           </div>
         </Link>
@@ -100,6 +100,7 @@ export default function Header() {
           <Link href="/shop" className="text-slate-300 hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">Crafts Shop</Link>
           <Link href="/workshops" className="text-slate-300 hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">Shows & Workshops</Link>
           <Link href="/facilities" className="text-slate-300 hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">Venues</Link>
+          <Link href="/#contact" className="text-slate-300 hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">Contact Us</Link>
         </nav>
 
         {/* Desktop CTA Button & cart */}
@@ -124,13 +125,6 @@ export default function Header() {
             {/* Desktop Welcome Popup */}
             {showWelcome && <WelcomePopup />}
           </div>
-
-          <Link 
-            href="/#contact" 
-            className="bg-rose-700 hover:bg-rose-600 text-white px-6 py-2.5 rounded-lg font-bold transition-all duration-300 shadow-[0_0_15px_rgba(190,18,60,0.3)] hover:shadow-[0_0_25px_rgba(190,18,60,0.6)] border border-rose-500/50"
-          >
-            Contact Us
-          </Link>
           
           {/* User Menu */}
           <UserMenu />
@@ -189,16 +183,10 @@ export default function Header() {
           <Link href="/shop" onClick={closeMenu} className="text-lg font-medium text-slate-300 hover:text-white">Crafts Shop</Link>
           <Link href="/workshops" onClick={closeMenu} className="text-lg font-medium text-slate-300 hover:text-white">Shows & Workshops</Link>
           <Link href="/facilities" onClick={closeMenu} className="text-lg font-medium text-slate-300 hover:text-white">Venues</Link>
+          <Link href="/#contact" onClick={closeMenu} className="text-lg font-medium text-slate-300 hover:text-white">Contact Us</Link>
           <button onClick={() => { closeMenu(); setIsDrawerOpen(true); }} className="text-lg font-medium text-slate-300 text-center w-full">My Cart</button>
           
           <div className="pt-6 border-t border-white/10">
-            <Link 
-              href="/#contact" 
-              onClick={closeMenu}
-              className="inline-block w-full bg-rose-700 hover:bg-rose-600 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(190,18,60,0.3)] mb-4"
-            >
-              Contact Us
-            </Link>
             <div className="flex justify-center">
               <UserMenu />
             </div>
