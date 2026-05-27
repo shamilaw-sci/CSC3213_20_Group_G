@@ -1,0 +1,77 @@
+﻿export const workshops = [
+  {
+    id: "wood",
+    title: "Wood Craft Workshop",
+    craftsman: "Master Wood Craftsman",
+    image: "/hero1.png",
+    price: 4500,
+    duration: "2 Hours",
+    location: "Kandy Craft Studio",
+    description: "Learn traditional Sri Lankan wood carving techniques.",
+    highlights: [
+      "Hands-on carving practice",
+      "Kandyan motif history",
+      "Finish a polished wooden keepsake",
+    ],
+    craftsmanDetails: {
+      name: "Master Perera",
+      experience: "25 years of traditional wood carving",
+      specialty: "Temple panels & home decor",
+    },
+    schedule: [
+      { date: "2026-06-05", times: ["09:00 AM", "11:00 AM", "02:00 PM"] },
+      { date: "2026-06-07", times: ["09:00 AM", "01:00 PM"] },
+      { date: "2026-06-10", times: ["11:00 AM", "02:00 PM"] },
+    ],
+  },
+  {
+    id: "brass",
+    title: "Brass Craft Workshop",
+    craftsman: "Master Brass Craftsman",
+    image: "/hero1.png",
+    price: 5000,
+    duration: "2 Hours",
+    location: "Kandy Craft Studio",
+    description: "Learn traditional brass crafting techniques.",
+    highlights: [
+      "Design your own brass artifact",
+      "Learn polishing and finishing",
+      "Discover Kandyan brass heritage",
+    ],
+    craftsmanDetails: {
+      name: "Master Silva",
+      experience: "20 years crafting ceremonial brassware",
+      specialty: "Decorative bowls & ritual pieces",
+    },
+    schedule: [
+      { date: "2026-06-06", times: ["10:00 AM", "01:00 PM"] },
+      { date: "2026-06-09", times: ["09:00 AM", "12:00 PM"] },
+      { date: "2026-06-12", times: ["11:00 AM", "03:00 PM"] },
+    ],
+  },
+  {
+    id: "mask",
+    title: "Mask Carving Workshop",
+    craftsman: "Mask Artisan",
+    image: "/hero1.png",
+    price: 6000,
+    duration: "3 Hours",
+    location: "Kandy Craft Studio",
+    description: "Traditional Sri Lankan mask carving experience.",
+    highlights: [
+      "Create a Kandyan mask",
+      "Learn carving and painting",
+      "Discover cultural symbolism",
+    ],
+    craftsmanDetails: {
+      name: "Master Kumara",
+      experience: "18 years making ceremonial masks",
+      specialty: "Traditional mask carving",
+    },
+    schedule: [
+      { date: "2026-06-08", times: ["09:00 AM", "02:00 PM"] },
+      { date: "2026-06-11", times: ["10:00 AM", "01:00 PM"] },
+      { date: "2026-06-14", times: ["11:00 AM", "03:00 PM"] },
+    ],
+  },
+];
