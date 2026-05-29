@@ -7,21 +7,28 @@ import ProductInteractive from './ProductInteractive';
 export default async function ArtifactDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  // 1. Fetch the main artifact WITH the joined artisan data
+  // 1. Fetch parent artifact (No artisan data here anymore)
   const { data: artifact, error } = await supabase
     .from('artifacts')
-    .select('*, artisans(*)')
+    .select('*')
     .eq('id', id)
     .single();
 
   if (error || !artifact) notFound();
 
-  // 2. Fetch Related Artifacts
+  // 2. Fetch variants WITH their specific artisans joined!
+  const { data: variants } = await supabase
+    .from('artifact_variants')
+    .select('*, artisans(*)')
+    .eq('artifact_id', id)
+    .order('created_at', { ascending: true });
+
+// 3. Fetch Related Artifacts (UPDATED TO USE catalog_view)
   const { data: relatedArtifacts } = await supabase
-    .from('artifacts')
+    .from('catalog_view')
     .select('*')
     .eq('category', artifact.category)
-    .neq('id', artifact.id)
+    .neq('artifact_id', artifact.id) // Exclude the current artifact
     .limit(4);
 
   return (
@@ -30,8 +37,8 @@ export default async function ArtifactDetailPage({ params }: { params: Promise<{
         <span className="group-hover:-translate-x-1 transition-transform">←</span> Back to Catalog
       </Link>
 
-      {/* Top Half: Interactive Product Details */}
-      <ProductInteractive artifact={artifact} />
+      {/* Pass data to Interactive Component */}
+      <ProductInteractive artifact={artifact} variants={variants || []} />
 
       {/* DELIVERY & PAYMENT OPTIONS SECTION */}
       <div className="mt-24 mb-16 pt-16 border-t border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -84,18 +91,17 @@ export default async function ArtifactDetailPage({ params }: { params: Promise<{
             <span className="grow h-px bg-slate-200 ml-4"></span>
           </h2>
           
-          {/* UPDATED: Mobile Horizontal Snap Carousel, Desktop Grid */}
           <div className="flex overflow-x-auto sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-6 pb-6 sm:pb-0 snap-x snap-mandatory no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
             {relatedArtifacts.map((item) => (
               <Link 
-                href={`/shop/${item.id}`} 
-                key={item.id} 
+                href={`/shop/${item.artifact_id}?variant=${item.variant_id}`} 
+                key={item.variant_id} 
                 className="group min-w-[260px] sm:min-w-0 snap-start bg-white rounded-2xl p-3 border border-slate-100 shadow-sm hover:shadow-xl transition-all"
               >
                 <div className="bg-slate-50 rounded-xl h-56 relative overflow-hidden mb-4">
                   <Image 
                     src={item.image_url} 
-                    alt={item.name} 
+                    alt={item.product_name} 
                     fill 
                     className="object-cover transition-transform duration-500 group-hover:scale-105" 
                   />
@@ -106,7 +112,10 @@ export default async function ArtifactDetailPage({ params }: { params: Promise<{
                   )}
                 </div>
                 <div className="px-2 pb-2">
-                  <h3 className="font-bold text-slate-900 group-hover:text-kandyan-gold transition-colors line-clamp-1">{item.name}</h3>
+                  <h3 className="font-bold text-slate-900 group-hover:text-kandyan-gold transition-colors line-clamp-1">
+                    {item.product_name}
+                  </h3>
+                  <p className="text-xs text-slate-400 font-bold mb-1">{item.color_name}</p>
                   <p className="text-slate-500 font-bold mt-1">
                     LKR {item.discounted_price ? item.discounted_price.toLocaleString() : item.price.toLocaleString()}
                   </p>

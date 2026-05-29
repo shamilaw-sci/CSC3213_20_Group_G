@@ -2,19 +2,28 @@
 
 import { useState, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Artifact } from './page';
-import { useCart } from '@/context/CartContext'; // NEW: Imported Cart Context
+import { useCart } from '@/context/CartContext'; 
 import { supabase } from '@/lib/supabase';
 
+// Updated Interface to match your SQL catalog_view
+export interface CatalogItem {
+  variant_id: string;
+  artifact_id: string;
+  product_name: string;
+  category: string;
+  color_name: string;
+  price: number;
+  discounted_price?: number;
+  image_url: string;
+  stock: number;
+}
+
 interface ArtifactCatalogProps {
-  initialArtifacts: Artifact[];
+  initialArtifacts: CatalogItem[];
 }
 
 export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogProps) {
   const router = useRouter();
-  
-  // NEW: Pulling in your cart logic. 
-  // *Note: Make sure your CartContext actually exports a function called 'addToCart' or 'addItem'!
   const { setIsDrawerOpen, addToCart } = useCart(); 
 
   // --- State ---
@@ -43,8 +52,9 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
       const lowerQuery = searchQuery.toLowerCase();
       result = result.filter(
         (a) =>
-          a.name.toLowerCase().includes(lowerQuery) ||
-          a.category.toLowerCase().includes(lowerQuery)
+          a.product_name.toLowerCase().includes(lowerQuery) ||
+          a.category.toLowerCase().includes(lowerQuery) ||
+          a.color_name.toLowerCase().includes(lowerQuery)
       );
     }
 
@@ -60,8 +70,8 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
 
       if (sortBy === 'price-low') return priceA - priceB;
       if (sortBy === 'price-high') return priceB - priceA;
-      if (sortBy === 'name') return a.name.localeCompare(b.name);
-      return 0; // Default
+      if (sortBy === 'name') return a.product_name.localeCompare(b.product_name);
+      return 0; // Default / Newest (assuming data is pre-sorted from DB)
     });
 
     return result;
@@ -81,7 +91,7 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-    setCurrentPage(1); // Reset to page 1 while typing
+    setCurrentPage(1); 
   };
 
   const scrollCategoriesRight = () => {
@@ -99,39 +109,41 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
     }, 50); 
   };
 
-  // --- ACTION HANDLERS FOR THE CARD ---
-  const handleCardClick = (id: string) => {
-    router.push(`/shop/${id}`);
+  // --- ACTION HANDLERS ---
+  const handleCardClick = (item: CatalogItem) => {
+    // Navigate to the parent ID but pass the variant as a query parameter
+    router.push(`/shop/${item.artifact_id}?variant=${item.variant_id}`);
   };
 
-  const handleAddToCart = (e: React.MouseEvent, artifact: Artifact) => {
-    e.stopPropagation(); // Prevents the card click from triggering
-    
-    // Add item to global cart state (assuming your context needs the item and a quantity)
-    if (addToCart) {
-      addToCart({ ...artifact, quantity: 1 });
-    }
-    
-    // Open the drawer to give the user visual feedback
-    if (setIsDrawerOpen) {
-      setIsDrawerOpen(true);
-    }
+  // Helper to format the cart item correctly for the context
+  const getCartItem = (item: CatalogItem) => ({
+    id: item.variant_id, // Use variant_id so different colors are separate items
+    name: `${item.product_name} - ${item.color_name}`,
+    price: item.price,
+    discounted_price: item.discounted_price,
+    image_url: item.image_url,
+    stock: item.stock,
+    quantity: 1
+  });
+
+  const handleAddToCart = (e: React.MouseEvent, item: CatalogItem) => {
+    e.stopPropagation(); 
+    if (addToCart) addToCart(getCartItem(item));
+    if (setIsDrawerOpen) setIsDrawerOpen(true);
   };
 
-  const handleBuyNow = async (e: React.MouseEvent, artifact: any) => {
-  e.stopPropagation();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user) {
-    // Redirect to login, but keep the intention
-    router.push('/login'); 
-    return;
-  }
+  const handleBuyNow = async (e: React.MouseEvent, item: CatalogItem) => {
+    e.stopPropagation();
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      router.push('/login'); 
+      return;
+    }
 
-  // If logged in, go to delivery details
-  addToCart({ ...artifact, quantity: 1 });
-  router.push('/checkout');
+    if (addToCart) addToCart(getCartItem(item));
+    router.push('/checkout');
   };
 
   return (
@@ -142,12 +154,10 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
         
         {/* Search Bar & Sort Row */}
         <div className="flex flex-col md:flex-row justify-between gap-4">
-          
-          {/* Search Bar */}
           <div className="relative w-full md:w-96">
             <input
               type="text"
-              placeholder="Search artifacts, categories..."
+              placeholder="Search artifacts, categories, colors..."
               value={searchQuery}
               onChange={handleSearchChange}
               className="w-full bg-white border border-slate-200 text-slate-900 text-sm font-medium rounded-2xl pl-12 pr-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-kandyan-gold focus:border-transparent shadow-sm transition-all"
@@ -157,7 +167,6 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
             </svg>
           </div>
 
-          {/* Sorting Dropdown */}
           <div className="flex items-center gap-3 self-end md:self-auto">
             <label className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden sm:block">Sort By:</label>
             <select 
@@ -173,12 +182,9 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
           </div>
         </div>
         
-        {/* Category Filter Pills (Interactive Chip Slider) */}
+        {/* Category Filter Pills */}
         <div className="relative w-full overflow-hidden rounded-xl">
-          <div 
-            ref={categoryScrollRef}
-            className="flex overflow-x-auto pb-2 gap-3 w-full snap-x scroll-smooth no-scrollbar pr-16"
-          >
+          <div ref={categoryScrollRef} className="flex overflow-x-auto pb-2 gap-3 w-full snap-x scroll-smooth no-scrollbar pr-16">
             {categories.map((category) => (
               <button
                 key={category}
@@ -199,9 +205,7 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
             aria-label="Scroll categories right"
             className="absolute right-0 top-0 bottom-2 w-16 bg-gradient-to-l from-kandyan-bg via-kandyan-bg/90 to-transparent flex items-center justify-end hover:from-slate-100 transition-colors cursor-pointer"
           >
-            <svg className="w-6 h-6 text-slate-600 mr-1 hover:text-slate-900 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path>
-            </svg>
+            <svg className="w-6 h-6 text-slate-600 mr-1 hover:text-slate-900 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path></svg>
           </button>
         </div>
       </div>
@@ -216,38 +220,26 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
       ) : (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-8">
-            {visibleArtifacts.map((artifact) => (
+            {visibleArtifacts.map((item) => (
               <div 
-                key={artifact.id}
-                onClick={() => handleCardClick(artifact.id)}
+                key={item.variant_id} // Unique key based on the variant
+                onClick={() => handleCardClick(item)}
                 className="group bg-white rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col cursor-pointer"
               >
                 {/* Image Container & Badges */}
                 <div className="aspect-square sm:aspect-[4/5] w-full relative overflow-hidden bg-slate-50">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={artifact.image_url}
-                    alt={artifact.name}
-                    className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-700"
-                    loading="lazy"
-                  />
+                  <img src={item.image_url} alt={item.product_name} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-700" loading="lazy" />
+                  
                   <div className="absolute top-2 left-2 sm:top-4 sm:left-4 flex flex-col gap-1 sm:gap-2">
-                    {/* Stock Badges */}
-                    {artifact.stock === 0 ? (
-                      <span className="bg-slate-900 text-white text-[8px] sm:text-[9px] font-black px-2 sm:px-3 py-1 sm:py-1.5 rounded-md uppercase tracking-widest shadow-sm">
-                        Sold Out
-                      </span>
-                    ) : artifact.stock < 5 ? (
-                      <span className="bg-kandyan-gold text-white text-[8px] sm:text-[9px] font-black px-2 sm:px-3 py-1 sm:py-1.5 rounded-md uppercase tracking-widest shadow-sm">
-                        Low Stock
-                      </span>
+                    {item.stock === 0 ? (
+                      <span className="bg-slate-900 text-white text-[8px] sm:text-[9px] font-black px-2 sm:px-3 py-1 sm:py-1.5 rounded-md uppercase tracking-widest shadow-sm">Sold Out</span>
+                    ) : item.stock < 5 ? (
+                      <span className="bg-kandyan-gold text-white text-[8px] sm:text-[9px] font-black px-2 sm:px-3 py-1 sm:py-1.5 rounded-md uppercase tracking-widest shadow-sm">Low Stock</span>
                     ) : null}
                     
-                    {/* Sale Badge */}
-                    {artifact.discounted_price && artifact.discounted_price < artifact.price && (
-                      <span className="bg-kandyan-maroon text-white text-[8px] sm:text-[9px] font-black px-2 sm:px-3 py-1 sm:py-1.5 rounded-md uppercase tracking-widest shadow-sm self-start">
-                        Sale
-                      </span>
+                    {item.discounted_price && item.discounted_price < item.price && (
+                      <span className="bg-kandyan-maroon text-white text-[8px] sm:text-[9px] font-black px-2 sm:px-3 py-1 sm:py-1.5 rounded-md uppercase tracking-widest shadow-sm self-start">Sale</span>
                     )}
                   </div>
                 </div>
@@ -255,26 +247,31 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
                 {/* Card Content */}
                 <div className="p-3 sm:p-6 flex flex-col flex-grow">
                   <span className="text-[9px] sm:text-[10px] font-bold text-kandyan-maroon uppercase tracking-widest mb-1 sm:mb-2 line-clamp-1">
-                    {artifact.category}
+                    {item.category}
                   </span>
-                  <h3 className="text-sm sm:text-lg font-extrabold text-slate-900 mb-2 sm:mb-4 line-clamp-1 group-hover:text-kandyan-gold transition-colors">
-                    {artifact.name}
+                  <h3 className="text-sm sm:text-lg font-extrabold text-slate-900 mb-1 line-clamp-1 group-hover:text-kandyan-gold transition-colors">
+                    {item.product_name}
                   </h3>
+                  
+                  {/* Color Indicator */}
+                  <p className="text-xs font-bold text-slate-400 mb-2 sm:mb-4">
+                    Color: <span className="text-slate-600">{item.color_name}</span>
+                  </p>
                   
                   {/* Pricing */}
                   <div className="mt-auto flex flex-col gap-1 mb-3 sm:mb-4 border-b border-slate-50 pb-3">
-                    {artifact.discounted_price && artifact.discounted_price < artifact.price ? (
+                    {item.discounted_price && item.discounted_price < item.price ? (
                       <div className="flex flex-col">
                         <span className="text-[10px] sm:text-sm font-medium text-slate-400 line-through">
-                          Rs. {artifact.price.toLocaleString()}
+                          Rs. {item.price.toLocaleString()}
                         </span>
                         <span className="text-base sm:text-xl font-black text-slate-900">
-                          Rs. {artifact.discounted_price.toLocaleString()}
+                          Rs. {item.discounted_price.toLocaleString()}
                         </span>
                       </div>
                     ) : (
                       <span className="text-base sm:text-xl font-black text-slate-900">
-                        Rs. {artifact.price.toLocaleString()}
+                        Rs. {item.price.toLocaleString()}
                       </span>
                     )}
                   </div>
@@ -283,8 +280,9 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
                   <div className="flex flex-col gap-2">
                     <div className="flex gap-2">
                       <button 
-                        onClick={(e) => handleAddToCart(e, artifact)}
-                        className="p-2 sm:px-4 sm:py-2 bg-slate-50 border border-slate-200 rounded-xl hover:border-kandyan-gold hover:bg-amber-50 text-slate-600 hover:text-kandyan-gold flex items-center justify-center transition-all shadow-sm"
+                        onClick={(e) => handleAddToCart(e, item)}
+                        disabled={item.stock === 0}
+                        className="p-2 sm:px-4 sm:py-2 bg-slate-50 border border-slate-200 rounded-xl hover:border-kandyan-gold hover:bg-amber-50 text-slate-600 hover:text-kandyan-gold flex items-center justify-center transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         aria-label="Add to cart"
                       >
                         <svg className="w-4 h-4 sm:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
@@ -292,14 +290,14 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
                       </button>
                       
                       <button 
-                        onClick={(e) => handleBuyNow(e, artifact)}
-                        className="flex-1 bg-slate-900 hover:bg-kandyan-gold text-white text-xs sm:text-sm font-bold py-2 rounded-xl transition-colors shadow-sm"
+                        onClick={(e) => handleBuyNow(e, item)}
+                        disabled={item.stock === 0}
+                        className="flex-1 bg-slate-900 hover:bg-kandyan-gold text-white text-xs sm:text-sm font-bold py-2 rounded-xl transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Buy Now
                       </button>
                     </div>
 
-                    {/* More Details */}
                     <div className="mt-1 text-center">
                       <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 group-hover:text-kandyan-maroon transition-colors uppercase tracking-widest flex items-center justify-center gap-1">
                         More Details 
@@ -313,7 +311,7 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
             ))}
           </div>
 
-          {/* --- Numbered Pagination UI --- */}
+          {/* --- Pagination UI --- */}
           {totalPages > 1 && (
             <div className="mt-16 flex items-center justify-center gap-2">
               <button
