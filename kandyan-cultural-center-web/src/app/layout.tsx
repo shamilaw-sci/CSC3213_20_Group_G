@@ -1,17 +1,14 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import BackToTop from "@/components/BackToTop";
 import { CartProvider } from "@/context/CartContext";
-import CartDrawer from "@/components/CartDrawer";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Kandyan Culture Connect | KCC",
   description: "Modern Digital Transformation Suite for the Kandyan Art Association",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -23,14 +20,8 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} bg-stone-50 text-stone-900 flex flex-col min-h-screen`}>
         <CartProvider>
-        <Header />
-        <CartDrawer />
-        {/* Main content takes up the remaining vertical space */}
-        <main className="flex-grow">
+          {/* We removed the layout frames here so they don't bleed into the POS */}
           {children}
-        </main>
-        <Footer />
-        <BackToTop />
         </CartProvider>
       </body>
     </html>

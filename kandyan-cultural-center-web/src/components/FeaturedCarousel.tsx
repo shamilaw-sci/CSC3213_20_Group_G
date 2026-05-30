@@ -125,7 +125,7 @@ export default function FeaturedCarousel({ artifacts }: { artifacts: any[] }) {
                   </div>
                 ) : (
                   <span className="text-base sm:text-xl font-black text-slate-900">
-                    Rs. {artifact.price.toLocaleString()}
+                    Rs. {artifact.price ? artifact.price.toLocaleString() : "N/A"}
                   </span>
                 )}
               </div>
