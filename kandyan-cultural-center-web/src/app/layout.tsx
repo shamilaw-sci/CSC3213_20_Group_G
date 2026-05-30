@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import BackToTop from "@/components/BackToTop";
 import { CartProvider } from "@/context/CartContext";
-import CartDrawer from "@/components/CartDrawer";
+import StoreLayout from "@/components/StoreLayout";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,14 +20,10 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} bg-stone-50 text-stone-900 flex flex-col min-h-screen`}>
         <CartProvider>
-        <Header />
-        <CartDrawer />
-        {/* Main content takes up the remaining vertical space */}
-        <main className="flex-grow">
-          {children}
-        </main>
-        <Footer />
-        <BackToTop />
+          {/* We moved the Header, Footer, and Cart into this wrapper! */}
+          <StoreLayout>
+            {children}
+          </StoreLayout>
         </CartProvider>
       </body>
     </html>
