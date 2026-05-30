@@ -18,6 +18,11 @@ export default function POSPage() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
+  // Secondary Bar State
+  const [scannerMode, setScannerMode] = useState<'barcode' | 'camera'>('barcode');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isOnline, setIsOnline] = useState(true); // Defaulting to true for now
+  
   // Form State
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -25,29 +30,29 @@ export default function POSPage() {
 
   // Handle the form submission
   const handleLoginSubmit = (e: FormEvent) => {
-    e.preventDefault(); // Prevent the page from refreshing
+    e.preventDefault(); 
     
     if (username === 'cashier1' && password === '123456') {
-      // Success!
       setActiveCashier({
         id: 'emp-101',
         name: 'Cashier 1',
       });
-      // Reset form and close modal
       setIsLoginModalOpen(false);
       setUsername('');
       setPassword('');
       setLoginError('');
     } else {
-      // Failure
       setLoginError('Invalid username or password.');
     }
   };
 
   const handleLogout = () => {
     setActiveCashier(null);
-    setIsDropdownOpen(false); // Close the dropdown when logging out
+    setIsDropdownOpen(false); 
   };
+
+  // Mock function to test network toggle (Click the network pill to test)
+  const toggleNetwork = () => setIsOnline(!isOnline);
 
   return (
     <div className="flex flex-col h-screen bg-stone-100 font-sans relative">
@@ -117,8 +122,6 @@ export default function POSPage() {
 
       {/* --- TOP ACTION BAR --- */}
       <header className="relative flex justify-between items-center bg-white px-6 py-4 shadow-sm border-b border-stone-200 z-30 shrink-0">
-        
-        {/* Left: Logo Area */}
         <div className="flex items-center w-1/4">
           <div className="w-12 h-12 bg-amber-700 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-inner">
             KAA
@@ -128,14 +131,12 @@ export default function POSPage() {
           </span>
         </div>
 
-        {/* Center: Association Name */}
         <div className="absolute left-1/2 transform -translate-x-1/2 w-1/2 text-center">
           <h1 className="text-xl md:text-2xl font-black text-stone-800 tracking-wide">
             The Kandyan Art Association
           </h1>
         </div>
 
-        {/* Right: Cashier Details / Login Button */}
         <div className="flex items-center justify-end w-1/4 relative">
           {activeCashier ? (
             <div>
@@ -150,10 +151,8 @@ export default function POSPage() {
                 <span className="text-xs text-stone-400">▼</span>
               </button>
 
-              {/* User Dropdown Menu */}
               {isDropdownOpen && (
                 <>
-                  {/* Invisible overlay to close dropdown when clicking outside */}
                   <div 
                     className="fixed inset-0 z-40" 
                     onClick={() => setIsDropdownOpen(false)} 
@@ -166,12 +165,9 @@ export default function POSPage() {
                       <li>
                         <button 
                           className="w-full text-left px-4 py-2 text-stone-700 hover:bg-stone-100 transition-colors"
-                          onClick={() => {
-                            setIsDropdownOpen(false);
-                            // Future: Add settings or history toggle here
-                          }}
+                          onClick={() => setIsDropdownOpen(false)}
                         >
-                          ⚙️ Settings (Coming Soon)
+                          ⚙️ Settings
                         </button>
                       </li>
                       <li>
@@ -223,45 +219,98 @@ export default function POSPage() {
 
       ) : (
 
-        <div className="flex flex-1 overflow-hidden z-10">
-          {/* Left Side: Product Discovery */}
-          <div className="flex-[2.5] p-6 flex flex-col overflow-hidden">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-stone-800">Merchandise</h2>
-            </div>
+        <div className="flex flex-col flex-1 overflow-hidden z-10">
+          
+          {/* --- SECONDARY ACTION BAR (SEARCH & CONTROLS) --- */}
+          <div className="flex justify-between items-center bg-white px-6 py-3 border-b border-stone-200 shrink-0 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
             
-            <div className="flex-1 bg-white p-6 rounded-2xl shadow-sm border border-stone-200 overflow-y-auto">
-              <p className="text-stone-400 text-center mt-10">
-                Product grid will go here...
-              </p>
+            {/* Left: Input Toggle */}
+            <div className="flex bg-stone-100 p-1 rounded-lg border border-stone-200 w-56">
+              <button
+                onClick={() => setScannerMode('barcode')}
+                className={`flex-1 flex items-center justify-center py-1.5 text-sm font-semibold rounded-md transition-all ${scannerMode === 'barcode' ? 'bg-white text-amber-700 shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}
+              >
+                <span className="mr-2">🔫</span> Scanner
+              </button>
+              <button
+                onClick={() => setScannerMode('camera')}
+                className={`flex-1 flex items-center justify-center py-1.5 text-sm font-semibold rounded-md transition-all ${scannerMode === 'camera' ? 'bg-white text-amber-700 shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}
+              >
+                <span className="mr-2">📸</span> Camera
+              </button>
             </div>
-          </div>
 
-          {/* Right Side: Cart Sidebar */}
-          <div className="flex-[1] min-w-[350px] bg-white border-l border-stone-200 p-6 flex flex-col shadow-[-4px_0_24px_-8px_rgba(0,0,0,0.05)]">
-            <h2 className="text-xl font-bold text-stone-800 mb-6 pb-4 border-b border-stone-100">
-              Current Order
-            </h2>
-            
-            <div className="flex-1 overflow-y-auto">
-              <p className="text-stone-400 text-center mt-10">
-                Scanned items will appear here...
-              </p>
-            </div>
-            
-            <div className="mt-auto pt-6 border-t border-stone-200">
-              <div className="flex justify-between items-end mb-6">
-                <span className="text-lg font-medium text-stone-500">Total</span>
-                <span className="text-4xl font-black text-amber-700">
-                  Rs. {cartTotal.toFixed(2)}
-                </span>
+            {/* Center: Search/Barcode Input */}
+            <div className="flex-1 max-w-2xl mx-8 relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <span className="text-stone-400">🔍</span>
               </div>
-              <button className="w-full py-5 bg-stone-900 hover:bg-stone-800 text-white text-xl font-black rounded-xl transition-all shadow-lg active:scale-[0.98]">
-                CHARGE
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={scannerMode === 'barcode' ? "Scan barcode or search item name..." : "Camera active. Search manually..."}
+                className="w-full pl-12 pr-4 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-600 focus:bg-white transition-all text-stone-800 font-medium shadow-inner"
+                autoFocus
+              />
+            </div>
+
+            {/* Right: Network Status */}
+            <div className="w-56 flex justify-end">
+              <button 
+                onClick={toggleNetwork}
+                className={`flex items-center px-4 py-2 rounded-full border transition-colors shadow-sm ${isOnline ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100' : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'}`}
+                title="Click to simulate connection drop"
+              >
+                <span className={`w-3 h-3 rounded-full mr-2 shadow-sm ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></span>
+                <span className="text-sm font-bold uppercase tracking-wider">
+                  {isOnline ? 'Online' : 'Offline'}
+                </span>
               </button>
             </div>
           </div>
-          
+
+          {/* --- PRODUCT & CART AREA --- */}
+          <div className="flex flex-1 overflow-hidden">
+            {/* Left Side: Product Discovery */}
+            <div className="flex-[2.5] p-6 flex flex-col overflow-hidden">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-stone-800">Merchandise</h2>
+              </div>
+              
+              <div className="flex-1 bg-white p-6 rounded-2xl shadow-sm border border-stone-200 overflow-y-auto">
+                <p className="text-stone-400 text-center mt-10">
+                  Product grid will go here...
+                </p>
+              </div>
+            </div>
+
+            {/* Right Side: Cart Sidebar */}
+            <div className="flex-[1] min-w-[350px] bg-white border-l border-stone-200 p-6 flex flex-col shadow-[-4px_0_24px_-8px_rgba(0,0,0,0.05)]">
+              <h2 className="text-xl font-bold text-stone-800 mb-6 pb-4 border-b border-stone-100">
+                Current Order
+              </h2>
+              
+              <div className="flex-1 overflow-y-auto">
+                <p className="text-stone-400 text-center mt-10">
+                  Scanned items will appear here...
+                </p>
+              </div>
+              
+              <div className="mt-auto pt-6 border-t border-stone-200">
+                <div className="flex justify-between items-end mb-6">
+                  <span className="text-lg font-medium text-stone-500">Total</span>
+                  <span className="text-4xl font-black text-amber-700">
+                    Rs. {cartTotal.toFixed(2)}
+                  </span>
+                </div>
+                <button className="w-full py-5 bg-stone-900 hover:bg-stone-800 text-white text-xl font-black rounded-xl transition-all shadow-lg active:scale-[0.98]">
+                  CHARGE
+                </button>
+              </div>
+            </div>
+          </div>
+
         </div>
       )}
     </div>
