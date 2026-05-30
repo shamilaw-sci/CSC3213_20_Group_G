@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
-import ConditionalLayout from "@/components/ConditionalLayout";
+import StoreLayout from "@/components/StoreLayout";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,10 +21,10 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} bg-stone-50 text-stone-900 flex flex-col min-h-screen`}>
         <CartProvider>
-          {/* This wrapper automatically handles showing/hiding the header based on the URL */}
-          <ConditionalLayout>
+          {/* We moved the Header, Footer, and Cart into this wrapper! */}
+          <StoreLayout>
             {children}
-          </ConditionalLayout>
+          </StoreLayout>
         </CartProvider>
       </body>
     </html>
