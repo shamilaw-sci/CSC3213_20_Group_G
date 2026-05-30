@@ -3,12 +3,17 @@ export interface POSItem {
   name: string;
   price: number;
   barcode?: string | null;
-  // type can help you differentiate between physical goods and tickets later
   type: 'merchandise' | 'ticket'; 
+  color?: string;
+  hexCode?: string;
+  imageUrl?: string;
 }
 
 export interface CartItem extends POSItem {
   quantity: number;
+  discountPercentage?: number;
+  customPrice?: number;
+
 }
 
 export interface OfflineOrder {
@@ -26,4 +31,7 @@ export interface POSContextType {
   removeFromCart: (itemId: string) => void;
   clearCart: () => void;
   cartTotal: number;
+  updateQuantity: (id: string, quantity: number) => void;
+  applyDiscount: (id: string, percentage: number) => void;
+  applyCustomPrice: (id: string, price: number) => void;
 }

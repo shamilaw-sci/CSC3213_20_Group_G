@@ -2,6 +2,8 @@
 
 import { useState, FormEvent } from 'react';
 import { usePOS } from '../../context/POSContext';
+import ProductGrid from '../../components/pos/ProductGrid';
+import CartSidebar from '../../components/pos/CartSidebar';
 
 interface Cashier {
   id: string;
@@ -273,41 +275,13 @@ export default function POSPage() {
           {/* --- PRODUCT & CART AREA --- */}
           <div className="flex flex-1 overflow-hidden">
             {/* Left Side: Product Discovery */}
-            <div className="flex-[2.5] p-6 flex flex-col overflow-hidden">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-stone-800">Merchandise</h2>
-              </div>
-              
-              <div className="flex-1 bg-white p-6 rounded-2xl shadow-sm border border-stone-200 overflow-y-auto">
-                <p className="text-stone-400 text-center mt-10">
-                  Product grid will go here...
-                </p>
-              </div>
+            <div className="flex-1 bg-white p-6 rounded-2xl shadow-sm border border-stone-200 overflow-y-auto">
+              <ProductGrid />
             </div>
-
             {/* Right Side: Cart Sidebar */}
             <div className="flex-[1] min-w-[350px] bg-white border-l border-stone-200 p-6 flex flex-col shadow-[-4px_0_24px_-8px_rgba(0,0,0,0.05)]">
-              <h2 className="text-xl font-bold text-stone-800 mb-6 pb-4 border-b border-stone-100">
-                Current Order
-              </h2>
+                <CartSidebar />
               
-              <div className="flex-1 overflow-y-auto">
-                <p className="text-stone-400 text-center mt-10">
-                  Scanned items will appear here...
-                </p>
-              </div>
-              
-              <div className="mt-auto pt-6 border-t border-stone-200">
-                <div className="flex justify-between items-end mb-6">
-                  <span className="text-lg font-medium text-stone-500">Total</span>
-                  <span className="text-4xl font-black text-amber-700">
-                    Rs. {cartTotal.toFixed(2)}
-                  </span>
-                </div>
-                <button className="w-full py-5 bg-stone-900 hover:bg-stone-800 text-white text-xl font-black rounded-xl transition-all shadow-lg active:scale-[0.98]">
-                  CHARGE
-                </button>
-              </div>
             </div>
           </div>
 

@@ -18,18 +18,63 @@ export const POSProvider = ({ children }: { children: React.ReactNode }) => {
     });
   };
 
-  const removeFromCart = (itemId: string) => {
-    setCart((prevCart) => prevCart.filter((i) => i.id !== itemId));
-  };
+  const updateQuantity = (id: string, newQuantity: number) => {
+  if (newQuantity < 1) return; // Prevent going below 1 via this function
+  
+  setCart(prevCart => 
+    prevCart.map(item => 
+      item.id === id ? { ...item, quantity: newQuantity } : item
+    )
+  );
+};
 
-  const clearCart = () => setCart([]);
+  const removeFromCart = (id: string) => {
+  setCart(prevCart => prevCart.filter(item => item.id !== id));
+};
 
-  const cartTotal = useMemo(() => {
-    return cart.reduce((total, item) => total + item.price * item.quantity, 0);
-  }, [cart]);
+  const clearCart = () => {
+  setCart([]);
+};
+
+
+  // Apply a percentage discount
+const applyDiscount = (id: string, percentage: number) => {
+  setCart(prevCart => prevCart.map(item => {
+    if (item.id === id) {
+      // We clear customPrice if they apply a discount, so they don't conflict
+      return { ...item, discountPercentage: percentage, customPrice: undefined };
+    }
+    return item;
+  }));
+};
+
+// Apply a manual flat price
+const applyCustomPrice = (id: string, price: number) => {
+  setCart(prevCart => prevCart.map(item => {
+    if (item.id === id) {
+      // We clear discount if they apply a custom price
+      return { ...item, customPrice: price, discountPercentage: undefined };
+    }
+    return item;
+  }));
+};
+
+  const cartTotal = cart.reduce((total, item) => {
+  let effectivePrice = item.price;
+  
+  if (item.customPrice !== undefined) {
+    effectivePrice = item.customPrice;
+  } else if (item.discountPercentage) {
+    effectivePrice = item.price - (item.price * (item.discountPercentage / 100));
+  }
+  
+  return total + (effectivePrice * item.quantity);
+}, 0);
+
+  
 
   return (
-    <POSContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, cartTotal }}>
+    <POSContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, cartTotal, updateQuantity, applyDiscount, applyCustomPrice }}>
       {children}
     </POSContext.Provider>
   );
