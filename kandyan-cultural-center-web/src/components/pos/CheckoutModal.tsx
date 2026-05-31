@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { usePOS } from '../../context/POSContext';
-import { supabase } from '../../lib/supabase'; // Make sure this path is correct for your project!
+import { supabase } from '../../lib/supabase';
 
 interface CheckoutModalProps {
   onClose: () => void;
@@ -11,7 +11,7 @@ interface CheckoutModalProps {
 type PaymentMethod = 'cash' | 'card' | 'bank_transfer';
 
 export default function CheckoutModal({ onClose }: CheckoutModalProps) {
-  const { cart, cartTotal, clearCart } = usePOS(); // Ensure clearCart exists in your POSContext!
+  const { cart, cartTotal, clearCart } = usePOS();
   
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [discountPercent, setDiscountPercent] = useState<string>('');
@@ -28,14 +28,14 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
     setError(null);
 
     try {
-      // 1. Prepare the order record for your 'orders' or 'order_details' table
+      // 1. Prepare the order record for 'orders' table
       const orderData = {
         total_amount: cartTotal,
         discount_percentage: discountValue,
         final_amount: finalTotal,
         payment_method: paymentMethod,
         status: 'completed',
-        // cashier_id: 'emp-101', // Add this if your DB requires tracking who made the sale
+        // cashier_id: 'emp-101', // if the DB requires tracking who made the sale
       };
 
       // 2. Insert into Supabase (Update 'orders' to match your actual table name)

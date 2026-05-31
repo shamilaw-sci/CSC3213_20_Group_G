@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { usePOS } from '../../context/POSContext';
-import CheckoutModal from './CheckoutModal'; // We will create this next!
+import CheckoutModal from './CheckoutModal'; 
 
 export default function CartSidebar() {
   const { cart, cartTotal, updateQuantity, removeFromCart, applyCustomPrice } = usePOS();
@@ -11,7 +11,7 @@ export default function CartSidebar() {
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   
-  // State for our new Checkout Modal
+  // New Checkout Modal
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   const handleSavePrice = (itemId: string) => {

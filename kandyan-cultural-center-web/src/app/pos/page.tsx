@@ -276,7 +276,7 @@ export default function POSPage() {
           <div className="flex flex-1 overflow-hidden">
             {/* Left Side: Product Discovery */}
             <div className="flex-1 bg-white p-6 rounded-2xl shadow-sm border border-stone-200 overflow-y-auto">
-              <ProductGrid />
+              <ProductGrid searchQuery={searchQuery} />
             </div>
             {/* Right Side: Cart Sidebar */}
             <div className="flex-[1] min-w-[350px] bg-white border-l border-stone-200 p-6 flex flex-col shadow-[-4px_0_24px_-8px_rgba(0,0,0,0.05)]">

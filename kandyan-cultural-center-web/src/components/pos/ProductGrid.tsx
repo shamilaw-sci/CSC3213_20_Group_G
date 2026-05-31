@@ -1,12 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image'; // <-- Import Next.js Image optimization
+import Image from 'next/image';
 import { usePOS } from '../../context/POSContext';
 import { supabase } from '../../lib/supabase'; 
 import { POSItem } from '../../types/pos.types';
 
-export default function ProductGrid() {
+// 1. Tell TypeScript to expect the search prop
+interface ProductGridProps {
+  searchQuery?: string;
+}
+
+// 2. Accept the prop into the component
+export default function ProductGrid({ searchQuery = '' }: ProductGridProps) {
   const { addToCart } = usePOS();
   
   const [products, setProducts] = useState<POSItem[]>([]);
@@ -18,12 +24,7 @@ export default function ProductGrid() {
       try {
         const { data, error: supabaseError } = await supabase
           .from('artifact_variants')
-          .select(`
-            *,
-            artifacts (
-              name
-            )
-          `); 
+          .select('*, artifacts(name)'); 
 
         if (supabaseError) throw supabaseError;
 
@@ -34,8 +35,6 @@ export default function ProductGrid() {
             price: item.price || 0,
             barcode: item.barcode || null,
             type: 'merchandise',
-            
-            // THE FIX: Exactly matching the column names from your screenshot
             color: item.color_name || null, 
             hexCode: item.hex_code || null,
             imageUrl: item.image_url || null,
@@ -54,6 +53,21 @@ export default function ProductGrid() {
     fetchProducts();
   }, []);
 
+  // FILTER LOGIC
+  const filteredProducts = products.filter((product) => {
+    // If the search bar is empty, show everything
+    if (!searchQuery.trim()) return true;
+    
+    // Convert everything to lowercase
+    const term = searchQuery.toLowerCase();
+    
+    return (
+      product.name.toLowerCase().includes(term) ||
+      product.id.toLowerCase().includes(term) ||
+      (product.barcode && product.barcode.toLowerCase().includes(term))
+    );
+  });
+
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -70,9 +84,21 @@ export default function ProductGrid() {
     );
   }
 
+  // Handle the case where they search for something that doesn't exist
+  if (filteredProducts.length === 0) {
+    return (
+      <div className="flex flex-col h-full items-center justify-center text-stone-400">
+        <span className="text-4xl mb-3">🔍</span>
+        <p className="font-semibold text-lg">No products found</p>
+        <p className="text-sm">Try adjusting your search for "{searchQuery}"</p>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-20">
-      {products.map((product) => (
+      {/* Map over filteredProducts instead of products */}
+      {filteredProducts.map((product) => (
         <button
           key={product.id}
           onClick={() => addToCart(product)}
@@ -100,7 +126,6 @@ export default function ProductGrid() {
               {product.name}
             </h3>
             
-            {/* Badges Area */}
             <div className="flex flex-wrap items-center gap-2 mb-3 mt-auto">
               <span className="text-[10px] bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded font-mono border border-stone-200">
                 ID: {product.id.slice(0, 8)}
@@ -108,7 +133,6 @@ export default function ProductGrid() {
               
               {product.color && (
                 <div className="flex items-center bg-stone-50 border border-stone-200 px-1.5 py-0.5 rounded gap-1.5">
-                  {/* Render the actual color dot using the hex code! */}
                   {product.hexCode && (
                     <span 
                       className="w-2.5 h-2.5 rounded-full shadow-inner" 
