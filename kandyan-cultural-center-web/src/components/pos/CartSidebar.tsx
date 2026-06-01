@@ -5,14 +5,14 @@ import { usePOS } from '../../context/POSContext';
 import CheckoutModal from './CheckoutModal'; 
 
 export default function CartSidebar() {
-  const { cart, cartTotal, updateQuantity, removeFromCart, applyCustomPrice } = usePOS();
+  const { cart, cartTotal, updateQuantity, removeFromCart, applyCustomPrice, clearCart } = usePOS();
 
-  // State for the item currently getting a custom manual price
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   
-  // New Checkout Modal
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  
+  const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
 
   const handleSavePrice = (itemId: string) => {
     const numericValue = parseFloat(editValue);
@@ -23,15 +23,33 @@ export default function CartSidebar() {
     setEditValue('');
   };
 
+  const handleConfirmClear = () => {
+    clearCart();
+    setIsClearConfirmOpen(false);
+  };
+
   return (
     <>
       <div className="flex-[1] min-w-[350px] bg-white border-l border-stone-200 p-6 flex flex-col shadow-[-4px_0_24px_-8px_rgba(0,0,0,0.05)] h-full z-10">
         
+        {/* UPDATED HEADER: Added the Clear button here */}
         <div className="flex justify-between items-end mb-6 pb-4 border-b border-stone-100 shrink-0">
           <h2 className="text-xl font-bold text-stone-800">Current Order</h2>
-          <span className="text-sm font-semibold text-stone-400 bg-stone-100 px-3 py-1 rounded-full">
-            {cart.length} Items
-          </span>
+          
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-stone-400 bg-stone-100 px-3 py-1 rounded-full">
+              {cart.length} Items
+            </span>
+            {cart.length > 0 && (
+              <button 
+                onClick={() => setIsClearConfirmOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-full transition-colors border border-red-100"
+                title="Cancel Entire Order"
+              >
+                <span>✕</span> Cancel
+              </button>
+            )}
+          </div>
         </div>
         
         <div className="flex-1 overflow-y-auto pr-2 space-y-3">
@@ -66,7 +84,7 @@ export default function CartSidebar() {
                     
                     {!isEditing && (
                       <div className="flex gap-1 flex-shrink-0">
-                        <button onClick={() => { setEditingPriceId(item.id); setEditValue(''); }} className="w-16 h-8 flex items-center justify-center bg-stone-200 hover:bg-stone-300 text-stone-600 rounded-lg text-xs font-bold transition-colors" title="Edit Manual Price">Custom Price</button>
+                        <button onClick={() => { setEditingPriceId(item.id); setEditValue(''); }} className="w-8 h-8 flex items-center justify-center bg-stone-200 hover:bg-stone-300 text-stone-600 rounded-lg text-xs font-bold transition-colors" title="Edit Manual Price">Rs</button>
                         <button onClick={() => removeFromCart(item.id)} className="w-8 h-8 flex items-center justify-center text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-colors ml-1" title="Remove item">🗑️</button>
                       </div>
                     )}
@@ -122,7 +140,7 @@ export default function CartSidebar() {
           
           <button 
             disabled={cart.length === 0} 
-            onClick={() => setIsCheckoutOpen(true)} // <-- This triggers the modal!
+            onClick={() => setIsCheckoutOpen(true)} 
             className="w-full py-5 bg-amber-700 hover:bg-amber-800 disabled:bg-stone-300 disabled:text-stone-500 disabled:cursor-not-allowed text-white text-2xl font-black rounded-xl transition-all shadow-lg active:scale-[0.98] flex items-center justify-center"
           >
             <span className="mr-3">💳</span> CHECKOUT
@@ -130,9 +148,40 @@ export default function CartSidebar() {
         </div>
       </div>
 
-      {/* Render the modal on top of everything if it is open */}
       {isCheckoutOpen && (
         <CheckoutModal onClose={() => setIsCheckoutOpen(false)} />
+      )}
+
+      {/* NEW: Cancel Order Confirmation Modal */}
+      {isClearConfirmOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+                ⚠️
+              </div>
+              <h3 className="text-xl font-black text-stone-800 mb-2">Cancel Order?</h3>
+              <p className="text-stone-500 text-sm">
+                Are you sure you want to clear all {cart.length} items from the current transaction? This cannot be undone.
+              </p>
+            </div>
+            
+            <div className="flex border-t border-stone-200">
+              <button 
+                onClick={() => setIsClearConfirmOpen(false)}
+                className="flex-1 py-4 font-bold text-stone-600 hover:bg-stone-50 transition-colors border-r border-stone-200"
+              >
+                Go Back
+              </button>
+              <button 
+                onClick={handleConfirmClear}
+                className="flex-1 py-4 font-black text-red-600 hover:bg-red-50 transition-colors"
+              >
+                Yes, Cancel Order
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
