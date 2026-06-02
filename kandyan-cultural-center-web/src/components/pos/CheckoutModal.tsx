@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { usePOS } from '../../context/POSContext';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'; 
 
 interface CheckoutModalProps {
   onClose: () => void;
@@ -17,8 +17,11 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
   const [discountPercent, setDiscountPercent] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // NEW: State to control showing the thermal receipt
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [orderTimestamp, setOrderTimestamp] = useState<Date | null>(null);
 
-  // Calculate final numbers
   const discountValue = parseFloat(discountPercent) || 0;
   const discountAmount = cartTotal * (discountValue / 100);
   const finalTotal = cartTotal - discountAmount;
@@ -28,62 +31,153 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
     setError(null);
 
     try {
-      // 1. Prepare the order record for 'orders' table
-      const orderData = {
-        total_amount: cartTotal,
-        discount_percentage: discountValue,
-        final_amount: finalTotal,
-        payment_method: paymentMethod,
-        status: 'completed',
-        // cashier_id: 'emp-101', // if the DB requires tracking who made the sale
-      };
+      // 1. Simulating a quick network delay (600ms) to make it feel real
+      await new Promise((resolve) => setTimeout(resolve, 600));
 
-      // 2. Insert into Supabase (Update 'orders' to match your actual table name)
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert(orderData)
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
-
-      // 3. (Optional but recommended) Insert the individual items into an 'order_items' table
-      /* const itemsData = cart.map(item => ({
-        order_id: order.id,
-        variant_id: item.id,
-        quantity: item.quantity,
-        price_at_time: item.customPrice || item.price
-      }));
-      await supabase.from('order_items').insert(itemsData);
-      */
-
-      // 4. Success! Clear the cart and close the modal
-      clearCart(); // You will need to add a simple clearCart() function to your POSContext
-      onClose();
-      alert("Order confirmed and saved to database!");
+      // 2. Capture the exact time the order was finalized for the receipt
+      setOrderTimestamp(new Date());
+      
+      // 3. Transform the modal into the Receipt view instantly
+      setShowReceipt(true);
 
     } catch (err: any) {
       console.error("Checkout Error:", err);
-      setError("Failed to save order to database. Please try again.");
+      setError("Failed to process transaction. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // This runs when the cashier finishes viewing/printing the receipt
+  const handleFinishTransaction = () => {
+    clearCart();
+    onClose();
+  };
+
+
+  // VIEW 1: THE THERMAL RECEIPT PREVIEW (Shows after successful payment)
+
+  if (showReceipt) {
+    return (
+      <div className="fixed inset-0 z-[80] flex items-center justify-center bg-stone-900/80 backdrop-blur-sm p-4">
+        <div className="flex flex-col items-center animate-in zoom-in-95 duration-300">
+          
+          {/* Virtual Thermal Paper */}
+          <div className="bg-white w-80 p-6 shadow-2xl font-mono text-stone-900 relative">
+            {/* Paper jagged top edge effect */}
+            <div className="absolute top-0 left-0 w-full h-2 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxwb2x5Z29uIHBvaW50cz0iMCwwIDQsOCA4LDAiIGZpbGw9IiNlN2U1ZTQiLz48L3N2Zz4=')] -mt-2"></div>
+            
+            <div className="text-center mb-6">
+              <div className="text-3xl font-black mb-1">KAA</div>
+              <h2 className="font-bold text-sm uppercase">The Kandyan Art Association</h2>
+              <p className="text-[10px] text-stone-500">Central Province, Sri Lanka</p>
+            </div>
+
+            <div className="border-b-2 border-dashed border-stone-300 pb-3 mb-3 text-[11px] leading-relaxed">
+              <div className="flex justify-between">
+                <span>Date: {orderTimestamp?.toLocaleDateString()}</span>
+                <span>{orderTimestamp?.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Bill No:</span>
+                <span className="font-bold">#{orderNumber}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Cashier:</span>
+                <span>Cashier 1</span> {/* You can pull this from Context later! */}
+              </div>
+            </div>
+
+            <table className="w-full text-[11px] mb-4">
+              <thead>
+                <tr className="border-b-2 border-dashed border-stone-300 text-left">
+                  <th className="pb-2 font-bold w-full">ITEM</th>
+                  <th className="pb-2 font-bold px-2 text-right">QTY</th>
+                  <th className="pb-2 font-bold text-right">AMT</th>
+                </tr>
+              </thead>
+              <tbody className="align-top">
+                {cart.map(item => {
+                  const itemPrice = item.customPrice !== undefined ? item.customPrice : item.price;
+                  return (
+                    <tr key={item.id}>
+                      <td className="py-2 pr-2">
+                        <div className="font-bold">{item.name}</div>
+                        <div className="text-[9px] text-stone-500">ID: {item.id.slice(0,8)}</div>
+                      </td>
+                      <td className="py-2 px-2 text-right">{item.quantity}</td>
+                      <td className="py-2 text-right">{((itemPrice * item.quantity)).toLocaleString()}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+
+            <div className="border-t-2 border-dashed border-stone-300 pt-3 text-xs space-y-1.5">
+              <div className="flex justify-between text-stone-600">
+                <span>Subtotal</span>
+                <span>Rs. {cartTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+              </div>
+              {discountValue > 0 && (
+                <div className="flex justify-between text-stone-600">
+                  <span>Discount ({discountValue}%)</span>
+                  <span>- Rs. {discountAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-black text-sm pt-2 mt-2 border-t-2 border-dashed border-stone-300">
+                <span>TOTAL</span>
+                <span>Rs. {finalTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+              </div>
+              <div className="flex justify-between text-[10px] text-stone-500 pt-1">
+                <span className="uppercase">Paid via {paymentMethod.replace('_', ' ')}</span>
+              </div>
+            </div>
+
+            <div className="text-center mt-8 text-[11px] font-bold pb-2">
+              <p>THANK YOU FOR YOUR VISIT</p>
+              <p className="font-normal mt-1 text-[9px] text-stone-500">Please keep this receipt for your records</p>
+            </div>
+            
+            {/* Paper jagged bottom edge effect */}
+            <div className="absolute bottom-0 left-0 w-full h-2 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxwb2x5Z29uIHBvaW50cz0iMCwwIDQsOCA4LDAiIGZpbGw9IiNlN2U1ZTQiLz48L3N2Zz4=')] -mb-2 rotate-180"></div>
+          </div>
+
+          {/* Action Buttons underneath the paper */}
+          <div className="flex gap-4 mt-8 w-80">
+            <button 
+              onClick={() => alert("Printing simulated. In production, this would trigger the thermal printer.")}
+              className="flex-1 py-3 bg-stone-700 hover:bg-stone-600 text-white font-bold rounded-xl shadow-lg transition-colors"
+            >
+              🖨️ Re-Print
+            </button>
+            <button 
+              onClick={handleFinishTransaction}
+              className="flex-[2] py-3 bg-amber-700 hover:bg-amber-600 text-white font-black rounded-xl shadow-lg transition-colors"
+            >
+              NEXT ORDER ➔
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  
+  // VIEW 2: THE STANDARD CHECKOUT MODAL (Shows before payment)
+ 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
         
         {/* Header */}
         <div className="flex justify-between items-center px-6 py-4 border-b border-stone-200 bg-stone-50">
-          <h2 className="text-2xl font-black text-stone-800">Checkout</h2>
-          <span className="text-sm font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 shadow-sm">
+          <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-black text-stone-800">Checkout</h2>
+            <span className="text-sm font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 shadow-sm">
               #{orderNumber}
             </span>
-          <button 
-            onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 text-stone-600 rounded-full font-bold transition-colors"
-          >
+          </div>
+          <button onClick={onClose} className="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 text-stone-600 rounded-full font-bold transition-colors">
             ✕
           </button>
         </div>
@@ -113,7 +207,6 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
           {/* Right Column: Payment & Discount */}
           <div className="w-1/2 p-6 bg-stone-50 flex flex-col">
             
-            {/* Bill Discount Input */}
             <div className="mb-8">
               <label className="block text-sm font-bold text-stone-700 mb-2">Total Bill Discount (%)</label>
               <div className="flex items-center gap-2">
@@ -130,14 +223,13 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
               </div>
             </div>
 
-            {/* Payment Methods */}
             <div className="mb-8">
               <label className="block text-sm font-bold text-stone-700 mb-2">Payment Method</label>
               <div className="grid grid-cols-3 gap-2">
                 {[
                   { id: 'cash', label: '💵 Cash' },
                   { id: 'card', label: '💳 Card' },
-                  { id: 'bank_transfer', label: '🏦 Bank Transfer' }
+                  { id: 'bank_transfer', label: '🏦 Bank' }
                 ].map((method) => (
                   <button
                     key={method.id}
@@ -154,7 +246,6 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
               </div>
             </div>
 
-            {/* Total Breakdown */}
             <div className="mt-auto bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-2 mb-6">
               <div className="flex justify-between text-stone-500 font-medium">
                 <span>Subtotal:</span>
@@ -176,7 +267,6 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
 
             {error && <div className="text-red-500 text-sm font-bold mb-4 text-center bg-red-50 p-2 rounded">{error}</div>}
 
-            {/* Confirm Button */}
             <button 
               onClick={handleConfirmOrder}
               disabled={isSubmitting}
