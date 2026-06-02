@@ -6,6 +6,20 @@ const POSContext = createContext<POSContextType | undefined>(undefined);
 export const POSProvider = ({ children }: { children: React.ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
 
+  const generateOrderNumber = () => {
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(-2);
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  
+  // Generates a random 4-digit number between 1000 and 9999
+  const xxxx = Math.floor(1000 + Math.random() * 9000); 
+  
+  return `S${yy}${mm}${dd}${xxxx}`;
+};
+
+const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
+
   const addToCart = (item: POSItem) => {
     setCart((prevCart) => {
       const existingItem = prevCart.find((i) => i.id === item.id);
@@ -34,6 +48,7 @@ export const POSProvider = ({ children }: { children: React.ReactNode }) => {
 
   const clearCart = () => {
   setCart([]);
+  setOrderNumber(generateOrderNumber()); // Generate a new order number for the next transaction
 };
 
 
@@ -74,7 +89,7 @@ const applyCustomPrice = (id: string, price: number) => {
   
 
   return (
-    <POSContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, cartTotal, updateQuantity, applyDiscount, applyCustomPrice }}>
+    <POSContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, cartTotal, updateQuantity, applyDiscount, applyCustomPrice, orderNumber }}>
       {children}
     </POSContext.Provider>
   );

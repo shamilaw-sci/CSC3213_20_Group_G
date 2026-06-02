@@ -7,12 +7,14 @@ export interface POSItem {
   color?: string;
   hexCode?: string;
   imageUrl?: string;
+  stock?: number;
 }
 
 export interface CartItem extends POSItem {
   quantity: number;
   discountPercentage?: number;
   customPrice?: number;
+  orderNumber: string;
 
 }
 
@@ -26,6 +28,7 @@ export interface OfflineOrder {
 
 // Define what our Context will expose to the UI
 export interface POSContextType {
+  orderNumber: string;
   cart: CartItem[];
   addToCart: (item: POSItem) => void;
   removeFromCart: (itemId: string) => void;

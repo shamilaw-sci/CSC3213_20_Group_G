@@ -5,7 +5,8 @@ import { usePOS } from '../../context/POSContext';
 import CheckoutModal from './CheckoutModal'; 
 
 export default function CartSidebar() {
-  const { cart, cartTotal, updateQuantity, removeFromCart, applyCustomPrice, clearCart } = usePOS();
+  const { cart, cartTotal, updateQuantity, removeFromCart, applyCustomPrice, clearCart, orderNumber } = usePOS();
+  
 
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
@@ -32,9 +33,17 @@ export default function CartSidebar() {
     <>
       <div className="flex-[1] min-w-[350px] bg-white border-l border-stone-200 p-6 flex flex-col shadow-[-4px_0_24px_-8px_rgba(0,0,0,0.05)] h-full z-10">
         
-        {/* UPDATED HEADER: Added the Clear button here */}
+        {/* 2. THE UPDATED HEADER */}
         <div className="flex justify-between items-end mb-6 pb-4 border-b border-stone-100 shrink-0">
-          <h2 className="text-xl font-bold text-stone-800">Current Order</h2>
+          
+          <div className="flex items-baseline gap-3">
+            <h2 className="text-xl font-bold text-stone-800">Current Order</h2>
+            
+            {/* NEW: Bill Number Badge */}
+            <span className="text-sm font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 shadow-sm">
+              #{orderNumber}
+            </span>
+          </div>
           
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-stone-400 bg-stone-100 px-3 py-1 rounded-full">

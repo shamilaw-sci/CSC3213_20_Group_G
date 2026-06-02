@@ -5,6 +5,8 @@ import { usePOS } from '../../context/POSContext';
 import ProductGrid from '../../components/pos/ProductGrid';
 import CartSidebar from '../../components/pos/CartSidebar';
 
+
+
 interface Cashier {
   id: string;
   name: string;
@@ -19,6 +21,7 @@ export default function POSPage() {
   // UI State
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   
   // Secondary Bar State
   const [scannerMode, setScannerMode] = useState<'barcode' | 'camera'>('barcode');
@@ -50,7 +53,8 @@ export default function POSPage() {
 
   const handleLogout = () => {
     setActiveCashier(null);
-    setIsDropdownOpen(false); 
+    setIsDropdownOpen(false);
+    setIsLogoutConfirmOpen(false);
   };
 
   // Mock function to test network toggle (Click the network pill to test)
@@ -174,14 +178,17 @@ export default function POSPage() {
                       </li>
                       <li>
                         <button 
+                          onClick={() => setIsLogoutConfirmOpen(true)}
                           className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 font-medium transition-colors"
-                          onClick={handleLogout}
+                          title="Log out of the terminal"
                         >
+                          
                           🚪 Log Out
                         </button>
                       </li>
                     </ul>
                   </div>
+                  
                 </>
               )}
             </div>
@@ -285,6 +292,36 @@ export default function POSPage() {
             </div>
           </div>
 
+        </div>
+      )}
+      {isLogoutConfirmOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-stone-100 text-stone-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+                👋
+              </div>
+              <h3 className="text-xl font-black text-stone-800 mb-2">Ending Shift?</h3>
+              <p className="text-stone-500 text-sm">
+                Are you sure you want to log out of the POS terminal?
+              </p>
+            </div>
+            
+            <div className="flex border-t border-stone-200">
+              <button 
+                onClick={() => setIsLogoutConfirmOpen(false)}
+                className="flex-1 py-4 font-bold text-stone-600 hover:bg-stone-50 transition-colors border-r border-stone-200"
+              >
+                Go Back
+              </button>
+              <button 
+                onClick={handleLogout} // <-- This runs your updated logout function!
+                className="flex-1 py-4 font-black text-amber-700 hover:bg-amber-50 transition-colors"
+              >
+                Yes, Log Out
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -38,6 +38,8 @@ export default function ProductGrid({ searchQuery = '' }: ProductGridProps) {
             color: item.color_name || null, 
             hexCode: item.hex_code || null,
             imageUrl: item.image_url || null,
+
+            stock: item.stock || 0,
           }));
           
           setProducts(formattedProducts);
@@ -117,6 +119,21 @@ export default function ProductGrid({ searchQuery = '' }: ProductGridProps) {
             ) : (
               <div className="w-full h-full flex items-center justify-center text-stone-300">
                 <span>No Image</span>
+              </div>
+            )}
+
+            {/* NEW: Stock Quantity Badge in the bottom right corner */}
+            {product.stock !== undefined && (
+              <div className="absolute bottom-2 right-2 z-10">
+                <span className={`px-2 py-1 rounded-md text-xs font-black shadow-md ${
+                  product.stock <= 0 
+                    ? 'bg-red-500 text-white' 
+                    : product.stock < 5 
+                      ? 'bg-amber-500 text-white' 
+                      : 'bg-stone-900/80 text-white backdrop-blur-sm'
+                }`}>
+                  {product.stock <= 0 ? 'OUT OF STOCK' : `${product.stock} IN STOCK`}
+                </span>
               </div>
             )}
           </div>

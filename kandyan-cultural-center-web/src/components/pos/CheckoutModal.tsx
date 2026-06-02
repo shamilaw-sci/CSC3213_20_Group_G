@@ -11,7 +11,7 @@ interface CheckoutModalProps {
 type PaymentMethod = 'cash' | 'card' | 'bank_transfer';
 
 export default function CheckoutModal({ onClose }: CheckoutModalProps) {
-  const { cart, cartTotal, clearCart } = usePOS();
+  const { cart, cartTotal, clearCart, orderNumber } = usePOS();
   
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [discountPercent, setDiscountPercent] = useState<string>('');
@@ -77,6 +77,9 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
         {/* Header */}
         <div className="flex justify-between items-center px-6 py-4 border-b border-stone-200 bg-stone-50">
           <h2 className="text-2xl font-black text-stone-800">Checkout</h2>
+          <span className="text-sm font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 shadow-sm">
+              #{orderNumber}
+            </span>
           <button 
             onClick={onClose}
             className="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 text-stone-600 rounded-full font-bold transition-colors"
