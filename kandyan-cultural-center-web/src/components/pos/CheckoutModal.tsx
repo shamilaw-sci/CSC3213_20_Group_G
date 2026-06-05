@@ -11,7 +11,7 @@ interface CheckoutModalProps {
 type PaymentMethod = 'cash' | 'card' | 'bank_transfer';
 
 export default function CheckoutModal({ onClose }: CheckoutModalProps) {
-  const { cart, cartTotal, clearCart, orderNumber } = usePOS();
+  const { cart, cartTotal, clearCart, orderNumber, processOrder, isOnline } = usePOS();
   
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [discountPercent, setDiscountPercent] = useState<string>('');
@@ -31,24 +31,34 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
     setError(null);
 
     try {
-      // 1. Simulating a quick network delay (600ms) to make it feel real
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      const orderData = {
+        invoice_number: orderNumber,
+        total_amount: cartTotal,
+        discount_percentage: discountValue,
+        final_amount: finalTotal,
+        payment_method: paymentMethod,
+        status: 'completed',
+      };
 
-      // 2. Capture the exact time the order was finalized for the receipt
+      // 1. Hand the data to the Context engine
+      // whether to push to Supabase or queue locally
+      await processOrder(orderData, cart);
+
+      // 2. Set the timestamp for the receipt
       setOrderTimestamp(new Date());
       
-      // 3. Transform the modal into the Receipt view instantly
+      // 3. Show the receipt
       setShowReceipt(true);
 
     } catch (err: any) {
       console.error("Checkout Error:", err);
-      setError("Failed to process transaction. Please try again.");
+      setError("System failure. Please check terminal storage.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // This runs when the cashier finishes viewing/printing the receipt
+  // When the cashier finishes viewing/printing the receipt
   const handleFinishTransaction = () => {
     clearCart();
     onClose();
@@ -84,7 +94,7 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
               </div>
               <div className="flex justify-between">
                 <span>Cashier:</span>
-                <span>Cashier 1</span> {/* You can pull this from Context later! */}
+                <span>Cashier 1</span>
               </div>
             </div>
 

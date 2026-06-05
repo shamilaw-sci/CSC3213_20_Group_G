@@ -1,68 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Image from 'next/image';
 import { usePOS } from '../../context/POSContext';
-import { supabase } from '../../lib/supabase'; 
-import { POSItem } from '../../types/pos.types';
 
-// 1. Tell TypeScript to expect the search prop
 interface ProductGridProps {
   searchQuery?: string;
 }
 
-// 2. Accept the prop into the component
 export default function ProductGrid({ searchQuery = '' }: ProductGridProps) {
-  const { addToCart } = usePOS();
-  
-  const [products, setProducts] = useState<POSItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // We pull everything directly from the Context now
+  const { addToCart, cachedProducts, loadProducts } = usePOS();
 
+  // Load products into the cache when the grid first renders
   useEffect(() => {
-    async function fetchProducts() {
-      try {
-        const { data, error: supabaseError } = await supabase
-          .from('artifact_variants')
-          .select('*, artifacts(name)'); 
-
-        if (supabaseError) throw supabaseError;
-
-        if (data) {
-          const formattedProducts: POSItem[] = data.map((item: any) => ({
-            id: item.id.toString(), 
-            name: item.artifacts?.name || `Variant #${item.id}`, 
-            price: item.price || 0,
-            barcode: item.barcode || null,
-            type: 'merchandise',
-            color: item.color_name || null, 
-            hexCode: item.hex_code || null,
-            imageUrl: item.image_url || null,
-
-            stock: item.stock || 0,
-          }));
-          
-          setProducts(formattedProducts);
-        }
-      } catch (err: any) {
-        console.error("Error fetching products:", err);
-        setError("Failed to load store inventory. Check network connection.");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchProducts();
+    loadProducts();
   }, []);
 
-  // FILTER LOGIC
-  const filteredProducts = products.filter((product) => {
-    // If the search bar is empty, show everything
+  // Filter the cached products based on the search bar
+  const filteredProducts = cachedProducts.filter((product) => {
     if (!searchQuery.trim()) return true;
-    
-    // Convert everything to lowercase
     const term = searchQuery.toLowerCase();
-    
     return (
       product.name.toLowerCase().includes(term) ||
       product.id.toLowerCase().includes(term) ||
@@ -70,24 +28,8 @@ export default function ProductGrid({ searchQuery = '' }: ProductGridProps) {
     );
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-700"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex h-full items-center justify-center text-red-500 font-semibold text-center px-6">
-        {error}
-      </div>
-    );
-  }
-
   // Handle the case where they search for something that doesn't exist
-  if (filteredProducts.length === 0) {
+  if (filteredProducts.length === 0 && cachedProducts.length > 0) {
     return (
       <div className="flex flex-col h-full items-center justify-center text-stone-400">
         <span className="text-4xl mb-3">🔍</span>
@@ -97,9 +39,17 @@ export default function ProductGrid({ searchQuery = '' }: ProductGridProps) {
     );
   }
 
+  // Handle initial loading state (before cache is ready)
+  if (cachedProducts.length === 0) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-700"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-20">
-      {/* Map over filteredProducts instead of products */}
       {filteredProducts.map((product) => (
         <button
           key={product.id}
@@ -122,17 +72,17 @@ export default function ProductGrid({ searchQuery = '' }: ProductGridProps) {
               </div>
             )}
 
-            {/* NEW: Stock Quantity Badge in the bottom right corner */}
+            {/* Stock Quantity Badge */}
             {product.stock !== undefined && (
               <div className="absolute bottom-2 right-2 z-10">
                 <span className={`px-2 py-1 rounded-md text-xs font-black shadow-md ${
-                  product.stock <= 0 
+                  (product.stock || 0) <= 0 
                     ? 'bg-red-500 text-white' 
-                    : product.stock < 5 
+                    : (product.stock || 0) < 5 
                       ? 'bg-amber-500 text-white' 
                       : 'bg-stone-900/80 text-white backdrop-blur-sm'
                 }`}>
-                  {product.stock <= 0 ? 'OUT OF STOCK' : `${product.stock} IN STOCK`}
+                  {(product.stock || 0) <= 0 ? 'OUT OF STOCK' : `${product.stock} IN STOCK`}
                 </span>
               </div>
             )}

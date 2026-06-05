@@ -14,7 +14,6 @@ export interface CartItem extends POSItem {
   quantity: number;
   discountPercentage?: number;
   customPrice?: number;
-  orderNumber: string;
 
 }
 
@@ -26,7 +25,7 @@ export interface OfflineOrder {
   isSynced: boolean;
 }
 
-// Define what our Context will expose to the UI
+// What the Context will expose to the UI
 export interface POSContextType {
   orderNumber: string;
   cart: CartItem[];
@@ -37,4 +36,8 @@ export interface POSContextType {
   updateQuantity: (id: string, quantity: number) => void;
   applyDiscount: (id: string, percentage: number) => void;
   applyCustomPrice: (id: string, price: number) => void;
+  isOnline: boolean;
+  cachedProducts: POSItem[];
+  loadProducts: () => Promise<void>;
+  processOrder: (orderData: any, cartItems: any[]) => Promise<void>;
 }
