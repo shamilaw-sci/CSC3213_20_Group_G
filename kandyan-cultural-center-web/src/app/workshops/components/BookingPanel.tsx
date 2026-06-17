@@ -2,11 +2,39 @@
 
 import { useEffect, useState } from 'react';
 
+// Convert time string "HH:MM" to minutes since midnight
+function timeToMinutes(timeStr: string): number {
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+// Normalize display times like "06:00 PM" or "6:00 PM" to 24-hour "HH:MM"
+function normalizeTimeTo24(timeStr: string) {
+  if (!timeStr) return timeStr;
+  const m = timeStr.trim().match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);
+  if (!m) return timeStr; // return as-is if unexpected format
+  let hh = parseInt(m[1], 10);
+  const mm = m[2];
+  const ampm = m[3]?.toUpperCase();
+  if (ampm === 'PM' && hh < 12) hh += 12;
+  if (ampm === 'AM' && hh === 12) hh = 0;
+  const hhStr = String(hh).padStart(2, '0');
+  return `${hhStr}:${mm}`;
+}
+
+type ScheduleSlot = {
+  date: string;
+  times: string[];
+};
+
 type Workshop = {
   id?: string;
+  category?: "workshop" | "show";
   title: string;
   price: number;
   craftsman: string;
+  location?: string;
+  schedule: ScheduleSlot[];
 };
 
 function formatDateForDisplay(dateString: string) {
@@ -50,7 +78,7 @@ export default function BookingPanel({ workshop }: { workshop: Workshop }) {
         const res = await fetch('/api/bookings/blocked-dates');
         if (res.ok) {
           const data = await res.json();
-          const dateSet = new Set(data.blockedDates || []);
+          const dateSet = new Set<string>(data.blockedDates || []);
           setBlockedDates(dateSet);
         }
       } catch (err) {
@@ -67,6 +95,12 @@ export default function BookingPanel({ workshop }: { workshop: Workshop }) {
       return;
     }
 
+    if (workshop.category === 'show') {
+      setCheckingAvailability(false);
+      setAvailability({ available: true, message: 'Show schedule selected' });
+      return;
+    }
+
     const checkAvailability = async () => {
       setCheckingAvailability(true);
       try {
@@ -77,9 +111,10 @@ export default function BookingPanel({ workshop }: { workshop: Workshop }) {
             booked_date: selectedDate,
             booked_time: selectedTime,
             workshop_id: workshop.id ?? null,
-            craftsman: workshop.craftsman,
+            craftsman: workshop.category === 'show' ? null : workshop.craftsman,
           }),
         });
+
         const data = await res.json();
         setAvailability(data);
       } catch (err: any) {
@@ -91,7 +126,7 @@ export default function BookingPanel({ workshop }: { workshop: Workshop }) {
 
     const timer = setTimeout(checkAvailability, 300);
     return () => clearTimeout(timer);
-  }, [selectedDate, selectedTime, workshop.id, workshop.craftsman]);
+  }, [selectedDate, selectedTime, workshop.id, workshop.craftsman, workshop.category]);
 
   const handleBooking = async () => {
     setError('');
@@ -112,8 +147,11 @@ export default function BookingPanel({ workshop }: { workshop: Workshop }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           workshop_id: workshop.id ?? null,
+          experience_id: workshop.id ?? null,
           workshop_title: workshop.title,
-          craftsman: workshop.craftsman,
+          experience_title: workshop.title,
+          category: workshop.category ?? 'workshop',
+          craftsman: workshop.category === 'show' ? null : workshop.craftsman,
           booked_date: selectedDate,
           booked_time: selectedTime,
           customer_name: name,
@@ -149,90 +187,128 @@ export default function BookingPanel({ workshop }: { workshop: Workshop }) {
     }
   };
 
-  // Calendar rendering
+  // Calendar rendering for workshop bookings
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
   const firstDay = new Date(year, month, 1).getDay();
   const lastDate = new Date(year, month + 1, 0).getDate();
   const monthName = currentMonth.toLocaleString('en-US', { month: 'long' });
-
   const minDate = new Date().toISOString().split('T')[0];
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6">Book Your Workshop</h2>
+      <h2 className="text-2xl font-bold mb-6">
+        Book Your {workshop.category === "show" ? "Show Ticket" : "Workshop"}
+      </h2>
 
-      {/* Calendar with Blocked Dates */}
-      <div className="mb-5 rounded-3xl border border-slate-200 bg-slate-50 p-4">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-semibold text-slate-900">{monthName} {year}</h3>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setCurrentMonth(new Date(year, month - 1, 1))}
-              className="px-3 py-1 rounded border border-slate-300 text-sm hover:bg-white"
-            >
-              ← Prev
-            </button>
-            <button
-              onClick={() => setCurrentMonth(new Date(year, month + 1, 1))}
-              className="px-3 py-1 rounded border border-slate-300 text-sm hover:bg-white"
-            >
-              Next →
-            </button>
+      {workshop.category === 'show' ? (
+        <div className="mb-5 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+          <h3 className="text-xl font-semibold text-slate-900 mb-4">Available show dates</h3>
+          <div className="space-y-4">
+            {workshop.schedule.map((slot) => (
+              <div key={slot.date} className="rounded-3xl border border-slate-200 bg-white p-4">
+                <p className="font-semibold text-slate-900">{formatDateForDisplay(slot.date)}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {slot.times.map((time) => (
+                    <button
+                      key={`${slot.date}-${time}`}
+                      type="button"
+                      onClick={() => {
+                        setSelectedDate(slot.date);
+                        setSelectedTime(normalizeTimeTo24(time));
+                      }}
+                      className={`rounded-full border px-4 py-2 text-sm transition ${
+                        selectedDate === slot.date && selectedTime === normalizeTimeTo24(time)
+                          ? 'border-rose-500 bg-rose-100 text-rose-900'
+                          : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-rose-300 hover:bg-rose-50'
+                      }`}
+                    >
+                      {time}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-
-        <div className="grid grid-cols-7 gap-1 text-sm">
-          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, idx) => (
-            <div key={`wd-${idx}`} className="text-center text-xs font-semibold text-slate-500">
-              {d}
+      ) : (
+        <>
+          {/* Calendar with Blocked Dates */}
+          <div className="mb-5 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="font-semibold text-slate-900">{monthName} {year}</h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentMonth(new Date(year, month - 1, 1))}
+                  className="px-3 py-1 rounded border border-slate-300 text-sm hover:bg-white"
+                >
+                  ← Prev
+                </button>
+                <button
+                  onClick={() => setCurrentMonth(new Date(year, month + 1, 1))}
+                  className="px-3 py-1 rounded border border-slate-300 text-sm hover:bg-white"
+                >
+                  Next →
+                </button>
+              </div>
             </div>
-          ))}
-          {Array.from({ length: firstDay }).map((_, i) => (
-            <div key={`pad-${i}`} />
-          ))}
-          {Array.from({ length: lastDate }).map((_, i) => {
-            const day = i + 1;
-            const iso = new Date(Date.UTC(year, month, day)).toISOString().split('T')[0];
-            const isBlocked = blockedDates.has(iso);
-            const isPast = iso < minDate;
-            const isDisabled = isBlocked || isPast;
 
-            return (
-              <button
-                key={`day-${day}`}
-                onClick={() => !isDisabled && setSelectedDate(iso)}
-                disabled={isDisabled}
-                className={`h-9 w-9 rounded-lg text-center leading-9 text-sm transition ${
-                  isDisabled
-                    ? 'text-slate-300 cursor-not-allowed bg-slate-200'
-                    : iso === selectedDate
-                    ? 'ring-2 ring-rose-500 bg-rose-100 text-rose-900 font-semibold'
-                    : 'border border-slate-200 bg-white text-slate-900 hover:bg-slate-50'
-                }`}
-                title={isBlocked ? 'Blocked' : isPast ? 'Past date' : ''}
-              >
-                {day}
-              </button>
-            );
-          })}
-        </div>
-        <div className="mt-3 text-xs text-slate-500">
-          <span className="inline-block mr-3">🔴 Blocked dates</span>
-          <span className="inline-block">📅 Select any available date</span>
-        </div>
-      </div>
+            <div className="grid grid-cols-7 gap-1 text-sm">
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, idx) => (
+                <div key={`wd-${idx}`} className="text-center text-xs font-semibold text-slate-500">
+                  {d}
+                </div>
+              ))}
+              {Array.from({ length: firstDay }).map((_, i) => (
+                <div key={`pad-${i}`} />
+              ))}
+              {Array.from({ length: lastDate }).map((_, i) => {
+                const day = i + 1;
+                const iso = new Date(Date.UTC(year, month, day)).toISOString().split('T')[0];
+                const isBlocked = blockedDates.has(iso);
+                const isPast = iso < minDate;
+                const isDisabled = isBlocked || isPast;
 
-      {/* Time Input */}
-      <div className="mb-5">
-        <label className="block mb-2 font-medium">Select Time</label>
-        <input
-          type="time"
-          value={selectedTime}
-          onChange={(e) => setSelectedTime(e.target.value)}
-          className="w-full rounded-3xl border border-slate-200 px-4 py-3 text-sm"
-        />
-      </div>
+                return (
+                  <button
+                    key={`day-${day}`}
+                    onClick={() => !isDisabled && setSelectedDate(iso)}
+                    disabled={isDisabled}
+                    className={`h-9 w-9 rounded-lg text-center leading-9 text-sm transition ${
+                      isDisabled
+                        ? 'text-slate-300 cursor-not-allowed bg-slate-200'
+                        : iso === selectedDate
+                        ? 'ring-2 ring-rose-500 bg-rose-100 text-rose-900 font-semibold'
+                        : 'border border-slate-200 bg-white text-slate-900 hover:bg-slate-50'
+                    }`}
+                    title={isBlocked ? 'Blocked' : isPast ? 'Past date' : ''}
+                  >
+                    {day}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-3 text-xs text-slate-500">
+              <span className="inline-block mr-3">🔴 Blocked dates</span>
+              <span className="inline-block">📅 Select any available date</span>
+            </div>
+          </div>
+
+          {/* Time Input */}
+        </>
+      )}
+
+      {workshop.category !== 'show' && (
+        <div className="mb-5">
+          <label className="block mb-2 font-medium">Select Time</label>
+          <input
+            type="time"
+            value={selectedTime}
+            onChange={(e) => setSelectedTime(e.target.value)}
+            className="w-full rounded-3xl border border-slate-200 px-4 py-3 text-sm"
+          />
+        </div>
+      )}
 
       {/* Availability Status */}
       {selectedDate && selectedTime && (
@@ -298,9 +374,14 @@ export default function BookingPanel({ workshop }: { workshop: Workshop }) {
           {selectedDate ? formatDateForDisplay(selectedDate) : 'Select a date'} at{' '}
           {selectedTime || '--:--'}
         </div>
-        <div className="text-sm text-slate-600 mt-1">
-          {workshop.craftsman} · {guests} guest{guests === 1 ? '' : 's'} · LKR {workshop.price}
+          <div className="text-sm text-slate-600 mt-1">
+          {workshop.category === 'show' ? workshop.location : workshop.craftsman} · {guests} guest{guests === 1 ? '' : 's'} · LKR {workshop.price}
         </div>
+        {workshop.category === 'show' && selectedDate && selectedTime && (
+          <div className="text-sm text-slate-600 mt-2">
+            Selected venue: <span className="font-semibold text-slate-900">{workshop.location}</span>
+          </div>
+        )}
       </div>
 
       {error && <div className="mb-4 text-sm text-rose-700">{error}</div>}
@@ -335,11 +416,11 @@ export default function BookingPanel({ workshop }: { workshop: Workshop }) {
               {/* Booking Details */}
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-slate-600">Workshop</span>
+                  <span className="text-slate-600">{workshop.category === 'show' ? 'Show' : 'Workshop'}</span>
                   <span className="font-semibold text-slate-900">{workshop.title}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-600">Craftsman</span>
+                  <span className="text-slate-600">{workshop.category === 'show' ? 'Performer' : 'Craftsman'}</span>
                   <span className="font-semibold text-slate-900">{workshop.craftsman}</span>
                 </div>
                 <div className="h-px bg-slate-200" />

@@ -6,23 +6,30 @@ export const metadata = {
   description: 'Purchase authentic Kandyan artifacts and traditional crafts.',
 };
 
-export interface Artifact {
-  id: string;
-  name: string;
-  price: number;
-  stock: number;
+// UPDATED: This interface now exactly matches what catalog_view returns
+export interface CatalogItem {
+  variant_id: string;
+  artifact_id: string;
+  product_name: string;
   category: string;
+  color_name: string;
+  price: number;
+  discounted_price?: number;
   image_url: string;
-  discounted_price?: number; // Added to match our recent database upgrade!
+  stock: number;
 }
 
+// Optional but highly recommended: Forces Next.js to not cache old inventory data
+export const revalidate = 0; 
+
 export default async function ShopPage() {
-  const { data: artifacts, error } = await supabase
-    .from('artifacts')
-    .select('*')
-    .order('created_at', { ascending: false });
+  // THE FIX: We now fetch from 'catalog_view' so the catalog gets all variant IDs
+  const { data: catalogItems, error } = await supabase
+    .from('catalog_view')
+    .select('*');
 
   if (error) {
+    console.error("Supabase Error:", error);
     return (
       <div className="flex h-screen items-center justify-center text-kandyan-maroon font-bold">
         Error loading the shop. Please check your connection.
@@ -51,7 +58,7 @@ export default async function ShopPage() {
 
       {/* Catalog Section */}
       <div className="container mx-auto px-6 max-w-7xl py-16">
-        <ArtifactCatalog initialArtifacts={artifacts || []} />
+        <ArtifactCatalog initialArtifacts={catalogItems || []} />
       </div>
     </main>
   );

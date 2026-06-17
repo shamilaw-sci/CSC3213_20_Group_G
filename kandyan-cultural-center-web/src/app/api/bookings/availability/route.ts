@@ -49,7 +49,7 @@ export async function POST(req: Request) {
 
     // Check if time slot is already booked (with 15-minute buffer)
     try {
-      let conflictQuery = supabase.from('bookings').select('booked_time');
+      let conflictQuery = supabase.from('workshop_bookings').select('booked_time');
       if (workshop_id) {
         conflictQuery = conflictQuery.eq('workshop_id', workshop_id);
       } else if (craftsman) {
