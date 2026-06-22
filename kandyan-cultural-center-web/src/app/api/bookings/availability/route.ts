@@ -10,7 +10,51 @@ function timeToMinutes(timeStr: string): number {
   return hours * 60 + minutes;
 }
 
+// GET endpoint to fetch booked times for a specific date
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const date = searchParams.get('date');
+
+    if (!date) {
+      return NextResponse.json({ error: 'Date is required' }, { status: 400 });
+    }
+
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      return NextResponse.json({
+        error: 'Supabase env vars missing',
+        bookedTimes: [],
+      }, { status: 500 });
+    }
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // Fetch all bookings for this date
+    const { data: bookings, error } = await supabase
+      .from('workshop_bookings')
+      .select('booked_time')
+      .eq('booked_date', date);
+
+    if (error) {
+      console.warn('Error fetching bookings:', error);
+      return NextResponse.json({ bookedTimes: [] });
+    }
+
+    // Extract unique times from bookings
+    const bookedTimes = bookings?.map((b) => b.booked_time) || [];
+
+    return NextResponse.json({ bookedTimes });
+  } catch (err: any) {
+    console.error('Error in GET availability:', err);
+    return NextResponse.json({
+      error: err?.message || 'Unknown error',
+      bookedTimes: [],
+    }, { status: 500 });
+  }
+}
+
 export async function POST(req: Request) {
+
   try {
     const body = await req.json();
     const { booked_date, booked_time, workshop_id, craftsman } = body;

@@ -1,111 +1,39 @@
-'use client';
+﻿'use client';
 
-import { useEffect, useState } from "react";
-import WorkshopCard from "./components/WorkshopCard";
-import { workshops, shows } from "./data";
-
-const tabs = [
-  { id: "workshops", label: "Workshops" },
-  { id: "shows", label: "Shows" },
-];
+import Link from "next/link";
+import { workshops } from "./data";
 
 export default function WorkshopsPage() {
-  const [activeTab, setActiveTab] = useState<"workshops" | "shows">("workshops");
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const items = activeTab === "shows" ? shows : workshops;
-
-  const headerData = {
-    workshops: {
-      title: "Discover traditional workshops",
-      description:
-        "Join hands-on artisan classes for woodwork, brass craft, and mask carving. Learn from master craftsmen and take home a cultural keepsake.",
-      images: ["/ad.jpg", "/story2.png"],
-      topics: ["Wood carving", "Brass art", "Mask painting"],
-    },
-    shows: {
-      title: "Experience cultural shows",
-      description:
-        "Reserve your seat for vibrant Kandyan performances, live drumming, and heritage processions in a memorable cultural setting.",
-      images: ["/hero3.png", "/hero1.png"],
-      topics: ["Kandyan dance", "Live drumming", "Heritage procession"],
-    },
-  };
-
-  const currentHeader = headerData[activeTab];
-
-  useEffect(() => {
-    setCurrentSlide(0);
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % currentHeader.images.length);
-    }, 8000);
-
-    return () => clearInterval(timer);
-  }, [activeTab, currentHeader.images.length]);
+  const workshop = workshops[0];
 
   return (
-    <main className="w-full">
-      <section className="relative overflow-hidden w-full rounded-b-[32px] bg-slate-950 shadow-xl shadow-slate-200/20 mb-10 min-h-[360px]">
-        <div className="absolute inset-0">
-          {currentHeader.images.map((image, index) => (
-            <div
-              key={image}
-              className={`absolute inset-0 bg-cover bg-center transition-opacity duration-[1200ms] ease-in-out ${
-                index === currentSlide ? "opacity-100" : "opacity-0"
-              }`}
-              style={{ backgroundImage: `url('${image}')` }}
-            />
-          ))}
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/15 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent" />
+    <main className="min-h-screen bg-slate-50">
+      <section className="bg-slate-950 text-white py-20">
+        <div className="mx-auto max-w-5xl px-6 sm:px-10">
+          <p className="text-sm uppercase tracking-[0.35em] text-amber-400 mb-3">Wood Craft Workshop</p>
+          <h1 className="text-4xl md:text-5xl font-extrabold leading-tight mb-6">{workshop.title}</h1>
+          <p className="max-w-3xl text-base text-slate-300 mb-10">A single focused wood craft session with a master craftsman. Learn how to carve a keepsake, explore Kandyan woodcraft techniques, and book your spot with one simple flow.</p>
         </div>
+      </section>
 
-        <div className="relative z-10 mx-auto px-6 py-10 sm:px-10 sm:py-12 lg:px-16 lg:py-14 max-w-7xl">
-          <div className="max-w-2xl">
-            <p className="text-xs uppercase tracking-[0.35em] text-rose-300 mb-3">
-              Shows & Workshops
-            </p>
-            <h1 className="text-4xl md:text-5xl font-extrabold text-white leading-tight mb-4">
-              {currentHeader.title}
-            </h1>
-            <p className="text-base md:text-lg text-slate-200 max-w-xl mb-6">
-              {currentHeader.description}
-            </p>
-            <div className="flex flex-wrap gap-3 mb-6">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as "workshops" | "shows")}
-                  className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
-                    activeTab === tab.id
-                      ? "bg-rose-700 text-white shadow-lg shadow-rose-700/20"
-                      : "border border-white/20 bg-white/10 text-white hover:bg-white/15"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+      <section className="mx-auto max-w-5xl px-6 py-20 sm:px-10">
+        <div className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-sm lg:p-10">
+          <div className="grid gap-8 lg:grid-cols-[0.95fr_0.7fr] items-center">
+            <div>
+              <div className="overflow-hidden rounded-[28px] border border-slate-200">
+                <img src={workshop.image} alt={workshop.title} className="h-72 w-full object-cover" />
+              </div>
             </div>
-            <div className="flex flex-wrap gap-3">
-              {currentHeader.topics.map((topic) => (
-                <span
-                  key={topic}
-                  className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm text-slate-100"
-                >
-                  {topic}
-                </span>
-              ))}
+            <div className="space-y-6">
+              <h2 className="text-3xl font-bold text-slate-900">Wood Craft Workshop</h2>
+              <p className="text-slate-600">The workshop page now shows only the wood craft experience. There are no show/workshop tabs anymore — just a flexible booking path for this single workshop.</p>
+              <Link href={`/workshops/${workshop.id}`} className="inline-flex items-center justify-center rounded-full bg-rose-600 px-7 py-4 text-base font-semibold text-white shadow-lg shadow-rose-600/20 transition hover:bg-rose-700">
+                More details
+              </Link>
             </div>
           </div>
         </div>
       </section>
-
-      <div className="max-w-7xl mx-auto px-6 pb-10">
-        <div className="grid md:grid-cols-3 gap-8">
-          {items.map((workshop) => (
-            <WorkshopCard key={workshop.id} workshop={workshop} />
-          ))}
-        </div>
-      </div>
     </main>
   );
 }

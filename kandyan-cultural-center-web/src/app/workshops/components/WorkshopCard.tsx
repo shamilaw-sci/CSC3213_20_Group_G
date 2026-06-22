@@ -1,9 +1,7 @@
-import Link from "next/link";
+﻿import Link from "next/link";
+import { useCurrency } from '@/context/CurrencyContext';
 
-type ScheduleSlot = {
-  date: string;
-  times: string[];
-};
+// schedule removed
 
 type Workshop = {
   id: string;
@@ -15,12 +13,7 @@ type Workshop = {
   description: string;
   location: string;
   highlights: string[];
-  craftsmanDetails: {
-    name: string;
-    experience: string;
-    specialty: string;
-  };
-  schedule: ScheduleSlot[];
+  // schedule removed
 };
 
 function formatDate(dateString: string) {
@@ -31,69 +24,38 @@ function formatDate(dateString: string) {
   });
 }
 
-export default function WorkshopCard({
-  workshop,
-}: {
-  workshop: Workshop;
-}) {
+export default function WorkshopCard({ workshop }: { workshop: Workshop }) {
+  const { formatPrice } = useCurrency();
   return (
     <Link href={`/workshops/${workshop.id}`}>
-      <div className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition cursor-pointer">
-
-        <img
-          src={workshop.image}
-          alt={workshop.title}
-          className="w-full h-64 object-cover"
-        />
-
-        <div className="p-5">
-          <h2 className="text-xl font-bold">{workshop.title}</h2>
-
-          <p className="text-gray-500 mt-1">
-            {workshop.craftsman}
-          </p>
-
-          <p className="mt-2 text-sm text-gray-600">
-            {workshop.description}
-          </p>
-
-          <div className="mt-4 text-sm text-slate-600">
-            <div className="font-medium text-slate-800 mb-2">What you will learn</div>
-            <div className="flex flex-wrap gap-2">
-              {workshop.highlights.slice(0, 2).map((item) => (
-                <span
-                  key={item}
-                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1"
-                >
-                  {item}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-3 font-semibold">
-            LKR {workshop.price}
-          </div>
-
-          <div className="text-sm text-gray-500">
-            {workshop.duration}
-          </div>
-
-          <div className="mt-4 text-sm text-slate-600">
-            <div className="font-medium text-slate-800 mb-2">Next dates</div>
-            <div className="flex flex-wrap gap-2">
-              {workshop.schedule.slice(0, 2).map((slot) => (
-                <span
-                  key={slot.date}
-                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1"
-                >
-                  {formatDate(slot.date)}
-                </span>
-              ))}
-            </div>
-          </div>
+      <div className="group cursor-pointer overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-sm transition hover:shadow-xl">
+        <div className="h-72 overflow-hidden bg-slate-100">
+          <img src={workshop.image} alt={workshop.title} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
         </div>
+        <div className="p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">{workshop.title}</h2>
+              <p className="mt-2 text-sm text-slate-500">{workshop.craftsman}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-lg font-bold text-rose-700">{formatPrice(workshop.price)}</p>
+              <p className="text-xs text-slate-400">{workshop.duration}</p>
+            </div>
+          </div>
 
+          <p className="mt-5 text-sm leading-6 text-slate-600">{workshop.description}</p>
+
+          <div className="mt-6 grid gap-2">
+            {workshop.highlights.slice(0, 3).map((item) => (
+              <span key={item} className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                {item}
+              </span>
+            ))}
+          </div>
+
+          {/* schedule removed */}
+        </div>
       </div>
     </Link>
   );

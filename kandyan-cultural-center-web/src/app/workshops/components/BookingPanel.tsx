@@ -1,11 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { forwardRef, ForwardedRef, useEffect, useImperativeHandle, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useCurrency } from '@/context/CurrencyContext';
 
-// Convert time string "HH:MM" to minutes since midnight
-function timeToMinutes(timeStr: string): number {
+// Convert time string "HH:MM" to 12-hour display format
+function timeTo12Hour(timeStr: string): string {
+  if (!timeStr) return '';
   const [hours, minutes] = timeStr.split(':').map(Number);
-  return hours * 60 + minutes;
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours % 12 || 12;
+  return `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`;
 }
 
 // Normalize display times like "06:00 PM" or "6:00 PM" to 24-hour "HH:MM"
@@ -22,11 +27,6 @@ function normalizeTimeTo24(timeStr: string) {
   return `${hhStr}:${mm}`;
 }
 
-type ScheduleSlot = {
-  date: string;
-  times: string[];
-};
-
 type Workshop = {
   id?: string;
   category?: "workshop" | "show";
@@ -34,7 +34,6 @@ type Workshop = {
   price: number;
   craftsman: string;
   location?: string;
-  schedule: ScheduleSlot[];
 };
 
 function formatDateForDisplay(dateString: string) {
@@ -45,48 +44,104 @@ function formatDateForDisplay(dateString: string) {
   });
 }
 
-type BookingConfirmation = {
-  id: string;
-  date: string;
-  time: string;
+
+export type BookingChangeState = {
+  selectedDate: string;
+  selectedTime: string;
+  guests: number;
   name: string;
   email: string;
   phone: string;
-  guests: number;
-} | null;
+  availability: { available: boolean; message: string } | null;
+  checkingAvailability: boolean;
+  error: string;
+  loading: boolean;
+};
 
-export default function BookingPanel({ workshop }: { workshop: Workshop }) {
-  const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+export type BookingPanelRef = {
+  handleBooking: () => Promise<void>;
+};
+
+type BookingPanelProps = {
+  workshop: Workshop;
+  initialName?: string;
+  initialEmail?: string;
+  initialPhone?: string;
+  onBookingChange?: (state: BookingChangeState) => void;
+  showSubmitButton?: boolean;
+  showBookingSummary?: boolean;
+};
+
+function BookingPanel(
+  { workshop, initialName = '', initialEmail = '', initialPhone = '', onBookingChange, showSubmitButton = true, showBookingSummary = true }: BookingPanelProps,
+  ref: ForwardedRef<BookingPanelRef>
+) {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [guests, setGuests] = useState(1);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const [name, setName] = useState(initialName);
+  const [email, setEmail] = useState(initialEmail);
+  const [phone, setPhone] = useState(initialPhone);
+
+  useEffect(() => {
+    if (initialName) setName(initialName);
+    if (initialEmail) setEmail(initialEmail);
+    if (initialPhone) setPhone(initialPhone);
+  }, [initialName, initialEmail, initialPhone]);
 
   const [availability, setAvailability] = useState<{ available: boolean; message: string } | null>(null);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
-  const [confirmation, setConfirmation] = useState<BookingConfirmation>(null);
+  
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
+  const [bookedTimes, setBookedTimes] = useState<Set<string>>(new Set());
 
-  // Fetch blocked dates on mount
+  // Free-date booking: fixed time slots available for any date (unless blocked)
+  const TIME_SLOTS = ['09:00', '11:30', '14:00'];
+  const today = new Date().toISOString().slice(0, 10);
+  const allTimesForDate = TIME_SLOTS;
+  const { formatPrice } = useCurrency();
+
+  const isSelectedDateBlocked = selectedDate ? blockedDates.has(selectedDate) : false;
+  const isSelectedDateValid = !!selectedDate && !isSelectedDateBlocked;
+
+  // Fetch blocked dates
   useEffect(() => {
     const fetchBlockedDates = async () => {
       try {
         const res = await fetch('/api/bookings/blocked-dates');
-        if (res.ok) {
-          const data = await res.json();
-          const dateSet = new Set<string>(data.blockedDates || []);
-          setBlockedDates(dateSet);
-        }
+        if (!res.ok) return;
+        const data = await res.json();
+        setBlockedDates(new Set(data.blockedDates || []));
       } catch (err) {
-        console.warn('Failed to fetch blocked dates', err);
+        console.warn('Failed to load blocked dates', err);
       }
     };
+
     fetchBlockedDates();
   }, []);
+
+  // Fetch booked times for the currently selected date
+  useEffect(() => {
+    if (!selectedDate) {
+      setBookedTimes(new Set());
+      return;
+    }
+
+    const fetchBookedTimes = async () => {
+      try {
+        const res = await fetch(`/api/bookings/availability?date=${selectedDate}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setBookedTimes(new Set((data.bookedTimes || []).map((time: string) => normalizeTimeTo24(time))));
+      } catch (err) {
+        console.warn('Failed to load booked times', err);
+      }
+    };
+
+    fetchBookedTimes();
+  }, [selectedDate]);
 
   // Real-time availability check
   useEffect(() => {
@@ -104,12 +159,13 @@ export default function BookingPanel({ workshop }: { workshop: Workshop }) {
     const checkAvailability = async () => {
       setCheckingAvailability(true);
       try {
+        const normalizedTime = normalizeTimeTo24(selectedTime);
         const res = await fetch('/api/bookings/availability', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             booked_date: selectedDate,
-            booked_time: selectedTime,
+            booked_time: normalizedTime,
             workshop_id: workshop.id ?? null,
             craftsman: workshop.category === 'show' ? null : workshop.craftsman,
           }),
@@ -142,6 +198,7 @@ export default function BookingPanel({ workshop }: { workshop: Workshop }) {
 
     setLoading(true);
     try {
+      const normalizedTime = normalizeTimeTo24(selectedTime);
       const res = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -153,7 +210,7 @@ export default function BookingPanel({ workshop }: { workshop: Workshop }) {
           category: workshop.category ?? 'workshop',
           craftsman: workshop.category === 'show' ? null : workshop.craftsman,
           booked_date: selectedDate,
-          booked_time: selectedTime,
+          booked_time: normalizedTime,
           customer_name: name,
           customer_email: email,
           customer_phone: phone,
@@ -163,16 +220,6 @@ export default function BookingPanel({ workshop }: { workshop: Workshop }) {
 
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error || 'Booking failed');
-
-      setConfirmation({
-        id: json.booking.id,
-        date: selectedDate,
-        time: selectedTime,
-        name,
-        email,
-        phone,
-        guests,
-      });
       setSelectedDate('');
       setSelectedTime('');
       setName('');
@@ -180,6 +227,79 @@ export default function BookingPanel({ workshop }: { workshop: Workshop }) {
       setPhone('');
       setGuests(1);
       setAvailability(null);
+
+      // After booking is created, initialize payment via /api/checkout and redirect to PayHere
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const profileId = user?.id || null;
+
+        // Calculate totals: subtotal remains fixed, gateway fee (3.3%), and final total
+        const subtotal = workshop.price;
+        const gatewayFee = Math.round(subtotal * 0.033); // 3.3% handling fee
+        const totalAmount = subtotal + gatewayFee;
+
+        const checkoutRes = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            profileId,
+            totalAmount,
+            items: [
+              {
+                id: workshop.id || 'workshop',
+                name: workshop.title,
+                quantity: 1,
+                price: workshop.price,
+              },
+            ],
+            shippingAddress: workshop.location || '',
+          }),
+        });
+
+        const paymentConfig = await checkoutRes.json();
+        if (!checkoutRes.ok) throw new Error(paymentConfig.error || 'Failed to initialize payment');
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = 'https://sandbox.payhere.lk/pay/checkout';
+
+        const nameParts = name.trim().split(' ');
+        const first_name = nameParts[0] || '';
+        const last_name = nameParts.slice(1).join(' ') || '';
+
+        const fields: Record<string, any> = {
+          merchant_id: paymentConfig.merchantId,
+          return_url: `${window.location.origin}/success?booking=${json.booking.id}&order=${paymentConfig.orderId}`,
+          cancel_url: `${window.location.origin}/workshops/checkout?workshop=${workshop.id}`,
+          notify_url: `${window.location.origin}/api/payhere-notify`,
+          order_id: paymentConfig.orderId,
+          items: workshop.title,
+          currency: paymentConfig.currency || 'LKR',
+          amount: paymentConfig.amount || String(workshop.price),
+          first_name,
+          last_name,
+          email,
+          phone,
+          address: workshop.location || '',
+          city: '',
+          country: 'Sri Lanka',
+          hash: paymentConfig.hash,
+          custom_1: `booking:${json.booking.id}`,
+        };
+
+        Object.entries(fields).forEach(([key, value]) => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key;
+          input.value = String(value ?? '');
+          form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+      } catch (payErr) {
+        console.error('Payment init error:', payErr);
+      }
     } catch (err: any) {
       setError(err?.message || 'Booking failed');
     } finally {
@@ -187,13 +307,22 @@ export default function BookingPanel({ workshop }: { workshop: Workshop }) {
     }
   };
 
-  // Calendar rendering for workshop bookings
-  const year = currentMonth.getFullYear();
-  const month = currentMonth.getMonth();
-  const firstDay = new Date(year, month, 1).getDay();
-  const lastDate = new Date(year, month + 1, 0).getDate();
-  const monthName = currentMonth.toLocaleString('en-US', { month: 'long' });
-  const minDate = new Date().toISOString().split('T')[0];
+  useImperativeHandle(ref, () => ({ handleBooking }), [handleBooking]);
+
+  useEffect(() => {
+    onBookingChange?.({
+      selectedDate,
+      selectedTime,
+      guests,
+      name,
+      email,
+      phone,
+      availability,
+      checkingAvailability,
+      error,
+      loading,
+    });
+  }, [selectedDate, selectedTime, guests, name, email, phone, availability, checkingAvailability, error, loading, onBookingChange]);
 
   return (
     <div>
@@ -201,114 +330,7 @@ export default function BookingPanel({ workshop }: { workshop: Workshop }) {
         Book Your {workshop.category === "show" ? "Show Ticket" : "Workshop"}
       </h2>
 
-      {workshop.category === 'show' ? (
-        <div className="mb-5 rounded-3xl border border-slate-200 bg-slate-50 p-4">
-          <h3 className="text-xl font-semibold text-slate-900 mb-4">Available show dates</h3>
-          <div className="space-y-4">
-            {workshop.schedule.map((slot) => (
-              <div key={slot.date} className="rounded-3xl border border-slate-200 bg-white p-4">
-                <p className="font-semibold text-slate-900">{formatDateForDisplay(slot.date)}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {slot.times.map((time) => (
-                    <button
-                      key={`${slot.date}-${time}`}
-                      type="button"
-                      onClick={() => {
-                        setSelectedDate(slot.date);
-                        setSelectedTime(normalizeTimeTo24(time));
-                      }}
-                      className={`rounded-full border px-4 py-2 text-sm transition ${
-                        selectedDate === slot.date && selectedTime === normalizeTimeTo24(time)
-                          ? 'border-rose-500 bg-rose-100 text-rose-900'
-                          : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-rose-300 hover:bg-rose-50'
-                      }`}
-                    >
-                      {time}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Calendar with Blocked Dates */}
-          <div className="mb-5 rounded-3xl border border-slate-200 bg-slate-50 p-4">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-semibold text-slate-900">{monthName} {year}</h3>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setCurrentMonth(new Date(year, month - 1, 1))}
-                  className="px-3 py-1 rounded border border-slate-300 text-sm hover:bg-white"
-                >
-                  ← Prev
-                </button>
-                <button
-                  onClick={() => setCurrentMonth(new Date(year, month + 1, 1))}
-                  className="px-3 py-1 rounded border border-slate-300 text-sm hover:bg-white"
-                >
-                  Next →
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-7 gap-1 text-sm">
-              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, idx) => (
-                <div key={`wd-${idx}`} className="text-center text-xs font-semibold text-slate-500">
-                  {d}
-                </div>
-              ))}
-              {Array.from({ length: firstDay }).map((_, i) => (
-                <div key={`pad-${i}`} />
-              ))}
-              {Array.from({ length: lastDate }).map((_, i) => {
-                const day = i + 1;
-                const iso = new Date(Date.UTC(year, month, day)).toISOString().split('T')[0];
-                const isBlocked = blockedDates.has(iso);
-                const isPast = iso < minDate;
-                const isDisabled = isBlocked || isPast;
-
-                return (
-                  <button
-                    key={`day-${day}`}
-                    onClick={() => !isDisabled && setSelectedDate(iso)}
-                    disabled={isDisabled}
-                    className={`h-9 w-9 rounded-lg text-center leading-9 text-sm transition ${
-                      isDisabled
-                        ? 'text-slate-300 cursor-not-allowed bg-slate-200'
-                        : iso === selectedDate
-                        ? 'ring-2 ring-rose-500 bg-rose-100 text-rose-900 font-semibold'
-                        : 'border border-slate-200 bg-white text-slate-900 hover:bg-slate-50'
-                    }`}
-                    title={isBlocked ? 'Blocked' : isPast ? 'Past date' : ''}
-                  >
-                    {day}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="mt-3 text-xs text-slate-500">
-              <span className="inline-block mr-3">🔴 Blocked dates</span>
-              <span className="inline-block">📅 Select any available date</span>
-            </div>
-          </div>
-
-          {/* Time Input */}
-        </>
-      )}
-
-      {workshop.category !== 'show' && (
-        <div className="mb-5">
-          <label className="block mb-2 font-medium">Select Time</label>
-          <input
-            type="time"
-            value={selectedTime}
-            onChange={(e) => setSelectedTime(e.target.value)}
-            className="w-full rounded-3xl border border-slate-200 px-4 py-3 text-sm"
-          />
-        </div>
-      )}
+      {/* Booking inputs moved into Guest Details section below */}
 
       {/* Availability Status */}
       {selectedDate && selectedTime && (
@@ -327,6 +349,45 @@ export default function BookingPanel({ workshop }: { workshop: Workshop }) {
 
       {/* Guest Details */}
       <div className="grid gap-3 mb-5">
+        <div>
+          <label className="block mb-2 font-medium">Select Date</label>
+          <input
+            type="date"
+            value={selectedDate}
+            min={today}
+            onChange={(e) => {
+              setSelectedDate(e.target.value);
+              setSelectedTime('');
+              setError('');
+            }}
+            className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm"
+          />
+          {selectedDate && isSelectedDateBlocked && (
+            <div className="mt-2 text-sm text-rose-700">This date is blocked.</div>
+          )}
+        </div>
+
+        <div>
+          <label className="block mb-2 font-medium">Select Time</label>
+          <select
+            value={selectedTime}
+            onChange={(e) => setSelectedTime(e.target.value)}
+            className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm"
+            disabled={!selectedDate || isSelectedDateBlocked}
+          >
+            <option value="">Choose a time</option>
+            {allTimesForDate.map((time) => {
+              const normalizedTime = normalizeTimeTo24(time);
+              const isBooked = bookedTimes.has(normalizedTime);
+              return (
+                <option key={time} value={normalizedTime} disabled={isBooked}>
+                  {timeTo12Hour(normalizedTime)} {isBooked ? '(Booked)' : ''}
+                </option>
+              );
+            })}
+          </select>
+        </div>
+
         <div>
           <label className="block mb-2 font-medium">Full Name</label>
           <input
@@ -367,110 +428,40 @@ export default function BookingPanel({ workshop }: { workshop: Workshop }) {
         </div>
       </div>
 
-      {/* Booking Summary */}
-      <div className="mb-6 rounded-3xl border border-slate-200 bg-slate-50 p-4">
-        <div className="text-sm text-slate-600">Booking Summary</div>
-        <div className="mt-3 text-lg font-semibold text-slate-900">
-          {selectedDate ? formatDateForDisplay(selectedDate) : 'Select a date'} at{' '}
-          {selectedTime || '--:--'}
-        </div>
-          <div className="text-sm text-slate-600 mt-1">
-          {workshop.category === 'show' ? workshop.location : workshop.craftsman} · {guests} guest{guests === 1 ? '' : 's'} · LKR {workshop.price}
-        </div>
-        {workshop.category === 'show' && selectedDate && selectedTime && (
-          <div className="text-sm text-slate-600 mt-2">
-            Selected venue: <span className="font-semibold text-slate-900">{workshop.location}</span>
+      {showBookingSummary && (
+        <div className="mb-6 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+          <div className="text-sm text-slate-600">Booking Summary</div>
+          <div className="mt-3 text-lg font-semibold text-slate-900">
+            {selectedDate ? formatDateForDisplay(selectedDate) : 'Select a date'} at{' '}
+            {selectedTime ? timeTo12Hour(selectedTime) : '--:--'}
           </div>
-        )}
-      </div>
+          <div className="text-sm text-slate-600 mt-1">
+            {workshop.category === 'show' ? workshop.location : workshop.craftsman} · {guests} guest{guests === 1 ? '' : 's'} · {formatPrice(workshop.price)}
+          </div>
+          {workshop.category === 'show' && selectedDate && selectedTime && (
+            <div className="text-sm text-slate-600 mt-2">
+              Selected venue: <span className="font-semibold text-slate-900">{workshop.location}</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {error && <div className="mb-4 text-sm text-rose-700">{error}</div>}
 
-      {/* Submit Button */}
-      <button
-        onClick={handleBooking}
-        disabled={loading || !availability?.available || checkingAvailability}
-        className="w-full rounded-3xl bg-rose-700 px-5 py-3 text-white font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-rose-800 enabled:hover:bg-rose-800"
-      >
-        {loading ? 'Submitting...' : 'Confirm Booking'}
-      </button>
-
-      {/* Confirmation Modal */}
-      {confirmation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-sm rounded-2xl bg-white shadow-2xl">
-            {/* Header */}
-            <div className="border-b border-slate-200 bg-gradient-to-r from-emerald-500 to-emerald-600 px-5 py-4 rounded-t-2xl text-white">
-              <h3 className="text-xl font-bold">✓ Booking Confirmed!</h3>
-              <p className="mt-1 text-sm text-emerald-100">Your workshop is reserved</p>
-            </div>
-
-            {/* Content */}
-            <div className="space-y-4 px-5 py-5">
-              {/* Reference ID */}
-              <div className="rounded-lg bg-emerald-50 p-3 border border-emerald-200">
-                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Reference ID</p>
-                <p className="mt-1 font-mono text-sm font-bold text-emerald-900 break-all">{confirmation.id}</p>
-              </div>
-
-              {/* Booking Details */}
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-slate-600">{workshop.category === 'show' ? 'Show' : 'Workshop'}</span>
-                  <span className="font-semibold text-slate-900">{workshop.title}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">{workshop.category === 'show' ? 'Performer' : 'Craftsman'}</span>
-                  <span className="font-semibold text-slate-900">{workshop.craftsman}</span>
-                </div>
-                <div className="h-px bg-slate-200" />
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Date</span>
-                  <span className="font-semibold text-slate-900">{formatDateForDisplay(confirmation.date)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Time</span>
-                  <span className="font-semibold text-slate-900">{confirmation.time}</span>
-                </div>
-                <div className="h-px bg-slate-200" />
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Guest Name</span>
-                  <span className="font-semibold text-slate-900 truncate">{confirmation.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Email</span>
-                  <span className="font-semibold text-slate-900 text-xs truncate">{confirmation.email}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Guests</span>
-                  <span className="font-semibold text-slate-900">{confirmation.guests}</span>
-                </div>
-                <div className="h-px bg-slate-200" />
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Price</span>
-                  <span className="font-semibold text-slate-900">LKR {workshop.price}</span>
-                </div>
-              </div>
-
-              {/* Note */}
-              <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600 border border-slate-200">
-                Confirmation email sent to <strong>{confirmation.email}</strong>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="border-t border-slate-200 bg-slate-50 px-5 py-3 rounded-b-2xl">
-              <button
-                onClick={() => setConfirmation(null)}
-                className="w-full rounded-lg bg-rose-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-800"
-              >
-                OK, Got It
-              </button>
-            </div>
-          </div>
-        </div>
+      {showSubmitButton && (
+        <button
+          onClick={handleBooking}
+          disabled={loading || !availability?.available || checkingAvailability}
+          className="w-full rounded-3xl bg-rose-700 px-5 py-3 text-white font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-rose-800 enabled:hover:bg-rose-800"
+        >
+          {loading ? 'Processing...' : 'Proceed to Pay'}
+        </button>
       )}
+
+      
     </div>
   );
 }
+
+export default forwardRef(BookingPanel);
   
