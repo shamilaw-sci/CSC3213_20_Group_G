@@ -34,5 +34,5 @@ jobs:
       - name: Test Production Build
         run: npm run build
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.https://bsrhrbijqiviwohuaigy.supabase.co }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzcmhyYmlqcWl2aXdvaHVhaWd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNDEyMzAsImV4cCI6MjA4OTkxNzIzMH0.NhTZOn8euAlFYkhvyVeAFlrrNffeoOrqk0L0B6jXRKY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
