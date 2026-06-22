@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext'; 
+import { useCurrency } from '@/context/CurrencyContext';
 import { supabase } from '@/lib/supabase';
 
 // Updated Interface to match your SQL catalog_view
@@ -25,6 +26,7 @@ interface ArtifactCatalogProps {
 export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogProps) {
   const router = useRouter();
   const { setIsDrawerOpen, addToCart } = useCart(); 
+  const { formatPrice } = useCurrency(); // <-- 2. GET FORMATTER FUNCTION
 
   // --- State ---
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -258,20 +260,20 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
                     Color: <span className="text-slate-600">{item.color_name}</span>
                   </p>
                   
-                  {/* Pricing */}
+                  {/* Pricing - NOW DYNAMIC */}
                   <div className="mt-auto flex flex-col gap-1 mb-3 sm:mb-4 border-b border-slate-50 pb-3">
                     {item.discounted_price && item.discounted_price < item.price ? (
                       <div className="flex flex-col">
                         <span className="text-[10px] sm:text-sm font-medium text-slate-400 line-through">
-                          Rs. {item.price.toLocaleString()}
+                          {formatPrice(item.price)}
                         </span>
                         <span className="text-base sm:text-xl font-black text-slate-900">
-                          Rs. {item.discounted_price.toLocaleString()}
+                          {formatPrice(item.discounted_price)}
                         </span>
                       </div>
                     ) : (
                       <span className="text-base sm:text-xl font-black text-slate-900">
-                        Rs. {item.price.toLocaleString()}
+                        {formatPrice(item.price)}
                       </span>
                     )}
                   </div>

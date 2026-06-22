@@ -53,6 +53,7 @@ export default function Footer() {
               <li><Link href="/about" className="hover:text-amber-400 transition-colors flex items-center gap-3 group"><span className="w-1.5 h-1.5 rounded-full bg-rose-800 group-hover:bg-amber-400 transition-colors"></span> Our Legacy</Link></li>
               <li><Link href="/terms" className="hover:text-amber-400 transition-colors flex items-center gap-3 group"><span className="w-1.5 h-1.5 rounded-full bg-rose-800 group-hover:bg-amber-400 transition-colors"></span> Terms and Conditions</Link></li>
               <li><Link href="/privacy" className="hover:text-amber-400 transition-colors flex items-center gap-3 group"><span className="w-1.5 h-1.5 rounded-full bg-rose-800 group-hover:bg-amber-400 transition-colors"></span> Privacy Policy</Link></li>
+              <li><Link href="/refund-policy" className="hover:text-amber-400 transition-colors flex items-center gap-3 group"><span className="w-1.5 h-1.5 rounded-full bg-rose-800 group-hover:bg-amber-400 transition-colors"></span> Refund Policy</Link></li>
             </ul>
 
             {/* Compact Contact Info */}
