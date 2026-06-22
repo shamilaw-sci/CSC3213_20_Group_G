@@ -4,11 +4,15 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import UserMenu from './UserMenu';
 import { useCart } from '@/context/CartContext';
+import { useCurrency, CurrencyCode } from '@/context/CurrencyContext';
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { cartCount, setIsDrawerOpen } = useCart();
   const [showWelcome, setShowWelcome] = useState(false);
+  
+  // Call the hook to extract currency and setCurrency
+  const { currency, setCurrency } = useCurrency();
 
   // --- WELCOME BACK DIALOG LOGIC ---
   useEffect(() => {
@@ -31,20 +35,36 @@ export default function Header() {
 
   const closeMenu = () => setIsMobileMenuOpen(false);
 
+  // --- REUSABLE CURRENCY DROPDOWN ---
+  const CurrencySelector = () => (
+    <div className="relative flex items-center">
+      <select
+        value={currency}
+        onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
+        className="appearance-none bg-white/5 border border-white/10 text-slate-300 text-xs sm:text-sm font-bold rounded-lg pl-3 pr-7 py-1.5 focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer hover:text-white hover:bg-white/10 transition-colors"
+      >
+        {(['LKR', 'USD', 'EUR', 'GBP', 'AUD'] as CurrencyCode[]).map((code) => (
+          <option key={code} value={code} className="bg-slate-900 text-white">
+            {code}
+          </option>
+        ))}
+      </select>
+      <svg className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path>
+      </svg>
+    </div>
+  );
+
   // --- REUSABLE POP-UP COMPONENT ---
-  // We make this a constant so we can easily render it for both Desktop and Mobile cart icons
   const WelcomePopup = () => (
     <div className="absolute top-full right-0 mt-5 w-72 bg-white rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.1)] border border-slate-100 p-5 z-[100] animate-in slide-in-from-top-2 fade-in duration-500 cursor-default text-left">
-      {/* Small arrow pointing up to the cart */}
       <div className="absolute -top-2 right-3.5 w-4 h-4 bg-white rotate-45 border-l border-t border-slate-100 rounded-sm"></div>
       
       <div className="relative z-10 flex items-start gap-4">
-        {/* Icon */}
-        <div className="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center text-kandyan-gold shrink-0">
+        <div className="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center text-amber-600 shrink-0">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
         </div>
         
-        {/* Content */}
         <div className="flex-grow">
           <button 
             onClick={(e) => { e.stopPropagation(); setShowWelcome(false); }}
@@ -64,7 +84,7 @@ export default function Header() {
                 setShowWelcome(false); 
                 setIsDrawerOpen(true); 
               }}
-              className="bg-slate-950 hover:bg-kandyan-maroon text-white text-[11px] font-bold px-3 py-2 rounded-lg transition-colors w-full shadow-sm"
+              className="bg-slate-950 hover:bg-amber-600 text-white text-[11px] font-bold px-3 py-2 rounded-lg transition-colors w-full shadow-sm"
             >
               View Cart
             </button>
@@ -79,7 +99,7 @@ export default function Header() {
       <div className="container mx-auto px-4 max-w-7xl h-20 flex items-center justify-between relative z-50">
         
         {/* Modern Logo Section */}
-        <Link href="/" onClick={closeMenu} className="flex items-center space-x-3 group">
+        <Link href="/" onClick={closeMenu} className="flex items-center space-x-3 group shrink-0">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-900 font-black text-lg shadow-[0_0_15px_rgba(245,158,11,0.3)] group-hover:shadow-[0_0_25px_rgba(245,158,11,0.6)] transition-all duration-300">
             K
           </div>
@@ -106,6 +126,8 @@ export default function Header() {
         {/* Desktop CTA Button & cart */}
         <div className="hidden lg:flex items-center gap-6">
           
+          <CurrencySelector />
+
           {/* Cart Button (Wrapped in a relative div for the popup) */}
           <div className="relative">
             <button 
@@ -116,7 +138,7 @@ export default function Header() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
               </svg>
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-kandyan-maroon text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-slate-950">
+                <span className="absolute -top-1 -right-1 bg-amber-600 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-slate-950">
                   {cartCount}
                 </span>
               )}
@@ -131,7 +153,9 @@ export default function Header() {
         </div>
 
         {/* Mobile Menu Toggle & Cart */}
-        <div className="flex lg:hidden items-center gap-4">
+        <div className="flex lg:hidden items-center gap-2 sm:gap-4">
+          
+          <CurrencySelector />
           
           {/* Mobile Cart Button */}
           <div className="relative">
@@ -154,7 +178,7 @@ export default function Header() {
           </div>
 
           <button 
-            className="text-slate-300 hover:text-white p-2"
+            className="text-slate-300 hover:text-white p-1.5"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label="Toggle Menu"
           >

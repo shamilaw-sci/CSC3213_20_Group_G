@@ -1,97 +1,89 @@
-import Link from 'next/link';
+import { Metadata } from "next";
 
-export const metadata = {
-  title: 'Privacy Policy | Kandyan Cultural Center',
-  description: 'How we collect, use, and protect your data at the Kandyan Cultural Center.',
+export const metadata: Metadata = {
+  title: "Privacy Policy | Kandyan Culture Connect",
+  description: "How we collect, use, and safeguard your data.",
 };
 
-export default function PrivacyPage() {
-  const lastUpdated = "May 30, 2026";
-
+export default function PrivacyPolicyPage() {
   return (
-    <main className="min-h-screen bg-stone-50 py-16 lg:py-24">
-      <div className="container mx-auto px-4 max-w-4xl">
+    <div className="bg-stone-50 min-h-screen py-16 px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
         
-        {/* Header */}
         <div className="text-center mb-12">
-          <h2 className="text-kandyan-maroon font-bold tracking-widest uppercase text-sm mb-4">Data Protection</h2>
-          <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">Privacy Policy</h1>
-          <p className="text-slate-500 font-medium">Last Updated: {lastUpdated}</p>
+          <h1 className="text-4xl font-black text-stone-900 mb-4">Privacy Policy</h1>
+          <p className="text-stone-500">Last updated: June 2026</p>
         </div>
 
-        {/* Content Document */}
-        <div className="bg-white p-8 md:p-14 rounded-[2rem] shadow-sm border border-slate-100 text-slate-600 leading-relaxed space-y-10">
+        <div className="bg-white p-8 md:p-12 rounded-3xl shadow-sm border border-stone-200 text-stone-600 leading-relaxed space-y-8">
           
           <section>
             <p>
-              The Kandyan Cultural Center ("we", "our", or "us") respects your privacy and is committed to protecting the personal data you share with us. This Privacy Policy outlines how we collect, use, safeguard, and disclose your information when you use our website.
+              At <strong>Kandyan Cultural Center (KCC)</strong>, we are committed to protecting the privacy and security of our customers' personal information. This Privacy Policy outlines how we collect, use, and safeguard your information when you visit or make a purchase on our website. By using our website, you consent to the practices described in this policy.
             </p>
           </section>
 
-          <section className="space-y-4">
-            <h2 className="text-2xl font-bold text-slate-900">1. Information We Collect</h2>
-            <p>
-              We collect information to provide better services to our users. The types of personal data we collect include:
-            </p>
-            <ul className="list-disc pl-6 space-y-2 text-slate-600">
-              <li><strong>Account Information:</strong> Name, email address, phone number, and physical address when you create a profile or make a purchase.</li>
-              <li><strong>Booking Information:</strong> Event details, expected invitees, and communication history when requesting the Grand Heritage Hall or booking workshops.</li>
-              <li><strong>Payment Information:</strong> We do not store your credit card details on our servers. All transactions are processed securely through certified, third-party payment gateways.</li>
+          <section>
+            <h2 className="text-xl font-bold text-stone-900 mb-3">Information We Collect</h2>
+            <p className="mb-2">When you visit our website, we may collect certain information about you, including:</p>
+            <ul className="list-disc pl-5 space-y-2">
+              <li><strong>Personal identification information:</strong> (such as your name, email address, and phone number) provided voluntarily by you during the registration or checkout process.</li>
+              <li><strong>Payment and billing information:</strong> necessary to process your orders, including credit card details, which are securely handled by trusted third-party payment processors.</li>
+              <li><strong>Browsing information:</strong> such as your IP address, browser type, and device information, collected automatically using cookies and similar technologies.</li>
             </ul>
           </section>
 
-          <section className="space-y-4">
-            <h2 className="text-2xl font-bold text-slate-900">2. How We Use Your Information</h2>
-            <p>Your data allows us to:</p>
-            <ul className="list-disc pl-6 space-y-2 text-slate-600">
-              <li>Process and deliver your artifact orders globally.</li>
-              <li>Review, approve, and manage your facility rental requests.</li>
-              <li>Send you order confirmations, e-tickets, and important account updates.</li>
-              <li>Improve our website&apos;s user experience and customer service.</li>
+          <section>
+            <h2 className="text-xl font-bold text-stone-900 mb-3">Use of Information</h2>
+            <p className="mb-2">We may use the collected information for the following purposes:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>To process and fulfill your orders, including shipping and delivery.</li>
+              <li>To communicate with you regarding your purchases, provide customer support, and respond to inquiries or requests.</li>
+              <li>To personalize your shopping experience and present relevant product recommendations and promotions.</li>
+              <li>To improve our website, products, and services based on your feedback and browsing patterns.</li>
+              <li>To detect and prevent fraud, unauthorized activities, and abuse of our website.</li>
             </ul>
           </section>
 
-          <section className="space-y-4">
-            <h2 className="text-2xl font-bold text-slate-900">3. Information Sharing</h2>
-            <p>
-              We strictly <strong>do not sell</strong> your personal information to third parties. We may share necessary data only in the following circumstances:
-            </p>
-            <ul className="list-disc pl-6 space-y-2 text-slate-600">
-              <li><strong>Service Providers:</strong> With trusted courier and logistics partners (e.g., DHL, local post) solely for the purpose of delivering your purchased artifacts.</li>
-              <li><strong>Legal Requirements:</strong> If required by Sri Lankan law, we may disclose your information to comply with legal proceedings or government requests.</li>
+          <section>
+            <h2 className="text-xl font-bold text-stone-900 mb-3">Information Sharing</h2>
+            <p className="mb-2">We respect your privacy and do not sell, trade, or otherwise transfer your personal information to third parties without your consent, except in the following circumstances:</p>
+            <ul className="list-disc pl-5 space-y-2">
+              <li><strong>Trusted service providers:</strong> We may share your information with third-party service providers who assist us in operating our website, processing payments, and delivering products. These providers are contractually obligated to handle your data securely and confidentially.</li>
+              <li><strong>Legal requirements:</strong> We may disclose your information if required to do so by law or in response to valid legal requests or orders.</li>
             </ul>
           </section>
 
-          <section className="space-y-4">
-            <h2 className="text-2xl font-bold text-slate-900">4. Data Security</h2>
+          <section>
+            <h2 className="text-xl font-bold text-stone-900 mb-3">Data Security</h2>
             <p>
-              We implement industry-standard security measures, including SSL encryption and secure cloud databases (via Supabase), to protect your personal information from unauthorized access, alteration, or disclosure. However, no internet transmission is 100% secure, and we cannot guarantee absolute security.
+              We implement industry-standard security measures to protect your personal information from unauthorized access, alteration, disclosure, or destruction. However, please be aware that no method of transmission over the internet or electronic storage is 100% secure, and we cannot guarantee absolute security.
             </p>
           </section>
 
-          <section className="space-y-4">
-            <h2 className="text-2xl font-bold text-slate-900">5. Your Rights</h2>
+          <section>
+            <h2 className="text-xl font-bold text-stone-900 mb-3">Cookies and Tracking Technologies</h2>
             <p>
-              You have the right to access, update, or request the deletion of your personal data stored on our platform. You can update your profile details directly from your user dashboard. For complete account deletion requests, please contact our administration.
+              We use cookies and similar technologies to enhance your browsing experience, analyze website traffic, and gather information about your preferences and interactions with our website. You have the option to disable cookies through your browser settings, but this may limit certain features and functionality of our website.
             </p>
           </section>
 
-          <hr className="border-slate-100" />
-
-          <section className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-            <h3 className="text-lg font-bold text-slate-900 mb-2">Contact Our Privacy Team</h3>
-            <p className="text-sm text-slate-500 mb-4">
-              If you have any questions, concerns, or requests regarding this Privacy Policy, please reach out to us:
+          <section>
+            <h2 className="text-xl font-bold text-stone-900 mb-3">Changes to the Privacy Policy</h2>
+            <p>
+              We reserve the right to update or modify this Privacy Policy at any time. Any changes will be posted on this page with a revised "last updated" date. We encourage you to review this Privacy Policy periodically to stay informed about how we collect, use, and protect your information.
             </p>
-            <ul className="text-sm font-medium text-slate-700 space-y-1">
-              <li><strong>Email:</strong> <a href="mailto:inquiries@kandyanculture.lk" className="text-kandyan-gold hover:underline">inquiries@kandyanculture.lk</a></li>
-              <li><strong>Phone:</strong> +94 75 414 7919</li>
-              <li><strong>Address:</strong> Kandyan Cultural Center, 72 Sangharaja Mawatha, Kandy, Sri Lanka.</li>
-            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-stone-900 mb-3">Contact Us</h2>
+            <p>
+              If you have any questions, concerns, or requests regarding our Privacy Policy or the handling of your personal information, please contact us using the information provided on our website.
+            </p>
           </section>
 
         </div>
       </div>
-    </main>
+    </div>
   );
 }
