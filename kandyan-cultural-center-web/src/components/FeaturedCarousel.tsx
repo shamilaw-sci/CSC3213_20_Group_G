@@ -1,15 +1,17 @@
-"use client";
+'use client';
 
 import { useRef } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext'; 
+import { useCurrency } from '@/context/CurrencyContext'; // <-- 1. IMPORT CURRENCY CONTEXT
 import { supabase } from '@/lib/supabase';
 
 export default function FeaturedCarousel({ artifacts }: { artifacts: any[] }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { addToCart, setIsDrawerOpen } = useCart(); 
+  const { formatPrice } = useCurrency(); // <-- 2. GET FORMATTER FUNCTION
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -108,14 +110,21 @@ export default function FeaturedCarousel({ artifacts }: { artifacts: any[] }) {
                 </p>
               )}
               
+              {/* Pricing - NOW DYNAMIC */}
               <div className="mt-auto flex flex-col gap-1 mb-3 sm:mb-4 border-b border-slate-50 pb-3">
                 {item.discounted_price && item.discounted_price < item.price ? (
                   <div className="flex flex-col">
-                    <span className="text-[10px] sm:text-sm font-medium text-slate-400 line-through">Rs. {item.price.toLocaleString()}</span>
-                    <span className="text-base sm:text-xl font-black text-slate-900">Rs. {item.discounted_price.toLocaleString()}</span>
+                    <span className="text-[10px] sm:text-sm font-medium text-slate-400 line-through">
+                      {formatPrice(item.price)}
+                    </span>
+                    <span className="text-base sm:text-xl font-black text-slate-900">
+                      {formatPrice(item.discounted_price)}
+                    </span>
                   </div>
                 ) : (
-                  <span className="text-base sm:text-xl font-black text-slate-900">Rs. {item.price.toLocaleString()}</span>
+                  <span className="text-base sm:text-xl font-black text-slate-900">
+                    {formatPrice(item.price)}
+                  </span>
                 )}
               </div>
 

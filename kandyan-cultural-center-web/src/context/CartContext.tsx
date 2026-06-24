@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 
-// 1. Updated Interface: Added discounted_price
 export interface CartItem {
   id: string;
   name: string;
@@ -13,12 +12,12 @@ export interface CartItem {
   stock?: number;
 }
 
-// 2. Updated Context Type: Added updateQuantity
 interface CartContextType {
   cart: CartItem[];
   addToCart: (item: CartItem) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
+  clearCart: () => void; // Added this function
   cartCount: number;
   isDrawerOpen: boolean;
   setIsDrawerOpen: (isOpen: boolean) => void;
@@ -30,7 +29,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Load from localStorage on initial render
   useEffect(() => {
     const savedCart = localStorage.getItem('kcc_cart');
     if (savedCart) {
@@ -42,7 +40,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Save to localStorage whenever cart changes
   useEffect(() => {
     localStorage.setItem('kcc_cart', JSON.stringify(cart));
   }, [cart]);
@@ -65,13 +62,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCart((prevCart) => prevCart.filter((item) => item.id !== id));
   };
 
-  // 3. New Function: Allows users to change quantity inside the drawer
   const updateQuantity = (id: string, quantity: number) => {
     setCart((prevCart) =>
       prevCart.map((item) =>
         item.id === id ? { ...item, quantity: Math.max(1, quantity) } : item
       )
     );
+  };
+
+  // New function to wipe the cart after successful payment
+  const clearCart = () => {
+    setCart([]);
+    localStorage.removeItem('kcc_cart');
   };
 
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
@@ -83,6 +85,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         addToCart, 
         removeFromCart, 
         updateQuantity, 
+        clearCart, 
         cartCount, 
         isDrawerOpen, 
         setIsDrawerOpen 
