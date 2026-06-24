@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@theme {
+:root {
   /* Brand Colors */
   --color-kandyan-gold: var(--color-amber-600);
   --color-kandyan-gold-dark: var(--color-amber-700);

@@ -1,0 +1,16 @@
+name: Supabase Keep-Alive Ping
+
+on:
+  schedule:
+    # Runs at 00:00 every 3 days (Same schedule as your Netlify cron)
+    - cron: '0 0 */3 * *' 
+  workflow_dispatch: # This allows you to manually trigger it by clicking a button in GitHub
+
+jobs:
+  ping-database:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Next.js API Route
+        run: |
+          curl -X GET "https://your-digital-ocean-domain.com/api/keep-alive" \
+          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
