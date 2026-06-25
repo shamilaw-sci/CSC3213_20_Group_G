@@ -94,7 +94,7 @@ function BookingPanel(
   
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
+  const [blockedDates, setBlockedDates] = useState<Record<string, string>>({});
   const [bookedTimes, setBookedTimes] = useState<Set<string>>(new Set());
 
   // Free-date booking: fixed time slots available for any date (unless blocked)
@@ -103,17 +103,24 @@ function BookingPanel(
   const allTimesForDate = TIME_SLOTS;
   const { formatPrice } = useCurrency();
 
-  const isSelectedDateBlocked = selectedDate ? blockedDates.has(selectedDate) : false;
+  const blockedReason = selectedDate ? blockedDates[selectedDate] : undefined;
+  const isSelectedDateBlocked = !!blockedReason;
   const isSelectedDateValid = !!selectedDate && !isSelectedDateBlocked;
 
-  // Fetch blocked dates
+  // Fetch blocked dates with reasons
   useEffect(() => {
     const fetchBlockedDates = async () => {
       try {
         const res = await fetch('/api/bookings/blocked-dates');
         if (!res.ok) return;
         const data = await res.json();
-        setBlockedDates(new Set(data.blockedDates || []));
+        const map: Record<string, string> = {};
+        (data.blockedDates || []).forEach((row: any) => {
+          if (row.blocked_date) {
+            map[row.blocked_date] = row.reason || 'Not available';
+          }
+        });
+        setBlockedDates(map);
       } catch (err) {
         console.warn('Failed to load blocked dates', err);
       }
@@ -147,6 +154,12 @@ function BookingPanel(
   useEffect(() => {
     if (!selectedDate || !selectedTime) {
       setAvailability(null);
+      return;
+    }
+
+    if (blockedReason) {
+      setCheckingAvailability(false);
+      setAvailability({ available: false, message: `${blockedReason} — this date is not available.` });
       return;
     }
 
@@ -363,7 +376,9 @@ function BookingPanel(
             className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm"
           />
           {selectedDate && isSelectedDateBlocked && (
-            <div className="mt-2 text-sm text-rose-700">This date is blocked.</div>
+            <div className="mt-2 rounded-3xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              <strong>Unavailable:</strong> {blockedReason}
+            </div>
           )}
         </div>
 

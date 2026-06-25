@@ -14,7 +14,7 @@ export async function GET(req: Request) {
 
     const { data, error } = await supabase
       .from('blocked_dates')
-      .select('blocked_date')
+      .select('blocked_date, reason')
       .gte('blocked_date', new Date().toISOString().split('T')[0])
       .order('blocked_date', { ascending: true });
 
@@ -23,7 +23,10 @@ export async function GET(req: Request) {
       return NextResponse.json({ blockedDates: [] });
     }
 
-    const blockedDates = (data || []).map((row: any) => row.blocked_date);
+    const blockedDates = (data || []).map((row: any) => ({
+      blocked_date: row.blocked_date,
+      reason: row.reason || 'Not available',
+    }));
     return NextResponse.json({ blockedDates });
   } catch (err: any) {
     console.warn('Error fetching blocked dates:', err);
