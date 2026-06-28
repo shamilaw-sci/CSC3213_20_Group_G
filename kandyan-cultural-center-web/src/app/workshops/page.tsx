@@ -1,4 +1,4 @@
-﻿import { supabaseServer } from '@/lib/supabaseServer';
+﻿import { supabaseServer } from '@/lib/supabase';
 import WorkshopCard from './components/WorkshopCard';
 
 export default async function WorkshopsPage() {
@@ -21,14 +21,16 @@ export default async function WorkshopsPage() {
   return (
     <main className="min-h-screen bg-slate-50">
       <section className="bg-slate-950 text-white py-20">
-        <div className="mx-auto max-w-5xl px-6 sm:px-10">
-          <p className="text-sm uppercase tracking-[0.35em] text-amber-400 mb-3">{workshop.category === 'workshop' ? 'Wood Craft Workshop' : 'Experience'}</p>
-          <h1 className="text-4xl md:text-5xl font-extrabold leading-tight mb-6">{workshop.title}</h1>
-          <p className="max-w-3xl text-base text-slate-300 mb-10">A single focused wood craft session with a master craftsman. Learn how to carve a keepsake, explore Kandyan woodcraft techniques, and book your spot with one simple flow.</p>
+        <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16">
+          <div className="max-w-4xl text-left pl-0 sm:pl-2 lg:pl-4">
+            <p className="text-sm uppercase tracking-[0.35em] text-amber-400 mb-3">Shows &amp; Workshops</p>
+            <h1 className="text-4xl md:text-5xl font-extrabold leading-tight mb-6">Create, Learn & Experience</h1>
+            <p className="max-w-3xl text-base text-slate-300 mb-10">{workshop.description || 'Join a focused session led by an experienced instructor — book your spot with one simple flow.'}</p>
+          </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-6 py-20 sm:px-10">
+      <section className="mx-auto max-w-7xl px-6 py-20 sm:px-10 lg:px-16">
         <WorkshopCard workshop={workshop} />
       </section>
     </main>

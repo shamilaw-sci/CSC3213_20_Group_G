@@ -16,9 +16,6 @@ type Workshop = {
   gallery: string[];
   price: number;
   duration: string;
-  location: string;
-  rating?: number;
-  reviews?: number;
   description: string;
   highlights: string[];
 };
@@ -63,21 +60,9 @@ function DurationIcon() {
   );
 }
 
-function LocationIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1118 0z" stroke="#F59E0B" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="10" r="2" stroke="#F59E0B" strokeWidth="1.2"/></svg>
-  );
-}
-
 function SkillIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2l2 5 5 .5-4 3 1.2 5L12 14l-4.2 2.5L9 10 5 7l5-.5L12 2z" stroke="#F59E0B" strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-  );
-}
-
-function StarIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 17.3L6.2 20l1.1-6.4L2 10.2l6.6-.9L12 3l3.4 6.3 6.6.9-5.3 3.4L17.8 20 12 17.3z" stroke="#F59E0B" strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
   );
 }
 
@@ -230,9 +215,6 @@ export default function WorkshopCheckoutPage() {
 
               <div className="mt-4 flex flex-wrap gap-3">
                 <ChipIcon label={selectedWorkshop.duration} icon={<DurationIcon />} />
-                <ChipIcon label={selectedWorkshop.location} icon={<LocationIcon />} />
-                <ChipIcon label="Beginner" icon={<SkillIcon />} />
-                <ChipIcon label="4.9" icon={<StarIcon />} />
               </div>
             </div>
             <div className="hidden md:flex items-center gap-4">

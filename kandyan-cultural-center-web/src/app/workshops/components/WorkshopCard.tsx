@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useCurrency } from '@/context/CurrencyContext';
 
-// schedule removed
 
 type Workshop = {
   id: string;
@@ -12,12 +11,8 @@ type Workshop = {
   image: string;
   price: number;
   duration: string;
-  location: string;
-  rating: number;
-  reviews: number;
   description: string;
   highlights: string[];
-  // schedule removed
 };
 
 function formatDate(dateString: string) {
@@ -50,8 +45,7 @@ export default function WorkshopCard({ workshop }: { workshop: Workshop }) {
             {workshop.description}
           </p>
 
-          <div className="mt-4 flex flex-col gap-2 text-sm text-slate-500">
-            <span>{workshop.location}</span>
+          <div className="mt-4 text-sm text-slate-500">
             <span>{formatPrice(workshop.price)}</span>
           </div>
 

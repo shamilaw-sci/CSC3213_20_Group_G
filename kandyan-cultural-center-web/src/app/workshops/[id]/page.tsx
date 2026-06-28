@@ -1,5 +1,5 @@
 ﻿import Link from "next/link";
-import { supabaseServer } from '@/lib/supabaseServer';
+import { supabaseServer } from '@/lib/supabase';
 
 type Props = {
   params: Promise<{ id: string | string[] }> | { id: string | string[] };
@@ -14,8 +14,8 @@ type Experience = {
   gallery: string[];
   price: number;
   duration: string;
-  location: string;
   description: string;
+  about?: string;
   highlights: string[];
 };
 
@@ -50,6 +50,10 @@ export default async function WorkshopDetailsPage({ params }: Props) {
     );
   }
 
+  const headerLabel = experience?.category
+    ? String(experience.category).replace(/^[a-z]/, (c) => c.toUpperCase())
+    : 'Workshop';
+
   return (
     <main className="min-h-screen bg-white text-slate-900">
       {/* Hero / Colored Header (no image) */}
@@ -57,7 +61,7 @@ export default async function WorkshopDetailsPage({ params }: Props) {
         <div className="absolute inset-0 opacity-80 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent" />
         <div className="mx-auto max-w-7xl px-6 py-20 sm:px-10 lg:px-16 relative z-10">
           <div className="max-w-3xl">
-            <p className="text-xs uppercase tracking-[0.35em] text-amber-300 mb-3">Wood Craft Workshop</p>
+            <p className="text-xs uppercase tracking-[0.35em] text-amber-300 mb-3">{headerLabel}</p>
             <h1 className="text-5xl font-bold leading-tight mb-5">{experience.title}</h1>
             <p className="max-w-2xl text-lg text-slate-200 mb-8">{experience.description}</p>
           </div>
@@ -92,8 +96,8 @@ export default async function WorkshopDetailsPage({ params }: Props) {
           <div className="space-y-8">
             {/* Image gallery: featured + thumbnails */}
             <div className="rounded-[20px] bg-white p-4 shadow-sm border border-slate-100">
-              <div className="overflow-hidden rounded-[20px]">
-                <img src={experience.gallery?.[0] ?? experience.image} alt="featured" className="w-full h-96 object-cover rounded-[20px] transition-transform duration-300 hover:scale-105" />
+              <div className="overflow-hidden rounded-[20px] bg-slate-100">
+                <img src={experience.gallery?.[0] ?? experience.image} alt="featured" className="w-full h-[28rem] md:h-[34rem] object-cover rounded-[20px] transition-transform duration-300 hover:scale-105" />
               </div>
               <div className="mt-4 grid grid-cols-4 gap-3">
                 {experience.gallery.slice(1, 5).map((img) => (
@@ -107,7 +111,7 @@ export default async function WorkshopDetailsPage({ params }: Props) {
             {/* About Workshop */}
             <div className="rounded-[20px] bg-white p-8 shadow-sm border border-slate-100">
               <h2 className="text-2xl font-bold mb-4">About this workshop</h2>
-              <p className="text-slate-700 leading-relaxed">{experience.description}</p>
+              <p className="text-slate-700 leading-relaxed">{experience.about || experience.description}</p>
             </div>
 
             {/* Highlights */}
@@ -133,6 +137,7 @@ export default async function WorkshopDetailsPage({ params }: Props) {
                 <InfoCard label="Skill level" value="Beginner" />
                 <InfoCard label="Max participants" value="8" />
                 <InfoCard label="Language" value="English / Sinhala" />
+                <InfoCard label="Craftsman" value={experience.craftsman} />
               </div>
             </div>
 
