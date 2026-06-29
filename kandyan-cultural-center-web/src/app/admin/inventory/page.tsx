@@ -6,32 +6,27 @@ import InventoryList from './InventoryList';
 import InventoryModals from './InventoryModals';
 
 export default function InventoryPage() {
-  // Data States
   const [variants, setVariants] = useState<any[]>([]);
   const [parentArtifacts, setParentArtifacts] = useState<any[]>([]);
   const [artisans, setArtisans] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Filter & Search States
+  // NEW STACKED FILTERS
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
   const [filterStock, setFilterStock] = useState('All');
+  const [filterPrice, setFilterPrice] = useState('All');
 
-  // UI States
   const [savingId, setSavingId] = useState<string | null>(null);
   const [message, setMessage] = useState({ type: '', text: '' });
-  
-  // Modal Controller States
   const [modalMode, setModalMode] = useState<'closed' | 'parent' | 'variant' | 'edit'>('closed');
   const [editData, setEditData] = useState<any>(null);
 
-  // Derived unique categories for the Datalist
   const distinctCategories = useMemo(() => {
     const cats = parentArtifacts.map(a => a.category).filter(Boolean);
     return Array.from(new Set(cats));
   }, [parentArtifacts]);
 
-  // Fetch Data
   const fetchData = async () => {
     setIsLoading(true);
     const { data: vData } = await supabase.from('artifact_variants').select('*, artifacts (*), artisans (name)').order('created_at', { ascending: false });
@@ -60,24 +55,31 @@ export default function InventoryPage() {
         v.barcode?.toLowerCase().includes(q)
       );
     }
+    
     if (filterCategory !== 'All') {
       result = result.filter(v => v.artifacts?.category === filterCategory);
     }
+    
     if (filterStock === 'Low') {
       result = result.filter(v => v.stock > 0 && v.stock <= 5);
     } else if (filterStock === 'Out') {
       result = result.filter(v => v.stock === 0);
     }
 
+    if (filterPrice !== 'All') {
+      if (filterPrice === '<5000') result = result.filter(v => v.price < 5000);
+      if (filterPrice === '5000-15000') result = result.filter(v => v.price >= 5000 && v.price <= 15000);
+      if (filterPrice === '>15000') result = result.filter(v => v.price > 15000);
+    }
+
     return result;
-  }, [variants, searchQuery, filterCategory, filterStock]);
+  }, [variants, searchQuery, filterCategory, filterStock, filterPrice]);
 
   const showMessage = (type: string, text: string) => {
     setMessage({ type, text });
     setTimeout(() => setMessage({ type: '', text: '' }), 4000);
   };
 
-  // Actions passed to List
   const handleSaveRow = async (variant: any) => {
     setSavingId(variant.id);
     const { error } = await supabase.from('artifact_variants').update({
@@ -106,57 +108,62 @@ export default function InventoryPage() {
   };
 
   return (
-    <div className="p-4 sm:p-8 lg:p-12 max-w-[1600px] mx-auto w-full relative">
+    <div className="p-4 sm:p-8 lg:p-12 max-w-[1600px] mx-auto w-full relative z-10">
       
-      {/* Header & Main Actions */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900">Inventory Setup</h1>
-          <p className="text-sm text-slate-500 mt-1">Manage artifacts, variants, and barcodes.</p>
+      {/* Header & Actions */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-6">
+        <div className="bg-white/60 backdrop-blur-xl border border-white/80 p-6 md:p-8 rounded-[2rem] shadow-sm w-full md:w-auto">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Inventory Setup</h1>
+          <p className="text-sm sm:text-base text-slate-600 mt-1 font-medium">Manage artifacts, variants, and barcodes.</p>
         </div>
         <div className="shrink-0 flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <button onClick={() => setModalMode('variant')} className="bg-white border border-slate-200 hover:text-amber-600 px-6 py-3 rounded-xl font-bold transition-all shadow-sm">
+          <button onClick={() => setModalMode('variant')} className="bg-white/60 hover:bg-white backdrop-blur-md border border-white/80 text-slate-700 hover:text-amber-600 px-6 py-3.5 rounded-[1.25rem] font-bold transition-all shadow-sm">
             + Add Variant SKU
           </button>
-          <button onClick={() => setModalMode('parent')} className="bg-slate-900 text-white hover:bg-amber-600 px-6 py-3 rounded-xl font-bold transition-all shadow-md">
+          <button onClick={() => setModalMode('parent')} className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-3.5 rounded-[1.25rem] font-bold transition-all shadow-[0_8px_20px_rgba(217,119,6,0.25)] hover:shadow-[0_12px_25px_rgba(217,119,6,0.35)] transform hover:-translate-y-0.5">
             + Add Base Artifact
           </button>
         </div>
       </div>
 
-      {/* Filters Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row gap-4">
-        <div className="relative flex-grow">
+      {/* FILTER BAR UPGRADED TO GLASSMORPHISM */}
+      <div className="bg-white/40 backdrop-blur-xl p-5 rounded-[2rem] border border-white/80 shadow-sm mb-8 flex flex-col md:flex-row gap-4 flex-wrap">
+        <div className="relative flex-grow min-w-[250px]">
           <input 
             type="text" 
-            placeholder="Search by Name, Color, or Barcode..." 
+            placeholder="Search Name or Barcode..." 
             value={searchQuery} 
             onChange={(e) => setSearchQuery(e.target.value)} 
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" 
+            className="w-full bg-white/60 border border-white/80 rounded-2xl pl-12 pr-4 py-3 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-sm placeholder:text-slate-400" 
           />
-          <svg className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          <svg className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
         </div>
         
-        <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-amber-500 md:w-48">
-          <option value="All">All Categories</option>
-          {distinctCategories.map((c) => <option key={c} value={c}>{c}</option>)}
+        <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="bg-white/60 border border-white/80 rounded-2xl px-5 py-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400 w-full md:w-auto shadow-sm appearance-none pr-10 cursor-pointer relative bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M5%208l5%205%205-5%22%20stroke%3D%22%2394a3b8%22%20stroke-width%3D%222.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:20px_20px] bg-[position:right_12px_center] bg-no-repeat">
+          <option value="All" className="bg-white">All Categories</option>
+          {distinctCategories.map((c) => <option key={c} value={c} className="bg-white">{c}</option>)}
         </select>
 
-        <select value={filterStock} onChange={(e) => setFilterStock(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-amber-500 md:w-48">
-          <option value="All">All Stock Levels</option>
-          <option value="Low">Low Stock (≤ 5)</option>
-          <option value="Out">Out of Stock</option>
+        <select value={filterStock} onChange={(e) => setFilterStock(e.target.value)} className="bg-white/60 border border-white/80 rounded-2xl px-5 py-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400 w-full md:w-auto shadow-sm appearance-none pr-10 cursor-pointer relative bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M5%208l5%205%205-5%22%20stroke%3D%22%2394a3b8%22%20stroke-width%3D%222.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:20px_20px] bg-[position:right_12px_center] bg-no-repeat">
+          <option value="All" className="bg-white">All Stock Levels</option>
+          <option value="Low" className="bg-white">Low Stock (≤ 5)</option>
+          <option value="Out" className="bg-white">Out of Stock</option>
+        </select>
+
+        <select value={filterPrice} onChange={(e) => setFilterPrice(e.target.value)} className="bg-white/60 border border-white/80 rounded-2xl px-5 py-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400 w-full md:w-auto shadow-sm appearance-none pr-10 cursor-pointer relative bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M5%208l5%205%205-5%22%20stroke%3D%22%2394a3b8%22%20stroke-width%3D%222.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:20px_20px] bg-[position:right_12px_center] bg-no-repeat">
+          <option value="All" className="bg-white">All Prices</option>
+          <option value="<5000" className="bg-white">Under LKR 5,000</option>
+          <option value="5000-15000" className="bg-white">LKR 5k - 15k</option>
+          <option value=">15000" className="bg-white">Over LKR 15,000</option>
         </select>
       </div>
 
-      {/* Floating Alert */}
       {message.text && (
         <div className={`fixed top-8 right-8 p-4 rounded-xl shadow-2xl z-[80] text-sm font-bold text-white animate-in slide-in-from-right-8 duration-300 ${message.type === 'error' ? 'bg-rose-500' : 'bg-emerald-500'}`}>
           {message.text}
         </div>
       )}
 
-      {/* List Component */}
       {isLoading ? (
         <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-slate-200 border-t-amber-500 rounded-full animate-spin"></div></div>
       ) : (
@@ -170,7 +177,6 @@ export default function InventoryPage() {
         />
       )}
 
-      {/* Modals Component */}
       <InventoryModals 
         isOpen={modalMode !== 'closed'} 
         mode={modalMode} 

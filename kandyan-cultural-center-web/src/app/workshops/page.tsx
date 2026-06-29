@@ -1,16 +1,21 @@
 ﻿import { supabaseServer } from '@/lib/supabase';
 import WorkshopCard from './components/WorkshopCard';
 
+export const metadata = {
+  title: 'Crafts Workshops | Kandyan Cultural Center',
+  description: 'Learn, Create and Experience authentic Kandyan artifacts and traditional crafts.',
+};
+
 export default async function WorkshopsPage() {
   const { data: workshops, error } = await supabaseServer.from('workshops').select('*').order('title');
 
   if (error || !workshops || workshops.length === 0) {
     return (
-      <main className="min-h-screen bg-slate-50 py-20">
-        <div className="mx-auto max-w-4xl px-6 text-center">
-          <p className="text-sm uppercase tracking-[0.3em] text-rose-600 mb-4">Workshops unavailable</p>
-          <h1 className="text-3xl font-bold">Unable to load workshops right now.</h1>
-          <p className="mt-4 text-slate-600">Please try again later.</p>
+      <main className="relative min-h-screen flex items-center justify-center bg-[#F8F9FA]">
+        <div className="mx-auto max-w-xl px-6 text-center relative z-10 bg-white/60 backdrop-blur-xl border border-white/80 p-12 rounded-[3rem] shadow-sm">
+          <p className="text-xs font-black uppercase tracking-[0.3em] text-rose-600 mb-4">Workshops unavailable</p>
+          <h1 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Unable to load workshops right now.</h1>
+          <p className="text-slate-500 font-medium">Please try again later.</p>
         </div>
       </main>
     );
@@ -19,20 +24,45 @@ export default async function WorkshopsPage() {
   const workshop = workshops[0];
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <section className="bg-slate-950 text-white py-20">
-        <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16">
-          <div className="max-w-4xl text-left pl-0 sm:pl-2 lg:pl-4">
-            <p className="text-sm uppercase tracking-[0.35em] text-amber-400 mb-3">Shows &amp; Workshops</p>
-            <h1 className="text-4xl md:text-5xl font-extrabold leading-tight mb-6">Create, Learn & Experience</h1>
-            <p className="max-w-3xl text-base text-slate-300 mb-10">{workshop.description || 'Join a focused session led by an experienced instructor — book your spot with one simple flow.'}</p>
-          </div>
-        </div>
-      </section>
+    <main className="relative min-h-screen bg-[#F8F9FA] pb-24">
+      
+      {/* --- FIXED BACKGROUND FOR GLASS BLUR EFFECT --- */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-[#F8F9FA] to-rose-50 opacity-80"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-amber-200/30 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-rose-200/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+      </div>
 
-      <section className="mx-auto max-w-7xl px-6 py-20 sm:px-10 lg:px-16">
-        <WorkshopCard workshop={workshop} />
-      </section>
+      <div className="relative z-10 w-full">
+        {/* Workshops Hero Header (Glassmorphism) */}
+        <section className="pt-32 pb-16 px-4 md:px-6">
+          <div className="container mx-auto max-w-7xl">
+            <div className="bg-white/40 backdrop-blur-xl border border-white/60 p-10 md:p-16 rounded-[3rem] shadow-[0_20px_50px_rgba(31,38,135,0.05)] w-full relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent"></div>
+              
+              <div className="relative z-10 max-w-4xl text-left">
+                <h2 className="text-amber-600 font-bold tracking-widest uppercase text-xs mb-4 flex items-center gap-3">
+                  <span className="w-8 h-px bg-amber-600"></span> Shows & Workshops
+                </h2>
+                <h1 className="text-4xl md:text-6xl font-black text-slate-900 leading-tight mb-6 tracking-tight">
+                  Create, Learn & <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-rose-600">Experience</span>
+                </h1>
+                <p className="text-slate-600 max-w-2xl text-lg font-light leading-relaxed">
+                  {workshop.description || 'Join a focused session led by an experienced instructor — book your spot with one simple flow.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Featured Workshop Card */}
+        <section className="container mx-auto max-w-7xl px-4 sm:px-6 pb-20">
+          <div className="w-full sm:max-w-md">
+            <WorkshopCard workshop={workshop} />
+          </div>
+        </section>
+      </div>
     </main>
   );
 }

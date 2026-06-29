@@ -3,9 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import Button from '@/components/Button';
 
-// --- COMPREHENSIVE COUNTRY & DIAL CODE LIST ---
 const COUNTRY_DATA = [
   { name: "Afghanistan", code: "+93" }, { name: "Albania", code: "+355" }, { name: "Algeria", code: "+213" },
   { name: "Andorra", code: "+355" }, { name: "Angola", code: "+213" }, { name: "Argentina", code: "+244" },
@@ -62,7 +60,7 @@ const COUNTRY_DATA = [
   { name: "Uruguay", code: "+598" }, { name: "Uzbekistan", code: "+998" }, { name: "Venezuela", code: "+58" },
   { name: "Vietnam", code: "+84" }, { name: "Yemen", code: "+967" }, { name: "Zambia", code: "+260" },
   { name: "Zimbabwe", code: "+263" }
-].sort((a, b) => a.name.localeCompare(b.name)); // Ensures perfect alphabetical order
+].sort((a, b) => a.name.localeCompare(b.name)); 
 
 export default function ProfileSetup() {
   const router = useRouter();
@@ -80,12 +78,10 @@ export default function ProfileSetup() {
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Automatically derive the correct dial code based on the selected country
   const currentDialCode = useMemo(() => {
     return COUNTRY_DATA.find(c => c.name === country)?.code || '+';
   }, [country]);
 
-  // 1. Load the user from Google Auth
   useEffect(() => {
     const loadUser = async () => {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
@@ -95,7 +91,6 @@ export default function ProfileSetup() {
         return;
       }
 
-      // NEW BOUNCER LOGIC: Check if they are already fully set up
       const { data: profile } = await supabase
         .from('profiles')
         .select('phone, full_name')
@@ -103,7 +98,7 @@ export default function ProfileSetup() {
         .single();
 
       if (profile && profile.phone && profile.full_name) {
-        router.push('/'); // Kick them back to the homepage
+        router.push('/'); 
         return;
       }
 
@@ -115,13 +110,11 @@ export default function ProfileSetup() {
     loadUser();
   }, [router]);
 
-  // 2. Step One: Send the SMS Verification Code
   const handleSendVerification = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     setErrorMsg('');
 
-    // Strip leading zeros from the phone input and prepend the dial code
     const cleanPhone = phone.replace(/^0+/, '');
     const formattedPhone = `${currentDialCode}${cleanPhone}`;
 
@@ -138,7 +131,6 @@ export default function ProfileSetup() {
     }
   };
 
-  // 3. Step Two: Verify Code & Save Profile
   const handleVerifyAndSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -147,7 +139,6 @@ export default function ProfileSetup() {
     const cleanPhone = phone.replace(/^0+/, '');
     const formattedPhone = `${currentDialCode}${cleanPhone}`;
 
-    // A. Verify the code
     const { error: verifyError } = await supabase.auth.verifyOtp({
       type: 'phone_change',
       phone: formattedPhone,
@@ -160,7 +151,6 @@ export default function ProfileSetup() {
       return;
     }
 
-    // B. Save to Database
     const { error: dbError } = await supabase.from('profiles').upsert({
       id: user.id,
       email: user.email,
@@ -181,73 +171,79 @@ export default function ProfileSetup() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-slate-200 border-t-kandyan-gold rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-slate-200 border-t-amber-600 rounded-full animate-spin"></div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-4 sm:p-6 relative selection:bg-kandyan-gold selection:text-white">
-      
-      {/* Background Soft Orbs */}
-      <div className="absolute top-0 right-0 w-64 sm:w-[500px] h-64 sm:h-[500px] bg-amber-400/5 rounded-full blur-[80px] pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 w-64 sm:w-[500px] h-64 sm:h-[500px] bg-rose-700/5 rounded-full blur-[80px] pointer-events-none"></div>
+  const glassInputClass = "w-full bg-white/50 backdrop-blur-md border border-white/80 text-slate-900 text-sm sm:text-base rounded-2xl px-4 py-3.5 sm:py-4 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400 transition-all shadow-sm placeholder:text-slate-400 font-medium";
+  const primaryBtnClass = "w-full bg-amber-600 hover:bg-amber-500 text-white py-3.5 sm:py-4 rounded-[1.25rem] font-bold text-sm sm:text-base transition-all shadow-[0_8px_20px_rgba(217,119,6,0.25)] hover:shadow-[0_12px_25px_rgba(217,119,6,0.35)] hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed";
 
-      {/* Main Card (Mobile optimized padding) */}
-      <div className="w-full max-w-xl bg-white rounded-[2rem] p-6 sm:p-10 md:p-12 shadow-2xl shadow-slate-200/50 border border-slate-100 relative z-10">
+  return (
+    <main className="relative min-h-screen flex flex-col justify-center items-center p-24 md:pt-32 sm:p-8 bg-[#F8F9FA]">
+      
+      {/* --- FIXED BACKGROUND FOR GLASS BLUR EFFECT --- */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-[#F8F9FA] to-rose-50 opacity-80"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-amber-200/30 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-rose-200/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+      </div>
+
+      <div className="relative z-10 w-full max-w-xl bg-white/60 backdrop-blur-2xl border border-white/80 rounded-[2.5rem] shadow-[0_20px_50px_rgba(31,38,135,0.05)] p-8 sm:p-12">
         
         <div className="text-center mb-8 sm:mb-10">
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Complete Profile</h1>
-          <p className="text-sm sm:text-base text-slate-500 mt-2 font-light">Just a few more details to set up your account.</p>
+          <div className="w-16 h-16 rounded-[1.25rem] bg-amber-100 text-amber-600 border border-amber-200/50 flex items-center justify-center mx-auto shadow-sm mb-4">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">Complete Profile</h1>
+          <p className="text-sm sm:text-base text-slate-500 mt-3 font-medium">Just a few more details to secure your account.</p>
         </div>
 
         {errorMsg && (
-          <div className="mb-6 bg-rose-50 border border-rose-200 text-kandyan-maroon px-4 py-3 rounded-xl text-sm font-medium text-center">
+          <div className="mb-8 bg-rose-50/80 backdrop-blur-sm border border-rose-200 text-rose-600 px-4 py-3 rounded-xl text-sm font-bold text-center shadow-sm">
             {errorMsg}
           </div>
         )}
 
         {step === 'details' ? (
           /* --- STEP 1: ENTER DETAILS --- */
-          <form onSubmit={handleSendVerification} className="space-y-6 sm:space-y-8">
+          <form onSubmit={handleSendVerification} className="space-y-6 sm:space-y-7">
             
             <div className="space-y-2">
-              <label className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest">Full Name</label>
+              <label className="text-[10px] sm:text-xs font-extrabold text-slate-500 uppercase tracking-widest pl-1">Full Name</label>
               <input
                 required
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. John Doe"
-                className="w-full bg-transparent border-b border-slate-300 py-2 sm:py-3 text-slate-900 focus:outline-none focus:border-kandyan-gold transition-colors font-medium text-sm sm:text-base"
+                className={glassInputClass}
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest">Country</label>
+              <label className="text-[10px] sm:text-xs font-extrabold text-slate-500 uppercase tracking-widest pl-1">Country</label>
               <div className="relative">
                 <select
                   required
                   value={country}
                   onChange={(e) => setCountry(e.target.value)}
-                  className="w-full bg-transparent border-b border-slate-300 py-2 sm:py-3 text-slate-900 focus:outline-none focus:border-kandyan-gold transition-colors font-medium text-sm sm:text-base cursor-pointer appearance-none pr-8"
+                  className={`${glassInputClass} appearance-none pr-10 cursor-pointer`}
                 >
                   {COUNTRY_DATA.map((c) => (
-                    <option key={c.name} value={c.name}>{c.name}</option>
+                    <option key={c.name} value={c.name} className="bg-white">{c.name}</option>
                   ))}
                 </select>
-                {/* Custom modern chevron for the dropdown */}
-                <svg className="w-4 h-4 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                <svg className="w-5 h-5 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path></svg>
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest">Mobile Number</label>
-              {/* Flex wrapper allows variable width dial codes to fit perfectly */}
-              <div className="flex w-full bg-transparent border-b border-slate-300 focus-within:border-kandyan-gold transition-colors group">
-                <div className="flex items-center justify-center pr-3 border-r border-slate-300 mr-3 py-2 sm:py-3">
-                  <span className="text-slate-900 font-bold text-sm sm:text-base tracking-wide">{currentDialCode}</span>
+              <label className="text-[10px] sm:text-xs font-extrabold text-slate-500 uppercase tracking-widest pl-1">Mobile Number</label>
+              <div className={`flex w-full bg-white/50 backdrop-blur-md border border-white/80 rounded-2xl focus-within:ring-2 focus-within:ring-amber-400 focus-within:border-amber-400 transition-all shadow-sm overflow-hidden`}>
+                <div className="flex items-center justify-center px-4 border-r border-white/60 bg-white/40">
+                  <span className="text-slate-900 font-bold text-sm sm:text-base">{currentDialCode}</span>
                 </div>
                 <input
                   required
@@ -255,49 +251,51 @@ export default function ProfileSetup() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder={country === 'Sri Lanka' ? "77 123 4567" : "123 456 7890"}
-                  className="w-full py-2 sm:py-3 bg-transparent text-slate-900 focus:outline-none font-medium tracking-wide text-sm sm:text-base"
+                  className="w-full py-3.5 sm:py-4 px-4 bg-transparent text-slate-900 focus:outline-none font-medium text-sm sm:text-base placeholder:text-slate-400"
                 />
               </div>
-              <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium pt-1">We will send a secure OTP to verify this number.</p>
+              <p className="text-[9px] sm:text-[10px] text-slate-500 font-bold pt-1 pl-1">We will send a secure OTP to verify this number.</p>
             </div>
 
-            <Button variant="primary" type="submit" className="w-full rounded-full !py-3.5 sm:!py-4 mt-2 sm:mt-4 text-sm sm:text-base" disabled={isSaving}>
+            <button type="submit" className={`${primaryBtnClass} mt-4`} disabled={isSaving}>
               {isSaving ? 'Sending OTP...' : 'Send Verification Code'}
-            </Button>
+            </button>
           </form>
 
         ) : (
 
           /* --- STEP 2: VERIFY OTP --- */
           <form onSubmit={handleVerifyAndSave} className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-right-4">
-            <div className="text-center mb-2">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-amber-50 rounded-full flex items-center justify-center text-kandyan-gold mx-auto mb-4">
-                <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-              </div>
-              <p className="text-xs sm:text-sm text-slate-500">We sent a 6-digit code to <br/><span className="font-bold text-slate-900">{currentDialCode} {phone.replace(/^0+/, '')}</span></p>
+            <div className="text-center mb-6">
+              <p className="text-sm sm:text-base text-slate-600 font-medium leading-relaxed">
+                We sent a 6-digit code to <br/>
+                <span className="font-black text-slate-900 text-lg bg-white/60 px-3 py-1 rounded-lg border border-white shadow-sm inline-block mt-2">
+                  {currentDialCode} {phone.replace(/^0+/, '')}
+                </span>
+              </p>
             </div>
 
-            <div className="space-y-2 px-4 sm:px-8">
+            <div className="space-y-2">
               <input 
                 required
                 type="text" 
                 maxLength={6}
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
-                className="w-full bg-transparent border-b-2 border-slate-300 py-2 sm:py-3 text-slate-900 text-center text-2xl sm:text-3xl tracking-[0.3em] sm:tracking-[0.5em] font-black focus:outline-none focus:border-kandyan-gold transition-colors" 
+                className="w-full bg-white/70 backdrop-blur-md border border-white/80 py-4 sm:py-5 rounded-2xl text-slate-900 text-center text-3xl sm:text-4xl tracking-[0.4em] sm:tracking-[0.6em] font-black focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400 transition-all shadow-inner" 
                 placeholder="••••••" 
               />
             </div>
 
-            <div className="space-y-3 pt-2">
-              <Button variant="primary" type="submit" className="w-full rounded-full !py-3.5 sm:!py-4 text-sm sm:text-base" disabled={isSaving}>
+            <div className="space-y-4 pt-4">
+              <button type="submit" className={primaryBtnClass} disabled={isSaving || otp.length < 6}>
                 {isSaving ? 'Verifying & Saving...' : 'Verify & Complete Profile'}
-              </Button>
+              </button>
               
               <button 
                 type="button" 
                 onClick={() => { setStep('details'); setErrorMsg(''); }} 
-                className="w-full text-[10px] sm:text-xs font-bold text-slate-400 hover:text-kandyan-maroon transition-colors py-2"
+                className="w-full text-xs font-bold text-slate-500 hover:text-amber-600 transition-colors py-2"
               >
                 Change mobile number
               </button>
@@ -306,6 +304,6 @@ export default function ProfileSetup() {
         )}
 
       </div>
-    </div>
+    </main>
   );
 }

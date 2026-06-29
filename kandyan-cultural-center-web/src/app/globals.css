@@ -6,29 +6,56 @@
   --color-kandyan-gold-dark: var(--color-amber-700);
   --color-kandyan-maroon: var(--color-rose-700);
   --color-kandyan-maroon-dark: var(--color-rose-800);
-  --color-kandyan-bg: #FAFAFA;
+  
+  /* Lighter, warmer background to fit the new aesthetic */
+  --color-kandyan-bg: #F8F9FA; 
 
-  /* Custom Box Shadows based on your code */
-  --shadow-kandyan-soft: 0 8px 30px rgba(0, 0, 0, 0.04);
-  --shadow-kandyan-hover: 0 20px 40px rgba(0, 0, 0, 0.08);
-  --shadow-kandyan-button: 0 8px 20px rgba(159, 18, 57, 0.2);
+  /* Modern Glass Shadows */
+  --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  --shadow-glass-hover: 0 12px 40px 0 rgba(31, 38, 135, 0.12);
+}
+
+html {
+  font-size: 90%; /* Scales down mobile slightly */
+}
+
+@media (min-width: 1024px) {
+  html {
+    font-size: 80%; /* Creates that 80% zoom effect on desktop */
+  }
+}
+
+@media (min-width: 1536px) {
+  html {
+    font-size: 95%; /* Scales back up slightly on massive monitors */
+  }
 }
 
 body {
   background-color: var(--color-kandyan-bg);
   color: var(--color-slate-900);
+  /* Smooth scrolling for the sticky sections */
+  scroll-behavior: smooth; 
 }
 
-/* --- GLOBAL MOBILE SCROLLBAR HIDE --- */
+/* Global mobile scrollbar hide */
 @media (max-width: 1024px) {
   ::-webkit-scrollbar {
     display: none;
     width: 0;
     height: 0;
   }
-
   * {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+}
+
+/* Utility for glass panels */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: var(--shadow-glass);
 }
