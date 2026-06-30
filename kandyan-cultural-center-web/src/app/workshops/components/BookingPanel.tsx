@@ -32,7 +32,14 @@ type Workshop = {
   category?: "workshop" | "show";
   title: string;
   price: number;
-  craftsman: string;
+  artisan_id?: string;
+  artisans?: {
+    id: string;
+    name?: string;
+    guild?: string;
+    bio?: string;
+    avatar_url?: string;
+  };
 };
 
 function formatDateForDisplay(dateString: string) {
@@ -100,6 +107,7 @@ function BookingPanel(
   const today = new Date().toISOString().slice(0, 10);
   const allTimesForDate = timeSlots;
   const { formatPrice } = useCurrency();
+  const workshopCraftsman = workshop.category === 'show' ? null : workshop.artisans?.name ?? 'Artisan';
 
   const blockedReason = selectedDate ? blockedDates[selectedDate] : undefined;
   const isSelectedDateBlocked = !!blockedReason;
@@ -199,7 +207,7 @@ function BookingPanel(
             booked_date: selectedDate,
             booked_time: normalizedTime,
             workshop_id: workshop.id ?? null,
-            craftsman: workshop.category === 'show' ? null : workshop.craftsman,
+            craftsman: workshop.category === 'show' ? null : workshopCraftsman,
           }),
         });
 
@@ -214,7 +222,7 @@ function BookingPanel(
 
     const timer = setTimeout(checkAvailability, 300);
     return () => clearTimeout(timer);
-  }, [selectedDate, selectedTime, workshop.id, workshop.craftsman, workshop.category]);
+  }, [selectedDate, selectedTime, workshop.id, workshopCraftsman, workshop.category]);
 
   const handleBooking = async () => {
     setError('');
@@ -240,7 +248,7 @@ function BookingPanel(
           workshop_title: workshop.title,
           experience_title: workshop.title,
           category: workshop.category ?? 'workshop',
-          craftsman: workshop.category === 'show' ? null : workshop.craftsman,
+          craftsman: workshop.category === 'show' ? null : workshopCraftsman,
           booked_date: selectedDate,
           booked_time: normalizedTime,
           customer_name: name,
@@ -470,7 +478,7 @@ function BookingPanel(
             {selectedTime ? timeTo12Hour(selectedTime) : '--:--'}
           </div>
           <div className="text-sm text-slate-600 mt-1">
-            {workshop.craftsman || 'Workshop'} · {guests} guest{guests === 1 ? '' : 's'} · {formatPrice(workshop.price)}
+            {workshopCraftsman || 'Workshop'} · {guests} guest{guests === 1 ? '' : 's'} · {formatPrice(workshop.price)}
           </div>
         </div>
       )}

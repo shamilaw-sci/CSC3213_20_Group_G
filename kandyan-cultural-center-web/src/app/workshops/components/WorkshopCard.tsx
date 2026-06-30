@@ -8,7 +8,14 @@ type Workshop = {
   id: string;
   title: string;
   craftsman: string;
-  image: string;
+  image?: string;
+  artisans?: {
+    id: string;
+    name?: string;
+    guild?: string;
+    bio?: string;
+    avatar_url?: string;
+  };
   price: number;
   duration: string;
   description: string;
@@ -30,7 +37,7 @@ export default function WorkshopCard({ workshop }: { workshop: Workshop }) {
       <div className="group cursor-pointer overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm transition hover:shadow-xl max-w-sm mx-0 inline-block">
         <div className="relative h-64 overflow-hidden bg-slate-100">
           <img
-            src={workshop.image}
+            src={workshop.image || workshop.artisans?.avatar_url || '/default-workshop.jpg'}
             alt={workshop.title}
             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
           />

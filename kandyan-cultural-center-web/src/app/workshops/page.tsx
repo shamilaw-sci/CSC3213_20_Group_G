@@ -2,7 +2,7 @@
 import WorkshopCard from './components/WorkshopCard';
 
 export default async function WorkshopsPage() {
-  const { data: workshops, error } = await supabaseServer.from('workshops').select('*').order('title');
+  const { data: workshops, error } = await supabaseServer.from('workshops').select('*, artisans(id,name,guild,bio,avatar_url)').order('title');
 
   if (error || !workshops || workshops.length === 0) {
     return (

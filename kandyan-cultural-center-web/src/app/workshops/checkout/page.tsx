@@ -11,7 +11,14 @@ type Workshop = {
   id: string;
   category?: "workshop" | "show";
   title: string;
-  craftsman: string;
+  artisan_id?: string;
+  artisans?: {
+    id: string;
+    name?: string;
+    guild?: string;
+    bio?: string;
+    avatar_url?: string;
+  };
   image: string;
   gallery: string[];
   price: number;
@@ -218,7 +225,11 @@ export default function WorkshopCheckoutPage() {
               </div>
             </div>
             <div className="hidden md:flex items-center gap-4">
-              <img src={selectedWorkshop.image} alt="workshop" className="h-24 w-24 rounded-lg object-cover border border-slate-200" />
+              <img
+                src={selectedWorkshop.image || selectedWorkshop.artisans?.avatar_url || '/default-workshop.jpg'}
+                alt="workshop"
+                className="h-24 w-24 rounded-lg object-cover border border-slate-200"
+              />
               <div className="text-right">
                 <p className="text-sm text-slate-300">From</p>
                 <p className="text-2xl font-bold text-amber-400">{formatPrice(selectedWorkshop.price)}</p>
@@ -231,10 +242,14 @@ export default function WorkshopCheckoutPage() {
           <div className="rounded-[20px] bg-white p-6 shadow-sm border border-slate-100">
             {/* Workshop info card */}
             <div className="mb-6 flex gap-4">
-              <img src={selectedWorkshop.image} alt={selectedWorkshop.title} className="h-20 w-20 rounded-lg object-cover" />
+              <img
+                src={selectedWorkshop.image || selectedWorkshop.artisans?.avatar_url || '/default-workshop.jpg'}
+                alt={selectedWorkshop.title}
+                className="h-20 w-20 rounded-lg object-cover"
+              />
               <div>
                 <h2 className="text-xl font-semibold">{selectedWorkshop.title}</h2>
-                <p className="text-sm text-slate-500">by {selectedWorkshop.craftsman}</p>
+                <p className="text-sm text-slate-500">by {selectedWorkshop.artisans?.name || 'Artisan'}</p>
                 <div className="mt-3 flex gap-2 flex-wrap">
                   <Badge>Hands-on Experience</Badge>
                   <Badge>Custom Keepsake</Badge>
@@ -274,7 +289,7 @@ export default function WorkshopCheckoutPage() {
                     <WorkshopIcon />
                     <div>
                       <div className="text-sm font-medium">{selectedWorkshop.title}</div>
-                      <div className="text-xs text-slate-500">{selectedWorkshop.craftsman}</div>
+                      <div className="text-xs text-slate-500">{selectedWorkshop.artisans?.name || 'Artisan'}</div>
                     </div>
                   </div>
                   <div className="font-medium">{formatPrice(selectedWorkshop.price)}</div>

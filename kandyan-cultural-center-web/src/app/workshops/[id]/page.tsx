@@ -9,7 +9,14 @@ type Experience = {
   id: string;
   category: string;
   title: string;
-  craftsman: string;
+  artisan_id?: string;
+  artisans?: {
+    id: string;
+    name?: string;
+    guild?: string;
+    bio?: string;
+    avatar_url?: string;
+  };
   image: string;
   gallery: string[];
   price: number;
@@ -33,7 +40,7 @@ export default async function WorkshopDetailsPage({ params }: Props) {
   const id = decodeURIComponent(String(rawId || "")).toLowerCase();
 
   const [{ data: experience, error }, { data: relatedWorkshops }] = await Promise.all([
-    supabaseServer.from('workshops').select('*').eq('id', id).single(),
+    supabaseServer.from('workshops').select('*, artisans(id,name,guild,bio,avatar_url)').eq('id', id).single(),
     supabaseServer.from('workshops').select('*').neq('id', id).limit(3),
   ]);
 
@@ -56,14 +63,26 @@ export default async function WorkshopDetailsPage({ params }: Props) {
 
   return (
     <main className="min-h-screen bg-white text-slate-900">
-      {/* Hero / Colored Header (no image) */}
-      <section className="relative overflow-hidden bg-slate-950 text-white">
-        <div className="absolute inset-0 opacity-80 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent" />
-        <div className="mx-auto max-w-7xl px-6 py-20 sm:px-10 lg:px-16 relative z-10">
+      {/* Hero / Image banner */}
+      <section
+        className="relative overflow-hidden bg-slate-950 text-white"
+        style={{
+          backgroundImage: `linear-gradient(rgba(15,23,42,0.7), rgba(15,23,42,0.7)), url(${experience.image || experience.artisans?.avatar_url || '/default-workshop.jpg'})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        <div className="absolute inset-0 bg-slate-950/80" />
+        <div className="mx-auto max-w-7xl px-6 py-24 sm:px-10 lg:px-16 relative z-10">
           <div className="max-w-3xl">
             <p className="text-xs uppercase tracking-[0.35em] text-amber-300 mb-3">{headerLabel}</p>
             <h1 className="text-5xl font-bold leading-tight mb-5">{experience.title}</h1>
             <p className="max-w-2xl text-lg text-slate-200 mb-8">{experience.description}</p>
+            <div className="flex flex-wrap gap-3">
+              <span className="rounded-full bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.16em] text-slate-100">{experience.duration}</span>
+              <span className="rounded-full bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.16em] text-slate-100">LKR {experience.price}</span>
+              <span className="rounded-full bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.16em] text-slate-100">{experience.artisans?.name || 'Master artisan'}</span>
+            </div>
           </div>
         </div>
       </section>
@@ -90,7 +109,7 @@ export default async function WorkshopDetailsPage({ params }: Props) {
         </ol>
       </div>
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pb-28 md:pb-12">
         <div className="grid gap-10 lg:grid-cols-[1.6fr_0.9fr]">
           {/* Main column */}
           <div className="space-y-8">
@@ -114,16 +133,16 @@ export default async function WorkshopDetailsPage({ params }: Props) {
               <p className="text-slate-700 leading-relaxed">{experience.about || experience.description}</p>
             </div>
 
-            {/* Highlights */}
+            {/* What you'll learn */}
             <div className="rounded-[20px] bg-white p-6 shadow-sm border border-slate-100">
-              <h3 className="text-xl font-semibold mb-4">Highlights</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <h3 className="text-xl font-semibold mb-4">What you'll learn</h3>
+              <div className="grid gap-3 sm:grid-cols-2">
                 {experience.highlights.map((h) => (
-                  <div key={h} className="flex items-start gap-3 p-3 rounded-lg border border-slate-50 shadow-sm">
-                    <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-amber-50 text-amber-600">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 6L9 17l-5-5" stroke="#9A6B13" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <div key={h} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 shadow-sm">
+                    <div className="flex items-center gap-3 text-amber-600">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-amber-100 text-sm font-semibold">✓</span>
+                      <p className="text-sm font-medium text-slate-800">{h}</p>
                     </div>
-                    <div className="text-sm text-slate-700">{h}</div>
                   </div>
                 ))}
               </div>
@@ -137,7 +156,7 @@ export default async function WorkshopDetailsPage({ params }: Props) {
                 <InfoCard label="Skill level" value="Beginner" />
                 <InfoCard label="Max participants" value="8" />
                 <InfoCard label="Language" value="English / Sinhala" />
-                <InfoCard label="Craftsman" value={experience.craftsman} />
+                <InfoCard label="Artisan" value={experience.artisans?.name || 'Master artisan'} />
               </div>
             </div>
 
@@ -194,10 +213,38 @@ export default async function WorkshopDetailsPage({ params }: Props) {
                   <p>Includes materials and instructor</p>
                 </div>
               </div>
+
+              <div className="mt-6 rounded-[20px] bg-slate-950 p-6 text-white shadow-lg border border-slate-800">
+                <div className="flex items-center gap-4">
+                  <img
+                    src={experience.artisans?.avatar_url || '/default-workshop.jpg'}
+                    alt={experience.artisans?.name || 'Artisan'}
+                    className="h-16 w-16 rounded-full object-cover border-2 border-amber-400"
+                  />
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-amber-300">Artisan</p>
+                    <h3 className="text-xl font-semibold">{experience.artisans?.name || 'Master artisan'}</h3>
+                    <p className="text-sm text-slate-300">{experience.artisans?.guild || 'Traditional crafts guild'}</p>
+                  </div>
+                </div>
+                <p className="mt-4 text-sm leading-relaxed text-slate-300">
+                  {experience.artisans?.bio || 'A skilled artisan with years of experience guiding guests through an authentic hands-on cultural craft workshop.'}
+                </p>
+              </div>
             </div>
           </aside>
         </div>
       </section>
+
+      <div className="md:hidden fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white p-4 shadow-xl">
+        <Link
+          href={`/workshops/checkout?workshop=${encodeURIComponent(experience.id)}`}
+          className="block w-full rounded-full bg-amber-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-lg transition hover:bg-amber-700"
+          aria-label="Book this workshop"
+        >
+          Book this workshop
+        </Link>
+      </div>
     </main>
   );
 }
