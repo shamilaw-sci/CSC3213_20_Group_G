@@ -7,15 +7,12 @@ import Image from 'next/image';
 export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState<'online' | 'in-store'>('online');
   
-  // Data States
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  // Fetch Data
   const fetchData = async () => {
     setIsLoading(true);
-    
-    // Fetch Orders with their items and artifact details
     const { data: fetchedOrders } = await supabase
       .from('orders')
       .select(`
@@ -25,7 +22,6 @@ export default function OrdersPage() {
       .order('created_at', { ascending: false });
       
     if (fetchedOrders) setOrders(fetchedOrders);
-
     setIsLoading(false);
   };
 
@@ -33,147 +29,143 @@ export default function OrdersPage() {
     fetchData();
   }, []);
 
-  // Filter orders based on the active tab
-  const filteredOrders = orders.filter(order => order.sales_channel === activeTab);
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
+    setUpdatingId(orderId);
+    
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
 
-  // Reusable Status Badge Component
-  const StatusBadge = ({ status }: { status: string }) => (
-    <span className={`px-2.5 py-1 rounded-full text-[9px] sm:text-[10px] uppercase tracking-wider font-bold ${
-      status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 
-      status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
-    }`}>
-      {status}
-    </span>
-  );
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: newStatus })
+      .eq('id', orderId);
+
+    if (error) {
+      alert(`Failed to update status: ${error.message}`);
+      fetchData(); 
+    }
+    
+    setUpdatingId(null);
+  };
+
+  const filteredOrders = orders.filter(order => (order.sales_channel || 'online') === activeTab);
+
+  const statusOptions = [
+    { value: 'pending', label: 'Pending Payment', color: 'bg-white/60 text-slate-700 border-white/80' },
+    { value: 'processing', label: 'Processing', color: 'bg-amber-100 text-amber-700 border-amber-200' },
+    { value: 'completed', label: 'Paid / Preparing', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+    { value: 'handed to courier', label: 'Handed to Courier', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+    { value: 'delivered', label: 'Delivered', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+    { value: 'cancelled', label: 'Cancelled', color: 'bg-rose-100 text-rose-700 border-rose-200' },
+  ];
+
+  const getStatusColor = (status: string) => {
+    const s = status.toLowerCase();
+    const config = statusOptions.find(opt => opt.value === s);
+    return config ? config.color : 'bg-white/60 text-slate-700 border-white/80';
+  };
 
   return (
-    <div className="p-4 sm:p-8 lg:p-12 max-w-7xl mx-auto w-full">
+    <div className="p-4 sm:p-8 lg:p-12 max-w-7xl mx-auto w-full relative z-10">
       
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 sm:mb-10 gap-4 sm:gap-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900">Order History</h1>
-          <p className="text-sm sm:text-base text-slate-500 mt-1">Review your online shipments and in-store purchase records.</p>
+      {/* Header & Tabs */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 sm:mb-10 gap-6">
+        <div className="bg-white/60 backdrop-blur-xl border border-white/80 p-6 md:p-8 rounded-[2rem] shadow-sm w-full md:w-auto">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Order Management</h1>
+          <p className="text-sm sm:text-base text-slate-600 mt-1 font-medium">Review orders and update delivery tracking states.</p>
         </div>
         
-        {/* Channel Tab Switcher */}
-        <div className="flex bg-slate-200/50 p-1.5 rounded-xl border border-slate-200 w-full sm:w-auto overflow-x-auto no-scrollbar">
+        <div className="flex bg-white/40 backdrop-blur-md p-1.5 rounded-[1.25rem] border border-white/80 w-full sm:w-auto overflow-x-auto no-scrollbar shadow-sm">
           <button 
             onClick={() => setActiveTab('online')}
-            className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 whitespace-nowrap ${
-              activeTab === 'online' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            className={`flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 whitespace-nowrap ${
+              activeTab === 'online' ? 'bg-white text-amber-600 shadow-[0_4px_10px_rgba(217,119,6,0.1)]' : 'text-slate-600 hover:text-amber-600 hover:bg-white/50'
             }`}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
-            Online Orders
+            Online Deliveries
           </button>
           <button 
             onClick={() => setActiveTab('in-store')}
-            className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 whitespace-nowrap ${
-              activeTab === 'in-store' ? 'bg-white text-amber-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            className={`flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 whitespace-nowrap ${
+              activeTab === 'in-store' ? 'bg-white text-amber-600 shadow-[0_4px_10px_rgba(217,119,6,0.1)]' : 'text-slate-600 hover:text-amber-600 hover:bg-white/50'
             }`}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-            In-Store
+            In-Store POS
           </button>
         </div>
       </div>
 
+      {/* Main Content */}
       {isLoading ? (
-        <div className="flex justify-center py-20"><div className="w-8 h-8 sm:w-10 sm:h-10 border-4 border-slate-200 border-t-amber-500 rounded-full animate-spin"></div></div>
+        <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-slate-200 border-t-amber-500 rounded-full animate-spin"></div></div>
       ) : filteredOrders.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-12 text-center text-slate-500 animate-in fade-in duration-300">
-          <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
-          </div>
-          <p className="text-sm">No {activeTab} records found.</p>
+        <div className="bg-white/60 backdrop-blur-xl border border-white/80 rounded-[2.5rem] shadow-sm p-16 text-center text-slate-500 animate-in fade-in duration-300">
+          <p className="text-lg font-bold">No {activeTab} records found.</p>
         </div>
       ) : (
-        <div className="animate-in fade-in duration-300">
-          
-          {/* ================== MOBILE CARD LAYOUT (< md) ================== */}
-          <div className="md:hidden space-y-4">
-            {filteredOrders.map((order) => (
-              <div key={order.id} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
-                
-                {/* Mobile Card Header */}
-                <div className="flex justify-between items-start border-b border-slate-100 pb-3 mb-3">
-                  <div>
-                    <div className="font-bold text-slate-900 text-sm">#{order.id.split('-')[0]}</div>
-                    <div className="text-[10px] text-slate-500 mt-0.5">{new Date(order.created_at).toLocaleDateString()}</div>
-                  </div>
-                  <StatusBadge status={order.status} />
-                </div>
-
-                {/* Mobile Order Items */}
-                <div className="space-y-3 mb-4">
-                  {order.order_items?.map((item: any) => (
-                    <div key={item.id} className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden relative shrink-0 border border-slate-200">
-                        {item.artifact_variants?.image_url && <Image src={item.artifact_variants.image_url} alt="Item" fill className="object-cover" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-slate-900 text-xs truncate">{item.artifact_variants?.artifacts?.name || 'Unknown Item'}</p>
-                        <p className="text-slate-500 text-[10px] mt-0.5">{item.artifact_variants?.color_name} <span className="font-bold text-slate-400">× {item.quantity}</span></p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Mobile Card Footer */}
-                <div className="flex justify-between items-center bg-slate-50 -mx-4 -mb-4 px-4 py-3 rounded-b-2xl border-t border-slate-100">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Total</span>
-                  <span className="font-black text-slate-900 text-sm">LKR {order.total_amount?.toLocaleString() || 0}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* ================== DESKTOP TABLE LAYOUT (>= md) ================== */}
-          <div className="hidden md:block bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white/60 backdrop-blur-2xl border border-white/80 rounded-[2.5rem] shadow-[0_20px_50px_rgba(31,38,135,0.05)] overflow-hidden animate-in fade-in duration-300">
+          <div className="overflow-x-auto no-scrollbar">
             <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-widest text-[10px] font-bold">
+              <thead className="bg-white/40 border-b border-white/60 text-slate-500 uppercase tracking-widest text-[10px] font-extrabold">
                 <tr>
-                  <th className="px-6 py-4">Order ID / Date</th>
-                  <th className="px-6 py-4">Items</th>
-                  <th className="px-6 py-4">Total Amount</th>
-                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-5 pl-8">Order ID / Details</th>
+                  <th className="px-6 py-5">Purchased Items</th>
+                  <th className="px-6 py-5">Total Amount</th>
+                  <th className="px-6 py-5 w-64 pr-8">Delivery Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-white/40">
                 {filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-slate-900 truncate w-32">{order.id.split('-')[0]}...</div>
-                      <div className="text-xs text-slate-500 mt-0.5">{new Date(order.created_at).toLocaleDateString()}</div>
+                  <tr key={order.id} className="hover:bg-white/50 transition-colors">
+                    <td className="px-6 py-5 pl-8 align-top">
+                      <div className="font-black text-slate-900 truncate w-32 text-base">#{order.id.split('-')[0]}</div>
+                      <div className="text-xs font-bold text-slate-400 mt-1">{new Date(order.created_at).toLocaleDateString()}</div>
+                      <div className="text-[10px] text-slate-600 mt-3 max-w-[150px] leading-relaxed font-medium bg-white/40 p-2 rounded-lg border border-white/60">
+                        {order.shipping_address || 'No address provided'}
+                      </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-5">
                       <div className="flex flex-col gap-3">
                         {order.order_items?.map((item: any) => (
-                          <div key={item.id} className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden relative shrink-0 border border-slate-200">
+                          <div key={item.id} className="flex items-center gap-3 bg-white/40 p-2 rounded-2xl border border-white/60 shadow-sm w-max pr-6">
+                            <div className="w-12 h-12 rounded-[0.8rem] bg-slate-50 overflow-hidden relative shrink-0 border border-white">
                               {item.artifact_variants?.image_url && <Image src={item.artifact_variants.image_url} alt="Item" fill className="object-cover" />}
                             </div>
                             <div className="text-xs">
                               <p className="font-bold text-slate-900 line-clamp-1">{item.artifact_variants?.artifacts?.name || 'Unknown Item'}</p>
-                              <p className="text-slate-500 mt-0.5">{item.artifact_variants?.color_name} <span className="font-bold text-slate-400">× {item.quantity}</span></p>
+                              <p className="text-slate-600 mt-0.5 font-medium">{item.artifact_variants?.color_name} <span className="font-bold text-amber-600 ml-1">× {item.quantity}</span></p>
                             </div>
                           </div>
                         ))}
                       </div>
                     </td>
-                    <td className="px-6 py-4 font-black text-slate-900">
+                    <td className="px-6 py-5 font-black text-slate-900 align-top text-base">
                       LKR {order.total_amount?.toLocaleString() || 0}
                     </td>
-                    <td className="px-6 py-4">
-                      <StatusBadge status={order.status} />
+                    <td className="px-6 py-5 pr-8 align-top">
+                      {/* DYNAMIC STATUS SELECTOR */}
+                      <div className="relative">
+                        <select
+                          value={order.status.toLowerCase()}
+                          onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                          disabled={updatingId === order.id}
+                          className={`appearance-none w-full border backdrop-blur-md px-4 py-3 pr-8 rounded-xl text-xs font-black uppercase tracking-wider outline-none cursor-pointer transition-colors shadow-sm ${getStatusColor(order.status)} ${updatingId === order.id ? 'opacity-50' : 'hover:brightness-95 focus:ring-2 focus:ring-amber-400 focus:border-amber-400'}`}
+                        >
+                          {statusOptions.map(opt => (
+                            <option key={opt.value} value={opt.value} className="bg-white text-slate-900 normal-case tracking-normal font-bold">
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-current opacity-60">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-
         </div>
       )}
     </div>
