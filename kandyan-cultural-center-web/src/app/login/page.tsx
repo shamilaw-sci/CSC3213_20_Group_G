@@ -16,7 +16,7 @@ export default function LoginPage() {
     email: '',
     phone: '',
     password: '',
-    confirmPassword: '', // Added Confirm Password
+    confirmPassword: '', 
     otp: '',
     fullName: '' 
   });
@@ -85,7 +85,6 @@ export default function LoginPage() {
     e.preventDefault();
     if (!isAgreed) return triggerErrorAnimation();
     
-    // NEW: Password Confirmation Check
     if (formData.password !== formData.confirmPassword) {
       setAuthError("Passwords do not match. Please try again.");
       return;
@@ -108,7 +107,6 @@ export default function LoginPage() {
 
     setIsLoading(false);
     if (error) {
-      // NEW: Friendly "Email already exists" check
       if (error.message.toLowerCase().includes("already registered")) {
         setAuthError("This email is already linked to an account. Please log in.");
       } else {
@@ -171,199 +169,187 @@ export default function LoginPage() {
     }
   };
 
+  // --- REUSABLE GLASS CLASSES ---
+  const glassInputClass = "w-full bg-white/50 backdrop-blur-md border border-white/80 text-slate-900 text-sm rounded-2xl px-4 py-3.5 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400 transition-all shadow-sm placeholder:text-slate-400";
+  const primaryBtnClass = "w-full bg-amber-600 hover:bg-amber-500 text-white py-3.5 rounded-[1.25rem] font-bold text-sm transition-all shadow-[0_8px_20px_rgba(217,119,6,0.25)] hover:shadow-[0_12px_25px_rgba(217,119,6,0.35)] hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed";
 
   return (
-    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-stone-50 selection:bg-kandyan-gold selection:text-white">
+    <main className="relative min-h-screen flex flex-col justify-center items-center p-24 md:pt-32 sm:p-8 bg-[#F8F9FA]">
       
-      {/* LEFT SIDE: Cultural Imagery */}
-      <div className="hidden lg:block relative w-full h-full overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/story1.png" alt="Kandyan Heritage" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent"></div>
-        <div className="absolute bottom-20 left-0 p-16 w-full">
-          <h2 className="text-white text-5xl font-black tracking-tight mb-4 leading-tight">
-            Preserving <br/><span className="text-kandyan-gold font-serif italic font-light">The Heritage</span>
-          </h2>
-          <div className="w-12 h-1 bg-white/20 mb-6"></div>
-          <p className="text-white/80 text-lg max-w-md font-light leading-relaxed">
-            Log in to access your digital cultural portal, manage your artifact orders, and book exclusive workshops.
-          </p>
-        </div>
+      {/* --- FIXED BACKGROUND FOR GLASS BLUR EFFECT --- */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-[#F8F9FA] to-rose-50 opacity-80"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-amber-200/30 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-rose-200/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
       </div>
 
-      {/* RIGHT SIDE: Dynamic Auth Portal */}
-      <div className="flex flex-col justify-center items-center p-8 lg:p-24 relative overflow-y-auto">
-        <Link href="/" className="absolute top-8 left-8 lg:top-12 lg:left-12 text-slate-400 hover:text-kandyan-maroon transition-colors flex items-center gap-2 text-xs font-bold uppercase tracking-widest group">
-          <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-          Back to Site
-        </Link>
-
-        <div className="w-full max-w-sm space-y-8 py-10">
-          
-          <div className="text-center space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-kandyan-gold text-white flex items-center justify-center font-black text-3xl mx-auto shadow-lg shadow-amber-500/30">K</div>
-            <div>
-              <h1 className="text-3xl font-black text-slate-900 tracking-tight mt-6">
-                {view === 'login' && 'Welcome Back'}
-                {view === 'signup' && 'Create Account'}
-                {view === 'otp' && 'Verify Email'}
-                {view === 'complete' && 'Complete Profile'}
-              </h1>
-              <p className="text-slate-500 mt-2 font-light text-sm">
-                {view === 'login' && 'Sign in to your Cultural Center account'}
-                {view === 'signup' && 'Join us to access exclusive features'}
-                {view === 'otp' && `We sent a 6-digit code to ${formData.email}`}
-                {view === 'complete' && 'Almost there! Add your phone number.'}
-              </p>
-            </div>
+      <div className="relative z-10 w-full max-w-md bg-white/60 backdrop-blur-2xl border border-white/80 rounded-[2.5rem] shadow-[0_20px_50px_rgba(31,38,135,0.05)] p-8 sm:p-10 flex flex-col">
+        
+        <div className="text-center space-y-3 mb-8">
+          <div className="w-16 h-16 rounded-[1.25rem] bg-amber-100 text-amber-600 border border-amber-200/50 flex items-center justify-center font-black text-3xl mx-auto shadow-sm">
+            K
           </div>
-
-          {authError && (
-            <div className="bg-rose-50 border border-rose-100 text-rose-600 text-xs font-medium p-4 rounded-xl text-center">
-              {authError}
-            </div>
-          )}
-
-          {/* VIEW: LOGIN */}
-          {view === 'login' && (
-            <div className="space-y-6">
-              <button onClick={handleGoogleLogin} className="w-full flex items-center justify-center gap-4 bg-white border border-slate-200 px-8 py-3.5 rounded-full font-bold text-slate-700 hover:shadow-md hover:border-kandyan-gold transition-all duration-300 group">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                Sign in with Google
-              </button>
-
-              <div className="flex items-center gap-4 opacity-40">
-                <div className="h-px bg-slate-300 flex-grow"></div>
-                <span className="text-[9px] uppercase tracking-widest text-slate-500 font-black">OR CONTINUE WITH EMAIL</span>
-                <div className="h-px bg-slate-300 flex-grow"></div>
-              </div>
-
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 mb-1 block">Email</label>
-                  <input type="email" name="email" required value={formData.email} onChange={handleInputChange} className="w-full bg-white border border-slate-200 text-slate-900 text-sm rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-kandyan-gold" />
-                </div>
-                <div className="relative">
-                  <div className="flex justify-between items-end mb-1 px-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Password</label>
-                    <Link href="/forgot-password" className="text-[10px] font-bold text-kandyan-gold hover:text-amber-600 hover:underline">Forgot Password?</Link>
-                  </div>
-                  <input type="password" name="password" required value={formData.password} onChange={handleInputChange} className="w-full bg-white border border-slate-200 text-slate-900 text-sm rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-kandyan-gold" />
-                </div>
-                <button type="submit" disabled={isLoading} className="w-full bg-slate-900 text-white py-3.5 rounded-full font-bold text-sm hover:bg-slate-800 transition-all shadow-md mt-2 disabled:opacity-50">
-                  {isLoading ? 'Authenticating...' : 'Sign In'}
-                </button>
-              </form>
-
-              <p className="text-center text-sm text-slate-500 pt-2">
-                Don't have an account? <button onClick={() => setView('signup')} className="text-kandyan-gold font-bold hover:underline">Sign up</button>
-              </p>
-            </div>
-          )}
-
-          {/* VIEW: SIGNUP */}
-          {view === 'signup' && (
-            <div className="space-y-6">
-              
-              <label className={`flex items-start gap-3 p-4 rounded-xl cursor-pointer transition-all duration-300 border relative ${showCheckboxError ? 'bg-rose-50 border-rose-300 animate-[shake_0.2s_ease-in-out_0s_2]' : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm'}`}>
-                <div className="relative flex items-center justify-center mt-0.5 shrink-0 w-5 h-5">
-                  <input type="checkbox" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" checked={isAgreed} onChange={(e) => {setIsAgreed(e.target.checked); if(e.target.checked) setShowCheckboxError(false);}} />
-                  <div className={`absolute inset-0 rounded flex items-center justify-center border-2 transition-all duration-200 ${isAgreed ? 'bg-amber-500 border-amber-500' : 'bg-white border-slate-300'}`}>
-                    <svg className={`w-3.5 h-3.5 text-white transition-transform duration-200 ${isAgreed ? 'scale-100' : 'scale-0'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                  </div>
-                </div>
-                <span className={`text-xs leading-relaxed select-none ${showCheckboxError ? 'text-rose-700' : 'text-slate-500'}`}>
-                  I agree to the <Link href="/terms-and-conditions" className="font-bold underline hover:text-amber-600" target="_blank">Terms</Link>, <Link href="/privacy-policy" className="font-bold underline hover:text-amber-600" target="_blank">Privacy</Link>, and <Link href="/refund-policy" className="font-bold underline hover:text-amber-600" target="_blank">Return Policy</Link>.
-                </span>
-              </label>
-
-              <button onClick={handleGoogleLogin} className={`w-full flex items-center justify-center gap-4 bg-white border px-8 py-3.5 rounded-full font-bold transition-all duration-300 group ${isAgreed ? 'border-slate-200 text-slate-700 hover:shadow-md hover:border-kandyan-gold cursor-pointer' : 'border-slate-200 text-slate-400 opacity-70 cursor-not-allowed'}`}>
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className={`w-5 h-5 ${isAgreed ? 'group-hover:scale-110 transition-transform' : 'grayscale'}`} />
-                Sign up with Google
-              </button>
-
-              <div className="flex items-center gap-4 opacity-40">
-                <div className="h-px bg-slate-300 flex-grow"></div>
-                <span className="text-[9px] uppercase tracking-widest text-slate-500 font-black">OR CONTINUE WITH EMAIL</span>
-                <div className="h-px bg-slate-300 flex-grow"></div>
-              </div>
-
-              <form onSubmit={handleSignup} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 mb-1 block">First Name</label>
-                    <input type="text" name="firstName" required value={formData.firstName} onChange={handleInputChange} className="w-full bg-white border border-slate-200 text-slate-900 text-sm rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-kandyan-gold" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 mb-1 block">Last Name</label>
-                    <input type="text" name="lastName" required value={formData.lastName} onChange={handleInputChange} className="w-full bg-white border border-slate-200 text-slate-900 text-sm rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-kandyan-gold" />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 mb-1 block">Phone Number</label>
-                  <input type="tel" name="phone" required value={formData.phone} onChange={handleInputChange} className="w-full bg-white border border-slate-200 text-slate-900 text-sm rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-kandyan-gold" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 mb-1 block">Email</label>
-                  <input type="email" name="email" required value={formData.email} onChange={handleInputChange} className="w-full bg-white border border-slate-200 text-slate-900 text-sm rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-kandyan-gold" />
-                </div>
-                
-                {/* NEW: Password & Confirm Password side-by-side */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 mb-1 block">Password</label>
-                    <input type="password" name="password" minLength={6} required value={formData.password} onChange={handleInputChange} className="w-full bg-white border border-slate-200 text-slate-900 text-sm rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-kandyan-gold" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 mb-1 block">Confirm</label>
-                    <input type="password" name="confirmPassword" minLength={6} required value={formData.confirmPassword} onChange={handleInputChange} className="w-full bg-white border border-slate-200 text-slate-900 text-sm rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-kandyan-gold" />
-                  </div>
-                </div>
-
-                <button type="submit" disabled={isLoading} className="w-full bg-slate-900 text-white py-3.5 rounded-full font-bold text-sm hover:bg-slate-800 transition-all shadow-md mt-4 disabled:opacity-50">
-                  {isLoading ? 'Creating Account...' : 'Create Account'}
-                </button>
-              </form>
-
-              <p className="text-center text-sm text-slate-500 pt-2">
-                Already have an account? <button onClick={() => setView('login')} className="text-kandyan-gold font-bold hover:underline">Log in</button>
-              </p>
-            </div>
-          )}
-
-          {/* VIEW: VERIFY OTP */}
-          {view === 'otp' && (
-            <form onSubmit={handleVerifyOTP} className="space-y-4">
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 mb-1 block">6-Digit Code</label>
-                <input type="text" maxLength={6} required value={formData.otp} onChange={(e) => setFormData(prev => ({...prev, otp: e.target.value.replace(/\D/g, '')}))} className="w-full bg-white border border-slate-200 text-slate-900 text-2xl tracking-[0.5em] text-center font-mono font-black rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-kandyan-gold" placeholder="000000" />
-              </div>
-              <button type="submit" disabled={isLoading || formData.otp.length < 6} className="w-full bg-kandyan-gold text-white py-3.5 rounded-full font-bold text-sm hover:bg-amber-600 transition-all shadow-md disabled:opacity-50 mt-4">
-                {isLoading ? 'Verifying...' : 'Verify & Continue'}
-              </button>
-            </form>
-          )}
-
-          {/* VIEW: COMPLETE GOOGLE PROFILE */}
-          {view === 'complete' && (
-            <form onSubmit={handleCompleteProfile} className="space-y-4">
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 mb-1 block">Full Name (From Google)</label>
-                <input type="text" name="fullName" required value={formData.fullName} onChange={handleInputChange} className="w-full bg-white border border-slate-200 text-slate-900 text-sm rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-kandyan-gold" />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 mb-1 block">Phone Number *</label>
-                <input type="tel" name="phone" required value={formData.phone} onChange={handleInputChange} placeholder="e.g. +94 77 123 4567" className="w-full bg-white border border-slate-200 text-slate-900 text-sm rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-kandyan-gold" />
-              </div>
-              <button type="submit" disabled={isLoading || !formData.phone} className="w-full bg-kandyan-gold text-white py-3.5 rounded-full font-bold text-sm hover:bg-amber-600 transition-all shadow-md disabled:opacity-50 mt-4">
-                {isLoading ? 'Saving...' : 'Save & Enter Store'}
-              </button>
-            </form>
-          )}
-
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight mt-4">
+              {view === 'login' && 'Welcome Back'}
+              {view === 'signup' && 'Create Account'}
+              {view === 'otp' && 'Verify Email'}
+              {view === 'complete' && 'Complete Profile'}
+            </h1>
+            <p className="text-slate-500 mt-2 font-medium text-sm">
+              {view === 'login' && 'Sign in to your Cultural Center account'}
+              {view === 'signup' && 'Join us to access exclusive features'}
+              {view === 'otp' && `We sent a 6-digit code to ${formData.email}`}
+              {view === 'complete' && 'Almost there! Add your phone number.'}
+            </p>
+          </div>
         </div>
+
+        {authError && (
+          <div className="mb-6 bg-rose-50/80 backdrop-blur-sm border border-rose-200 text-rose-600 text-xs font-bold px-4 py-3 rounded-xl text-center shadow-sm">
+            {authError}
+          </div>
+        )}
+
+        {/* VIEW: LOGIN */}
+        {view === 'login' && (
+          <div className="space-y-6">
+            <button onClick={handleGoogleLogin} className="w-full flex items-center justify-center gap-3 bg-white/60 backdrop-blur-md border border-white/80 px-6 py-3.5 rounded-[1.25rem] font-bold text-slate-700 hover:bg-white hover:border-amber-300 transition-all shadow-sm group cursor-pointer">
+              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              Sign in with Google
+            </button>
+
+            <div className="flex items-center gap-4 opacity-50">
+              <div className="h-px bg-slate-300 flex-grow"></div>
+              <span className="text-[9px] uppercase tracking-widest text-slate-500 font-black">Or continue with email</span>
+              <div className="h-px bg-slate-300 flex-grow"></div>
+            </div>
+
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest pl-1 mb-1 block">Email</label>
+                <input type="email" name="email" required value={formData.email} onChange={handleInputChange} className={glassInputClass} />
+              </div>
+              <div className="relative">
+                <div className="flex justify-between items-end mb-1 px-1">
+                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Password</label>
+                  <Link href="/forgot-password" className="text-[10px] font-extrabold text-amber-600 hover:underline">Forgot Password?</Link>
+                </div>
+                <input type="password" name="password" required value={formData.password} onChange={handleInputChange} className={glassInputClass} />
+              </div>
+              <button type="submit" disabled={isLoading} className={`${primaryBtnClass} mt-2`}>
+                {isLoading ? 'Authenticating...' : 'Sign In'}
+              </button>
+            </form>
+
+            <p className="text-center text-sm font-medium text-slate-500 pt-2">
+              Don't have an account? <button onClick={() => setView('signup')} className="text-amber-600 font-extrabold hover:underline">Sign up</button>
+            </p>
+          </div>
+        )}
+
+        {/* VIEW: SIGNUP */}
+        {view === 'signup' && (
+          <div className="space-y-6">
+            
+            <label className={`flex items-start gap-3 p-4 rounded-[1.25rem] cursor-pointer transition-all duration-300 border relative bg-white/50 backdrop-blur-sm ${showCheckboxError ? 'border-rose-400 bg-rose-50/50 animate-[shake_0.2s_ease-in-out_0s_2]' : 'border-white/80 hover:border-amber-300 shadow-sm'}`}>
+              <div className="relative flex items-center justify-center mt-0.5 shrink-0 w-5 h-5">
+                <input type="checkbox" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" checked={isAgreed} onChange={(e) => {setIsAgreed(e.target.checked); if(e.target.checked) setShowCheckboxError(false);}} />
+                <div className={`absolute inset-0 rounded flex items-center justify-center border-2 transition-all duration-200 ${isAgreed ? 'bg-amber-500 border-amber-500' : 'bg-white border-slate-300'}`}>
+                  <svg className={`w-3.5 h-3.5 text-white transition-transform duration-200 ${isAgreed ? 'scale-100' : 'scale-0'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                </div>
+              </div>
+              <span className={`text-xs font-medium leading-relaxed select-none ${showCheckboxError ? 'text-rose-600' : 'text-slate-600'}`}>
+                I agree to the <Link href="/terms-and-conditions" className="font-extrabold text-slate-800 hover:text-amber-600 transition-colors" target="_blank">Terms</Link>, <Link href="/privacy-policy" className="font-extrabold text-slate-800 hover:text-amber-600 transition-colors" target="_blank">Privacy</Link>, and <Link href="/refund-policy" className="font-extrabold text-slate-800 hover:text-amber-600 transition-colors" target="_blank">Return Policy</Link>.
+              </span>
+            </label>
+
+            <button onClick={handleGoogleLogin} className={`w-full flex items-center justify-center gap-3 bg-white/60 backdrop-blur-md border px-6 py-3.5 rounded-[1.25rem] font-bold transition-all duration-300 group shadow-sm ${isAgreed ? 'border-white/80 text-slate-700 hover:bg-white hover:border-amber-300 cursor-pointer' : 'border-slate-200 text-slate-400 opacity-60 cursor-not-allowed'}`}>
+              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className={`w-5 h-5 ${isAgreed ? 'group-hover:scale-110 transition-transform' : 'grayscale'}`} />
+              Sign up with Google
+            </button>
+
+            <div className="flex items-center gap-4 opacity-50">
+              <div className="h-px bg-slate-300 flex-grow"></div>
+              <span className="text-[9px] uppercase tracking-widest text-slate-500 font-black">Or continue with email</span>
+              <div className="h-px bg-slate-300 flex-grow"></div>
+            </div>
+
+            <form onSubmit={handleSignup} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest pl-1 mb-1 block">First Name</label>
+                  <input type="text" name="firstName" required value={formData.firstName} onChange={handleInputChange} className={glassInputClass} />
+                </div>
+                <div>
+                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest pl-1 mb-1 block">Last Name</label>
+                  <input type="text" name="lastName" required value={formData.lastName} onChange={handleInputChange} className={glassInputClass} />
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest pl-1 mb-1 block">Phone Number</label>
+                <input type="tel" name="phone" required value={formData.phone} onChange={handleInputChange} className={glassInputClass} />
+              </div>
+              <div>
+                <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest pl-1 mb-1 block">Email</label>
+                <input type="email" name="email" required value={formData.email} onChange={handleInputChange} className={glassInputClass} />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest pl-1 mb-1 block">Password</label>
+                  <input type="password" name="password" minLength={6} required value={formData.password} onChange={handleInputChange} className={glassInputClass} />
+                </div>
+                <div>
+                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest pl-1 mb-1 block">Confirm</label>
+                  <input type="password" name="confirmPassword" minLength={6} required value={formData.confirmPassword} onChange={handleInputChange} className={glassInputClass} />
+                </div>
+              </div>
+
+              <button type="submit" disabled={isLoading} className={`${primaryBtnClass} mt-4`}>
+                {isLoading ? 'Creating Account...' : 'Create Account'}
+              </button>
+            </form>
+
+            <p className="text-center text-sm font-medium text-slate-500 pt-2">
+              Already have an account? <button onClick={() => setView('login')} className="text-amber-600 font-extrabold hover:underline">Log in</button>
+            </p>
+          </div>
+        )}
+
+        {/* VIEW: VERIFY OTP */}
+        {view === 'otp' && (
+          <form onSubmit={handleVerifyOTP} className="space-y-4 animate-in fade-in slide-in-from-right-4">
+            <div>
+              <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest pl-1 mb-2 block text-center">6-Digit Code</label>
+              <input type="text" maxLength={6} required value={formData.otp} onChange={(e) => setFormData(prev => ({...prev, otp: e.target.value.replace(/\D/g, '')}))} className="w-full bg-white/70 backdrop-blur-md border border-white/80 text-slate-900 text-3xl tracking-[0.5em] text-center font-mono font-black rounded-2xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-inner" placeholder="••••••" />
+            </div>
+            <button type="submit" disabled={isLoading || formData.otp.length < 6} className={`${primaryBtnClass} mt-6`}>
+              {isLoading ? 'Verifying...' : 'Verify & Continue'}
+            </button>
+          </form>
+        )}
+
+        {/* VIEW: COMPLETE GOOGLE PROFILE */}
+        {view === 'complete' && (
+          <form onSubmit={handleCompleteProfile} className="space-y-4 animate-in fade-in slide-in-from-right-4">
+            <div>
+              <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest pl-1 mb-1 block">Full Name</label>
+              <input type="text" name="fullName" required value={formData.fullName} onChange={handleInputChange} className={glassInputClass} />
+            </div>
+            <div>
+              <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest pl-1 mb-1 block">Phone Number *</label>
+              <input type="tel" name="phone" required value={formData.phone} onChange={handleInputChange} placeholder="e.g. +94 77 123 4567" className={glassInputClass} />
+            </div>
+            <button type="submit" disabled={isLoading || !formData.phone} className={`${primaryBtnClass} mt-4`}>
+              {isLoading ? 'Saving...' : 'Save & Enter Portal'}
+            </button>
+          </form>
+        )}
+
       </div>
       <style dangerouslySetInnerHTML={{__html: `@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }`}} />
-    </div>
+    </main>
   );
 }

@@ -8,8 +8,8 @@ import { CurrencyProvider } from "@/context/CurrencyContext";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Kandyan Culture Connect | KCC",
-  description: "Modern Digital Transformation Suite for the Kandyan Art Association",
+  title: "Kandyan Culture Centre",
+  description: 'Preserving and promoting the traditional Kandyan arts and culture of Sri Lanka.',
 };
 
 export default function RootLayout({

@@ -33,7 +33,6 @@ type Workshop = {
   title: string;
   price: number;
   craftsman: string;
-  location?: string;
 };
 
 function formatDateForDisplay(dateString: string) {
@@ -94,26 +93,53 @@ function BookingPanel(
   
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
+  const [blockedDates, setBlockedDates] = useState<Record<string, string>>({});
   const [bookedTimes, setBookedTimes] = useState<Set<string>>(new Set());
+  const [timeSlots, setTimeSlots] = useState<string[]>([]);
 
-  // Free-date booking: fixed time slots available for any date (unless blocked)
-  const TIME_SLOTS = ['09:00', '11:30', '14:00'];
   const today = new Date().toISOString().slice(0, 10);
-  const allTimesForDate = TIME_SLOTS;
+  const allTimesForDate = timeSlots;
   const { formatPrice } = useCurrency();
 
-  const isSelectedDateBlocked = selectedDate ? blockedDates.has(selectedDate) : false;
+  const blockedReason = selectedDate ? blockedDates[selectedDate] : undefined;
+  const isSelectedDateBlocked = !!blockedReason;
   const isSelectedDateValid = !!selectedDate && !isSelectedDateBlocked;
 
-  // Fetch blocked dates
+  // Load time slots from the current workshop row in the workshops table
+  useEffect(() => {
+    const fetchTimeSlots = async () => {
+      if (!workshop.id) {
+        setTimeSlots([]);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/workshop-time-slots?workshopId=${encodeURIComponent(workshop.id)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setTimeSlots(Array.isArray(data?.slots) ? data.slots : []);
+      } catch (err) {
+        console.warn('Failed to load workshop time slots', err);
+      }
+    };
+
+    fetchTimeSlots();
+  }, [workshop.id]);
+
+  // Fetch blocked dates with reasons
   useEffect(() => {
     const fetchBlockedDates = async () => {
       try {
         const res = await fetch('/api/bookings/blocked-dates');
         if (!res.ok) return;
         const data = await res.json();
-        setBlockedDates(new Set(data.blockedDates || []));
+        const map: Record<string, string> = {};
+        (data.blockedDates || []).forEach((row: any) => {
+          if (row.blocked_date) {
+            map[row.blocked_date] = row.reason || 'Not available';
+          }
+        });
+        setBlockedDates(map);
       } catch (err) {
         console.warn('Failed to load blocked dates', err);
       }
@@ -147,6 +173,12 @@ function BookingPanel(
   useEffect(() => {
     if (!selectedDate || !selectedTime) {
       setAvailability(null);
+      return;
+    }
+
+    if (blockedReason) {
+      setCheckingAvailability(false);
+      setAvailability({ available: false, message: `${blockedReason} — this date is not available.` });
       return;
     }
 
@@ -252,7 +284,7 @@ function BookingPanel(
                 price: workshop.price,
               },
             ],
-            shippingAddress: workshop.location || '',
+            shippingAddress: '',
           }),
         });
 
@@ -280,7 +312,7 @@ function BookingPanel(
           last_name,
           email,
           phone,
-          address: workshop.location || '',
+          address: '',
           city: '',
           country: 'Sri Lanka',
           hash: paymentConfig.hash,
@@ -363,7 +395,9 @@ function BookingPanel(
             className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm"
           />
           {selectedDate && isSelectedDateBlocked && (
-            <div className="mt-2 text-sm text-rose-700">This date is blocked.</div>
+            <div className="mt-2 rounded-3xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              <strong>Unavailable:</strong> {blockedReason}
+            </div>
           )}
         </div>
 
@@ -436,13 +470,8 @@ function BookingPanel(
             {selectedTime ? timeTo12Hour(selectedTime) : '--:--'}
           </div>
           <div className="text-sm text-slate-600 mt-1">
-            {workshop.category === 'show' ? workshop.location : workshop.craftsman} · {guests} guest{guests === 1 ? '' : 's'} · {formatPrice(workshop.price)}
+            {workshop.craftsman || 'Workshop'} · {guests} guest{guests === 1 ? '' : 's'} · {formatPrice(workshop.price)}
           </div>
-          {workshop.category === 'show' && selectedDate && selectedTime && (
-            <div className="text-sm text-slate-600 mt-2">
-              Selected venue: <span className="font-semibold text-slate-900">{workshop.location}</span>
-            </div>
-          )}
         </div>
       )}
 

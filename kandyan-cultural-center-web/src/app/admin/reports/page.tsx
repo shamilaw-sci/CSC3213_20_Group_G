@@ -9,17 +9,15 @@ import autoTable from 'jspdf-autotable';
 export default function FinancialReportsPage() {
   const [rawData, setRawData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedMonth, setSelectedMonth] = useState<string>('all'); // Format: YYYY-MM
+  const [selectedMonth, setSelectedMonth] = useState<string>('all'); 
 
-  // Generate a list of available months based on the current date (Last 12 months)
   const availableMonths = useMemo(() => {
     const months = [];
     const date = new Date();
-    // Force the date to the 1st of the month to prevent the "31st skipping February" bug
     date.setDate(1); 
     
     for (let i = 0; i < 12; i++) {
-      const monthStr = date.toISOString().slice(0, 7); // YYYY-MM
+      const monthStr = date.toISOString().slice(0, 7); 
       const label = date.toLocaleString('default', { month: 'long', year: 'numeric' });
       months.push({ value: monthStr, label });
       date.setMonth(date.getMonth() - 1);
@@ -29,8 +27,6 @@ export default function FinancialReportsPage() {
 
   const fetchFinancialData = async () => {
     setIsLoading(true);
-    
-    // Fetch only completed orders to ensure accurate profit
     const { data: orders, error } = await supabase
       .from('orders')
       .select(`
@@ -57,7 +53,6 @@ export default function FinancialReportsPage() {
     fetchFinancialData();
   }, []);
 
-  // Process data based on the selected month filter
   const processedReport = useMemo(() => {
     const reportMap = new Map();
     let totalRevenue = 0;
@@ -66,8 +61,6 @@ export default function FinancialReportsPage() {
 
     rawData.forEach(order => {
       const orderMonth = order.created_at.slice(0, 7);
-      
-      // Filter by month
       if (selectedMonth !== 'all' && orderMonth !== selectedMonth) return;
 
       order.order_items?.forEach((item: any) => {
@@ -100,12 +93,12 @@ export default function FinancialReportsPage() {
     });
 
     return {
-      rows: Array.from(reportMap.values()).sort((a, b) => b.profit - a.profit), // Sort by highest profit
+      rows: Array.from(reportMap.values()).sort((a, b) => b.profit - a.profit), 
       summary: { totalRevenue, totalProfit, totalItemsSold }
     };
   }, [rawData, selectedMonth]);
 
-  // ===================== EXPORT TO EXCEL =====================
+  // EXPORT TO EXCEL
   const exportToExcel = () => {
     const exportData = processedReport.rows.map(row => ({
       'Artifact / Variant': row.name,
@@ -115,7 +108,6 @@ export default function FinancialReportsPage() {
       'Net Profit (LKR)': row.profit
     }));
 
-    // Add Summary Row
     exportData.push({
       'Artifact / Variant': 'TOTALS',
       'Category': '',
@@ -132,23 +124,21 @@ export default function FinancialReportsPage() {
     XLSX.writeFile(workbook, fileName);
   };
 
-  // ===================== EXPORT TO PDF =====================
+  // EXPORT TO PDF
   const exportToPDF = () => {
     const doc = new jsPDF();
     const periodLabel = selectedMonth === 'all' ? 'All Time' : availableMonths.find(m => m.value === selectedMonth)?.label;
 
-    // Document Header
     doc.setFontSize(20);
-    doc.setTextColor(245, 158, 11); // Amber
+    doc.setTextColor(245, 158, 11); 
     doc.text('KANDYAN CULTURAL CENTER', 14, 22);
     
     doc.setFontSize(12);
-    doc.setTextColor(51, 65, 85); // Slate
+    doc.setTextColor(51, 65, 85); 
     doc.text(`Financial Performance Report`, 14, 30);
     doc.text(`Period: ${periodLabel}`, 14, 36);
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 42);
 
-    // Summary Box
     doc.setDrawColor(226, 232, 240);
     doc.setFillColor(248, 250, 252);
     doc.rect(14, 48, 182, 25, 'FD');
@@ -159,7 +149,6 @@ export default function FinancialReportsPage() {
     doc.text(`Total Net Profit: LKR ${processedReport.summary.totalProfit.toLocaleString()}`, 20, 66);
     doc.text(`Total Units Sold: ${processedReport.summary.totalItemsSold}`, 120, 58);
 
-    // Data Table
     const tableColumn = ["Artifact / Variant", "Category", "Units Sold", "Revenue (LKR)", "Net Profit (LKR)"];
     const tableRows = processedReport.rows.map(row => [
       row.name,
@@ -179,7 +168,7 @@ export default function FinancialReportsPage() {
       columnStyles: {
         2: { halign: 'center' },
         3: { halign: 'right' },
-        4: { halign: 'right', fontStyle: 'bold', textColor: [5, 150, 105] } // Green profit
+        4: { halign: 'right', fontStyle: 'bold', textColor: [5, 150, 105] } 
       },
     });
 
@@ -188,34 +177,37 @@ export default function FinancialReportsPage() {
   };
 
   return (
-    <div className="p-4 sm:p-8 lg:p-12 max-w-7xl mx-auto w-full">
+    <div className="p-4 sm:p-8 lg:p-12 max-w-7xl mx-auto w-full relative z-10">
       
       {/* Header & Controls */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 sm:mb-10 gap-4 sm:gap-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900">Financial Reports</h1>
-          <p className="text-sm sm:text-base text-slate-500 mt-1">Analyze sales performance and export aggregate data.</p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 sm:mb-10 gap-6">
+        <div className="bg-white/60 backdrop-blur-xl border border-white/80 p-6 md:p-8 rounded-[2rem] shadow-sm w-full md:w-auto">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Financial Reports</h1>
+          <p className="text-sm sm:text-base text-slate-600 mt-1 font-medium">Analyze sales performance and export data.</p>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full md:w-auto">
-          <select 
-            value={selectedMonth} 
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="w-full sm:w-auto bg-white border border-slate-200 text-slate-700 px-4 py-3 rounded-xl font-bold outline-none focus:ring-2 focus:ring-amber-500 min-w-[200px]"
-          >
-            <option value="all">All Time</option>
-            {availableMonths.map(m => (
-              <option key={m.value} value={m.value}>{m.label}</option>
-            ))}
-          </select>
+          <div className="relative">
+            <select 
+              value={selectedMonth} 
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="w-full sm:w-auto bg-white/60 backdrop-blur-md border border-white/80 text-slate-700 px-5 py-3.5 rounded-[1.25rem] font-bold outline-none focus:ring-2 focus:ring-amber-500 shadow-sm appearance-none pr-10 min-w-[200px] cursor-pointer"
+            >
+              <option value="all" className="bg-white">All Time</option>
+              {availableMonths.map(m => (
+                <option key={m.value} value={m.value} className="bg-white">{m.label}</option>
+              ))}
+            </select>
+            <svg className="w-5 h-5 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path></svg>
+          </div>
           
-          <div className="flex gap-2 w-full sm:w-auto">
-            <button onClick={exportToExcel} disabled={processedReport.rows.length === 0} className="flex-1 sm:flex-none justify-center bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-4 sm:px-5 py-3 rounded-xl font-bold transition-colors flex items-center gap-2 disabled:opacity-50 text-sm sm:text-base">
-              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          <div className="flex gap-3 w-full sm:w-auto">
+            <button onClick={exportToExcel} disabled={processedReport.rows.length === 0} className="flex-1 sm:flex-none justify-center bg-emerald-500 hover:bg-emerald-400 text-white shadow-[0_4px_14px_rgba(16,185,129,0.3)] px-5 py-3.5 rounded-[1.25rem] font-bold transition-all flex items-center gap-2 disabled:opacity-50 text-sm sm:text-base transform hover:-translate-y-0.5">
+              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
               Excel
             </button>
-            <button onClick={exportToPDF} disabled={processedReport.rows.length === 0} className="flex-1 sm:flex-none justify-center bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-4 sm:px-5 py-3 rounded-xl font-bold transition-colors flex items-center gap-2 disabled:opacity-50 text-sm sm:text-base">
-              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+            <button onClick={exportToPDF} disabled={processedReport.rows.length === 0} className="flex-1 sm:flex-none justify-center bg-rose-600 hover:bg-rose-500 text-white shadow-[0_4px_14px_rgba(225,29,72,0.3)] px-5 py-3.5 rounded-[1.25rem] font-bold transition-all flex items-center gap-2 disabled:opacity-50 text-sm sm:text-base transform hover:-translate-y-0.5">
+              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
               PDF
             </button>
           </div>
@@ -223,50 +215,52 @@ export default function FinancialReportsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-20"><div className="w-8 h-8 sm:w-10 sm:h-10 border-4 border-slate-200 border-t-amber-500 rounded-full animate-spin"></div></div>
+        <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-slate-200 border-t-amber-500 rounded-full animate-spin"></div></div>
       ) : (
         <>
-          {/* Summary KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8 animate-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
-              <p className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider mb-1 sm:mb-2">Gross Revenue</p>
-              <h3 className="text-2xl sm:text-3xl font-black text-slate-900">LKR {processedReport.summary.totalRevenue.toLocaleString()}</h3>
+          {/* Summary KPI Cards (Glassmorphism) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-white/60 backdrop-blur-xl p-6 sm:p-8 rounded-[2rem] border border-white/80 shadow-sm">
+              <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">Gross Revenue</p>
+              <h3 className="text-3xl font-black text-slate-900 tracking-tight">LKR {processedReport.summary.totalRevenue.toLocaleString()}</h3>
             </div>
-            <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-5 sm:p-6 rounded-2xl border border-slate-700 shadow-md">
-              <p className="text-xs sm:text-sm font-bold text-amber-500/80 uppercase tracking-wider mb-1 sm:mb-2">Net Profit</p>
-              <h3 className="text-2xl sm:text-3xl font-black text-amber-500">LKR {processedReport.summary.totalProfit.toLocaleString()}</h3>
+            {/* Special Highlight for Profit Card */}
+            <div className="bg-gradient-to-br from-amber-500 to-amber-600 p-6 sm:p-8 rounded-[2rem] border border-amber-400 shadow-[0_15px_30px_rgba(245,158,11,0.25)] relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 blur-[30px] rounded-full pointer-events-none"></div>
+              <p className="text-[10px] font-extrabold text-amber-100 uppercase tracking-widest mb-2 relative z-10">Net Profit</p>
+              <h3 className="text-3xl font-black text-white tracking-tight relative z-10">LKR {processedReport.summary.totalProfit.toLocaleString()}</h3>
             </div>
-            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
-              <p className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider mb-1 sm:mb-2">Total Units Sold</p>
-              <h3 className="text-2xl sm:text-3xl font-black text-slate-900">{processedReport.summary.totalItemsSold} Items</h3>
+            <div className="bg-white/60 backdrop-blur-xl p-6 sm:p-8 rounded-[2rem] border border-white/80 shadow-sm">
+              <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">Total Units Sold</p>
+              <h3 className="text-3xl font-black text-slate-900 tracking-tight">{processedReport.summary.totalItemsSold} <span className="text-xl font-bold text-slate-400">Items</span></h3>
             </div>
           </div>
 
           {/* ================== MOBILE CARD LAYOUT (< md) ================== */}
           <div className="md:hidden space-y-4 animate-in fade-in duration-700">
             {processedReport.rows.length === 0 ? (
-              <div className="bg-white p-8 text-center text-slate-500 rounded-2xl border border-slate-200 shadow-sm">
+              <div className="bg-white/60 backdrop-blur-md p-10 text-center font-bold text-slate-500 rounded-[2rem] border border-white/80 shadow-sm">
                 No completed sales found for this period.
               </div>
             ) : (
               processedReport.rows.map((row, index) => (
-                <div key={index} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
-                  <div className="border-b border-slate-100 pb-3 mb-3">
-                    <h4 className="font-bold text-slate-900 text-sm leading-tight pr-2">{row.name}</h4>
-                    <p className="text-xs text-slate-500 mt-1">{row.category}</p>
+                <div key={index} className="bg-white/60 backdrop-blur-md border border-white/80 rounded-[2rem] shadow-sm p-5">
+                  <div className="border-b border-white/60 pb-4 mb-4">
+                    <h4 className="font-black text-slate-900 text-base leading-tight pr-2">{row.name}</h4>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-2 bg-white/50 w-max px-2.5 py-1 rounded-md">{row.category}</p>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="text-center bg-slate-50 p-2 rounded-xl">
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Units</p>
-                      <p className="font-black text-slate-700 text-sm">{row.quantity}</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="text-center bg-white/50 border border-white/60 p-3 rounded-2xl shadow-sm">
+                      <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">Units</p>
+                      <p className="font-black text-slate-900 text-base">{row.quantity}</p>
                     </div>
-                    <div className="text-center bg-slate-50 p-2 rounded-xl">
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Revenue</p>
-                      <p className="font-bold text-slate-600 text-xs sm:text-sm">{row.revenue.toLocaleString()}</p>
+                    <div className="text-center bg-white/50 border border-white/60 p-3 rounded-2xl shadow-sm">
+                      <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">Revenue</p>
+                      <p className="font-black text-slate-700 text-xs sm:text-sm">{row.revenue.toLocaleString()}</p>
                     </div>
-                    <div className="text-center bg-emerald-50/50 p-2 rounded-xl border border-emerald-100">
-                      <p className="text-[9px] font-bold text-emerald-600/70 uppercase tracking-widest mb-1">Profit</p>
-                      <p className="font-black text-emerald-600 text-xs sm:text-sm">+{row.profit.toLocaleString()}</p>
+                    <div className="text-center bg-amber-50 border border-amber-200/50 p-3 rounded-2xl shadow-sm">
+                      <p className="text-[9px] font-extrabold text-amber-600/70 uppercase tracking-widest mb-1.5">Profit</p>
+                      <p className="font-black text-amber-600 text-xs sm:text-sm">+{row.profit.toLocaleString()}</p>
                     </div>
                   </div>
                 </div>
@@ -275,29 +269,33 @@ export default function FinancialReportsPage() {
           </div>
 
           {/* ================== DESKTOP TABLE LAYOUT (>= md) ================== */}
-          <div className="hidden md:block bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden animate-in fade-in duration-700">
-            <div className="overflow-x-auto">
+          <div className="hidden md:block bg-white/60 backdrop-blur-2xl border border-white/80 rounded-[2.5rem] shadow-[0_20px_50px_rgba(31,38,135,0.05)] overflow-hidden animate-in fade-in duration-700">
+            <div className="overflow-x-auto no-scrollbar">
               <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-widest text-[10px] font-bold">
+                <thead className="bg-white/40 border-b border-white/60 text-slate-500 uppercase tracking-widest text-[10px] font-extrabold">
                   <tr>
-                    <th className="px-6 py-4">Artifact (Variant)</th>
-                    <th className="px-6 py-4">Category</th>
-                    <th className="px-6 py-4 text-center">Units Sold</th>
-                    <th className="px-6 py-4 text-right">Revenue (LKR)</th>
-                    <th className="px-6 py-4 text-right">Net Profit (LKR)</th>
+                    <th className="px-8 py-5">Artifact (Variant)</th>
+                    <th className="px-6 py-5">Category</th>
+                    <th className="px-6 py-5 text-center">Units Sold</th>
+                    <th className="px-6 py-5 text-right">Revenue (LKR)</th>
+                    <th className="px-8 py-5 text-right">Net Profit (LKR)</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-white/40">
                   {processedReport.rows.length === 0 ? (
-                    <tr><td colSpan={5} className="px-6 py-16 text-center text-slate-500">No completed sales found for this period.</td></tr>
+                    <tr><td colSpan={5} className="px-6 py-20 text-center font-bold text-slate-500">No completed sales found for this period.</td></tr>
                   ) : (
                     processedReport.rows.map((row, index) => (
-                      <tr key={index} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-6 py-4 font-bold text-slate-900">{row.name}</td>
-                        <td className="px-6 py-4 text-slate-500">{row.category}</td>
-                        <td className="px-6 py-4 text-center font-black text-slate-700">{row.quantity}</td>
-                        <td className="px-6 py-4 text-right font-medium text-slate-600">{row.revenue.toLocaleString()}</td>
-                        <td className="px-6 py-4 text-right font-black text-emerald-600">+{row.profit.toLocaleString()}</td>
+                      <tr key={index} className="hover:bg-white/50 transition-colors">
+                        <td className="px-8 py-5 font-black text-slate-900 text-base">{row.name}</td>
+                        <td className="px-6 py-5">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 bg-white/50 px-3 py-1.5 rounded-lg border border-white/60">
+                            {row.category}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5 text-center font-black text-slate-700 text-base">{row.quantity}</td>
+                        <td className="px-6 py-5 text-right font-bold text-slate-600 text-base">{row.revenue.toLocaleString()}</td>
+                        <td className="px-8 py-5 text-right font-black text-amber-600 text-base">+{row.profit.toLocaleString()}</td>
                       </tr>
                     ))
                   )}

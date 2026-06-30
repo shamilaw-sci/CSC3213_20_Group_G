@@ -1,39 +1,68 @@
-﻿'use client';
+﻿import { supabaseServer } from '@/lib/supabase';
+import WorkshopCard from './components/WorkshopCard';
 
-import Link from "next/link";
-import { workshops } from "./data";
+export const metadata = {
+  title: 'Crafts Workshops | Kandyan Cultural Center',
+  description: 'Learn, Create and Experience authentic Kandyan artifacts and traditional crafts.',
+};
 
-export default function WorkshopsPage() {
+export default async function WorkshopsPage() {
+  const { data: workshops, error } = await supabaseServer.from('workshops').select('*').order('title');
+
+  if (error || !workshops || workshops.length === 0) {
+    return (
+      <main className="relative min-h-screen flex items-center justify-center bg-[#F8F9FA]">
+        <div className="mx-auto max-w-xl px-6 text-center relative z-10 bg-white/60 backdrop-blur-xl border border-white/80 p-12 rounded-[3rem] shadow-sm">
+          <p className="text-xs font-black uppercase tracking-[0.3em] text-rose-600 mb-4">Workshops unavailable</p>
+          <h1 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Unable to load workshops right now.</h1>
+          <p className="text-slate-500 font-medium">Please try again later.</p>
+        </div>
+      </main>
+    );
+  }
+
   const workshop = workshops[0];
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <section className="bg-slate-950 text-white py-20">
-        <div className="mx-auto max-w-5xl px-6 sm:px-10">
-          <p className="text-sm uppercase tracking-[0.35em] text-amber-400 mb-3">Wood Craft Workshop</p>
-          <h1 className="text-4xl md:text-5xl font-extrabold leading-tight mb-6">{workshop.title}</h1>
-          <p className="max-w-3xl text-base text-slate-300 mb-10">A single focused wood craft session with a master craftsman. Learn how to carve a keepsake, explore Kandyan woodcraft techniques, and book your spot with one simple flow.</p>
-        </div>
-      </section>
+    <main className="relative min-h-screen bg-[#F8F9FA] pb-24">
+      
+      {/* --- FIXED BACKGROUND FOR GLASS BLUR EFFECT --- */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-[#F8F9FA] to-rose-50 opacity-80"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-amber-200/30 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-rose-200/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+      </div>
 
-      <section className="mx-auto max-w-5xl px-6 py-20 sm:px-10">
-        <div className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-sm lg:p-10">
-          <div className="grid gap-8 lg:grid-cols-[0.95fr_0.7fr] items-center">
-            <div>
-              <div className="overflow-hidden rounded-[28px] border border-slate-200">
-                <img src={workshop.image} alt={workshop.title} className="h-72 w-full object-cover" />
+      <div className="relative z-10 w-full">
+        {/* Workshops Hero Header (Glassmorphism) */}
+        <section className="pt-32 pb-16 px-4 md:px-6">
+          <div className="container mx-auto max-w-7xl">
+            <div className="bg-white/40 backdrop-blur-xl border border-white/60 p-10 md:p-16 rounded-[3rem] shadow-[0_20px_50px_rgba(31,38,135,0.05)] w-full relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent"></div>
+              
+              <div className="relative z-10 max-w-4xl text-left">
+                <h2 className="text-amber-600 font-bold tracking-widest uppercase text-xs mb-4 flex items-center gap-3">
+                  <span className="w-8 h-px bg-amber-600"></span> Shows & Workshops
+                </h2>
+                <h1 className="text-4xl md:text-6xl font-black text-slate-900 leading-tight mb-6 tracking-tight">
+                  Create, Learn & <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-rose-600">Experience</span>
+                </h1>
+                <p className="text-slate-600 max-w-2xl text-lg font-light leading-relaxed">
+                  {workshop.description || 'Join a focused session led by an experienced instructor — book your spot with one simple flow.'}
+                </p>
               </div>
             </div>
-            <div className="space-y-6">
-              <h2 className="text-3xl font-bold text-slate-900">Wood Craft Workshop</h2>
-              <p className="text-slate-600">The workshop page now shows only the wood craft experience. There are no show/workshop tabs anymore — just a flexible booking path for this single workshop.</p>
-              <Link href={`/workshops/${workshop.id}`} className="inline-flex items-center justify-center rounded-full bg-rose-600 px-7 py-4 text-base font-semibold text-white shadow-lg shadow-rose-600/20 transition hover:bg-rose-700">
-                More details
-              </Link>
-            </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        {/* Featured Workshop Card */}
+        <section className="container mx-auto max-w-7xl px-4 sm:px-6 pb-20">
+          <div className="w-full sm:max-w-md">
+            <WorkshopCard workshop={workshop} />
+          </div>
+        </section>
+      </div>
     </main>
   );
 }
