@@ -24,6 +24,7 @@ type Experience = {
   description: string;
   about?: string;
   highlights: string[];
+  no_of_guests?: number;
 };
 
 function formatDate(dateString: string) {
@@ -154,7 +155,7 @@ export default async function WorkshopDetailsPage({ params }: Props) {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <InfoCard label="Duration" value={experience.duration} />
                 <InfoCard label="Skill level" value="Beginner" />
-                <InfoCard label="Max participants" value="8" />
+                <InfoCard label="Max participants" value={experience.no_of_guests||"Null"} />
                 <InfoCard label="Language" value="English / Sinhala" />
                 <InfoCard label="Artisan" value={experience.artisans?.name || 'Master artisan'} />
               </div>

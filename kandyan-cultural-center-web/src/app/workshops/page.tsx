@@ -25,7 +25,8 @@ export default async function WorkshopsPage() {
           <div className="max-w-4xl text-left pl-0 sm:pl-2 lg:pl-4">
             <p className="text-sm uppercase tracking-[0.35em] text-amber-400 mb-3">Shows &amp; Workshops</p>
             <h1 className="text-4xl md:text-5xl font-extrabold leading-tight mb-6">Create, Learn & Experience</h1>
-            <p className="max-w-3xl text-base text-slate-300 mb-10">{workshop.description || 'Join a focused session led by an experienced instructor — book your spot with one simple flow.'}</p>
+            {/* <p className="max-w-3xl text-base text-slate-300 mb-10">{workshop.description || 'Join a focused session led by an experienced instructor — book your spot with one simple flow.'}</p> */}
+            <p className="max-w-3xl text-base text-slate-300 mb-10">{'Join a focused session led by an experienced instructor — book your spot with one simple flow.'}</p>
           </div>
         </div>
       </section>
