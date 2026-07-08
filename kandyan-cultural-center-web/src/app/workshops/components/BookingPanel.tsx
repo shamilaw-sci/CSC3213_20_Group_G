@@ -509,19 +509,42 @@ function BookingPanel(
               
               return (
                 <>
-                  <input
-                    type="number"
-                    min={1}
-                    max={availableSpots}
-                    value={guests}
-                    onChange={(e) => {
-                      const value = Number(e.target.value);
-                      if (value <= availableSpots && value >= 1) {
-                        setGuests(value);
-                      }
-                    }}
-                    className="w-full rounded-3xl border border-slate-200 px-4 py-3 text-sm"
-                  />
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (guests > 1) setGuests(guests - 1);
+                      }}
+                      className="flex-shrink-0 w-10 h-10 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-lg font-semibold text-slate-600 transition"
+                      aria-label="Decrease guests"
+                    >
+                      −
+                    </button>
+                    <input
+                      type="number"
+                      min={1}
+                      max={availableSpots}
+                      value={guests}
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+                        if (value <= availableSpots && value >= 1) {
+                          setGuests(value);
+                        }
+                      }}
+                      className="flex-1 text-center rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (guests < availableSpots) setGuests(guests + 1);
+                      }}
+                      disabled={guests >= availableSpots}
+                      className="flex-shrink-0 w-10 h-10 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-lg font-semibold text-slate-600 transition"
+                      aria-label="Increase guests"
+                    >
+                      +
+                    </button>
+                  </div>
                   {availableSpots < guests && (
                     <p className="mt-2 text-sm text-rose-600">Only {availableSpots} spot{availableSpots === 1 ? '' : 's'} available</p>
                   )}
@@ -530,14 +553,36 @@ function BookingPanel(
             })()
           )}
           {(!selectedTime || !selectedDate) && (
-            <input
-              type="number"
-              min={1}
-              value={guests}
-              onChange={(e) => setGuests(Number(e.target.value))}
-              className="w-full rounded-3xl border border-slate-200 px-4 py-3 text-sm"
-              placeholder="Select date and time first"
-            />
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (guests > 1) setGuests(guests - 1);
+                }}
+                className="flex-shrink-0 w-10 h-10 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-lg font-semibold text-slate-600 transition"
+                aria-label="Decrease guests"
+              >
+                −
+              </button>
+              <input
+                type="number"
+                min={1}
+                value={guests}
+                onChange={(e) => setGuests(Number(e.target.value))}
+                className="flex-1 text-center rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium"
+                placeholder="1"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setGuests(guests + 1);
+                }}
+                className="flex-shrink-0 w-10 h-10 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-lg font-semibold text-slate-600 transition"
+                aria-label="Increase guests"
+              >
+                +
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -555,13 +600,13 @@ function BookingPanel(
         </div>
       )}
 
-      {error && <div className="mb-4 text-sm text-rose-700">{error}</div>}
+      {error && <div className="mb-4 text-sm text-rose-700 bg-amber-600">{error}</div>}
 
       {showSubmitButton && (
         <button
           onClick={handleBooking}
           disabled={loading || !availability?.available || checkingAvailability}
-          className="w-full rounded-3xl bg-rose-700 px-5 py-3 text-white font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-rose-800 enabled:hover:bg-rose-800"
+          className="w-full rounded-3xl bg-orange-500 px-5 py-3 text-white font-semibold shadow-md transition-all duration-300 hover:bg-orange-600 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? 'Processing...' : 'Proceed to Pay'}
         </button>

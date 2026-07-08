@@ -5,21 +5,17 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(request: Request) {
-    // Add a safety check right at the start of the request
   if (!supabaseUrl || !supabaseKey) {
     return NextResponse.json(
       { error: 'Server configuration error: Missing Supabase credentials.' }, 
       { status: 500 }
     );
   }
+  
   try {
-    // PayHere sends system notification updates natively inside application/x-www-form-urlencoded formatting
     const formData = await request.formData();
     
     const merchantId = formData.get('merchant_id') as string;
@@ -32,7 +28,6 @@ export async function POST(request: Request) {
 
     const merchantSecret = process.env.PAYHERE_MERCHANT_SECRET!;
 
-    // 1. Re-verify the cryptographically unique incoming hash signature to validate message authenticity
     const hashedSecret = crypto
       .createHash('md5')
       .update(merchantSecret)
@@ -49,40 +44,44 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Security alert: Message signature manipulation detected.' }, { status: 400 });
     }
 
-    // 2. Evaluate state outcomes provided securely via standard PayHere code signals
-    if (statusCode === '2') { // '2' explicitly identifies absolute successful authorization execution
-      // 1. Mark Order as Completed and Log Transaction (You already have this)
+    if (statusCode === '2') { 
+      // 1. Mark the order as completed
       await supabase.from('orders').update({ status: 'completed' }).eq('id', orderId);
 
-      // 2. NEW: Fetch the items associated with this specific order
+      // 2. 🚨 ADD THIS: Log the successful transaction so financial reports generate correctly
+      await supabase
+        .from('transactions')
+        .insert({
+          order_id: orderId,
+          gateway_reference: paymentId,
+          status: 'success',
+          amount_paid: parseFloat(payhereAmount)
+        });
+
+      // 3. Deduct stock from inventory (Your existing code)
       const { data: orderItems } = await supabase
         .from('order_items')
         .select('variant_id, quantity')
         .eq('order_id', orderId);
 
-      // 3. NEW: Loop through each purchased item and deduct it from the master stock table
       if (orderItems && orderItems.length > 0) {
         for (const item of orderItems) {
-          // Fetch current stock first
           const { data: currentArtifact } = await supabase
-            .from('artifact_variants') // Change this to your exact table name ('artifacts' etc.)
+            .from('artifact_variants') 
             .select('stock')
             .eq('id', item.variant_id)
             .single();
 
           if (currentArtifact) {
-            // Deduct the purchased quantity and update the database
             const newStock = currentArtifact.stock - item.quantity;
-            
             await supabase
               .from('artifact_variants')
-              .update({ stock: Math.max(0, newStock) }) // Math.max prevents negative stock
+              .update({ stock: Math.max(0, newStock) }) 
               .eq('id', item.variant_id);
           }
         }
       }
     } else {
-      // Handle instances resulting from client platform execution errors/failures
       await supabase
         .from('orders')
         .update({ status: 'failed' })
@@ -98,7 +97,6 @@ export async function POST(request: Request) {
         });
     }
 
-    // Acknowledge validation receipt status confirmation directly back to the PayHere dispatch infrastructure servers
     return new Response('OK', { status: 200 });
 
   } catch (error) {

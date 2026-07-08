@@ -3,7 +3,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import Button from '@/components/Button';
 
 const COUNTRY_DATA = [
   { name: "Afghanistan", code: "+93" }, { name: "Albania", code: "+355" }, { name: "Algeria", code: "+213" },
@@ -207,28 +206,39 @@ export default function EditProfile() {
 
   if (isLoading) {
     return (
-      <div className="h-screen flex items-center justify-center text-slate-500 font-bold">
-        Loading profile...
+      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-slate-200 border-t-amber-600 rounded-full animate-spin"></div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-[var(--color-kandyan-bg)] py-10 px-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-kandyan-soft)] overflow-hidden p-8 sm:p-12">
+  // --- REUSABLE GLASS CLASSES ---
+  const glassInputClass = "w-full bg-white/50 backdrop-blur-md border border-white/80 text-slate-900 text-sm rounded-2xl px-4 py-3.5 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400 transition-all shadow-sm placeholder:text-slate-400 font-medium";
 
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-2">Edit Profile</h1>
-          <p className="text-slate-500 mb-8">Update your profile information</p>
+  return (
+    <main className="relative min-h-screen pt-32 md:pt-40 pb-24 px-4 sm:px-8 bg-[#F8F9FA]">
+      
+      {/* --- FIXED BACKGROUND FOR GLASS BLUR EFFECT --- */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-[#F8F9FA] to-rose-50 opacity-80"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-amber-200/30 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-rose-200/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+      </div>
+
+      <div className="relative z-10 max-w-2xl mx-auto">
+        <div className="bg-white/60 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(31,38,135,0.05)] border border-white/80 overflow-hidden p-8 sm:p-12">
+
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 mb-2 tracking-tight">Edit Profile</h1>
+          <p className="text-slate-500 font-medium mb-8">Update your profile information and avatar.</p>
 
           {errorMsg && (
-            <div className="mb-6 bg-rose-50 border border-rose-200 text-kandyan-maroon px-4 py-3 rounded-xl text-sm font-medium">
+            <div className="mb-8 bg-rose-50/80 backdrop-blur-sm border border-rose-200 text-rose-600 px-4 py-3 rounded-xl text-sm font-bold shadow-sm">
               {errorMsg}
             </div>
           )}
 
           {successMsg && (
-            <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm font-medium">
+            <div className="mb-8 bg-emerald-50/80 backdrop-blur-sm border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl text-sm font-bold shadow-sm">
               {successMsg}
             </div>
           )}
@@ -236,115 +246,120 @@ export default function EditProfile() {
           <form onSubmit={handleSubmit} className="space-y-8">
 
             {/* Avatar Upload */}
-            <div>
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 block">
+            <div className="bg-white/40 p-6 rounded-[2rem] border border-white/80 shadow-sm">
+              <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest mb-4 block">
                 Profile Picture
               </label>
-              <div className="flex flex-col sm:flex-row gap-6">
-                {avatarPreview && (
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                {avatarPreview ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     src={avatarPreview}
                     alt="Avatar preview"
-                    className="w-24 h-24 rounded-full object-cover bg-slate-100"
+                    className="w-24 h-24 sm:w-28 sm:h-28 rounded-[1.25rem] object-cover bg-white shadow-sm border border-white/80 shrink-0"
                   />
+                ) : (
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-[1.25rem] bg-white/60 flex items-center justify-center text-slate-300 shadow-sm border border-white/80 shrink-0">
+                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                  </div>
                 )}
-                <div className="flex-1">
+                <div className="flex-1 w-full text-center sm:text-left mt-2 sm:mt-0">
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleAvatarChange}
-                    className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-[var(--color-kandyan-gold)] file:text-white hover:file:bg-[var(--color-kandyan-gold-dark)] cursor-pointer"
+                    className="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-100 file:text-amber-700 hover:file:bg-amber-200 cursor-pointer file:transition-colors focus:outline-none"
                   />
-                  <p className="text-xs text-slate-500 mt-2">Max 5MB, JPG/PNG</p>
+                  <p className="text-[10px] text-slate-400 mt-3 font-bold uppercase tracking-widest">Max 5MB, JPG/PNG</p>
                 </div>
               </div>
             </div>
 
-            {/* Full Name */}
-            <div>
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 block">
-                Full Name
-              </label>
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="w-full bg-transparent border-b border-slate-300 py-2 sm:py-3 focus:outline-none focus:border-kandyan-gold text-slate-900"
-                placeholder="John Doe"
-                required
-              />
-            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Full Name */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest pl-1 block">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className={glassInputClass}
+                  placeholder="John Doe"
+                  required
+                />
+              </div>
 
-            {/* Email (Read-only) */}
-            <div>
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 block">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                disabled
-                className="w-full bg-slate-50 border-b border-slate-300 py-2 sm:py-3 focus:outline-none text-slate-600 cursor-not-allowed"
-              />
-              <p className="text-xs text-slate-400 mt-2">Email cannot be changed</p>
+              {/* Email (Read-only) */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest pl-1 block">
+                  Email <span className="text-[8px] font-medium lowercase">(Read Only)</span>
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  disabled
+                  className="w-full bg-slate-100/50 backdrop-blur-sm border border-slate-200/50 py-3.5 px-4 rounded-2xl text-slate-400 cursor-not-allowed text-sm font-medium"
+                />
+              </div>
             </div>
 
             {/* Country */}
-            <div>
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 block">
+            <div className="space-y-2">
+              <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest pl-1 block">
                 Country
               </label>
               <div className="relative">
                 <select
                   value={country}
                   onChange={(e) => setCountry(e.target.value)}
-                  className="w-full bg-transparent border-b border-slate-300 py-2 sm:py-3 focus:outline-none focus:border-kandyan-gold text-slate-900 appearance-none pr-8"
+                  className={`${glassInputClass} appearance-none pr-10 cursor-pointer`}
                 >
                   {COUNTRY_DATA.map((c) => (
-                    <option key={c.code} value={c.name}>
+                    <option key={c.name} value={c.name} className="bg-white">
                       {c.name} ({c.code})
                     </option>
                   ))}
                 </select>
-                <svg className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
             </div>
 
             {/* Phone */}
-            <div>
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 block">
+            <div className="space-y-2">
+              <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest pl-1 block">
                 Phone Number
               </label>
-              <div className="flex w-full bg-transparent border-b border-slate-300 focus-within:border-kandyan-gold">
-                <div className="flex items-center pr-3 border-r border-slate-300 py-2 sm:py-3">
-                  <span className="text-slate-900 font-medium">{currentDialCode}</span>
+              <div className="flex w-full bg-white/50 backdrop-blur-md border border-white/80 rounded-2xl focus-within:ring-2 focus-within:ring-amber-400 focus-within:border-amber-400 transition-all shadow-sm overflow-hidden">
+                <div className="flex items-center justify-center px-4 border-r border-white/60 bg-white/40">
+                  <span className="text-slate-900 font-bold text-sm sm:text-base">{currentDialCode}</span>
                 </div>
                 <input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full py-2 sm:py-3 pl-3 bg-transparent focus:outline-none text-slate-900"
+                  className="w-full py-3.5 px-4 bg-transparent text-slate-900 focus:outline-none font-medium text-sm placeholder:text-slate-400"
                   placeholder="123 456 7890"
                 />
               </div>
             </div>
 
             {/* Submit Button */}
-            <div className="flex gap-4 pt-8">
+            <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-white/60">
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="flex-1 px-8 py-4 border-2 border-slate-300 text-slate-900 font-bold rounded-xl hover:bg-slate-50 transition-all"
+                className="flex-1 px-8 py-4 bg-white/60 hover:bg-white text-slate-700 border border-white/80 font-bold rounded-2xl transition-all shadow-sm text-sm"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSaving}
-                className="flex-1 px-8 py-4 bg-[var(--color-kandyan-maroon)] hover:bg-[var(--color-kandyan-maroon-dark)] text-white font-bold rounded-xl shadow-[var(--shadow-kandyan-button)] transition-all disabled:opacity-50"
+                className="flex-1 px-8 py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl shadow-[0_8px_20px_rgba(217,119,6,0.25)] hover:shadow-[0_12px_25px_rgba(217,119,6,0.35)] hover:-translate-y-0.5 transition-all disabled:opacity-50 text-sm"
               >
                 {isSaving ? 'Saving...' : 'Save Changes'}
               </button>
@@ -352,6 +367,6 @@ export default function EditProfile() {
           </form>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
