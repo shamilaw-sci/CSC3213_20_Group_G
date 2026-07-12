@@ -45,8 +45,20 @@ export async function POST(request: Request) {
     }
 
     if (statusCode === '2') { 
+      // 1. Mark the order as completed
       await supabase.from('orders').update({ status: 'completed' }).eq('id', orderId);
 
+      // 2. 🚨 ADD THIS: Log the successful transaction so financial reports generate correctly
+      await supabase
+        .from('transactions')
+        .insert({
+          order_id: orderId,
+          gateway_reference: paymentId,
+          status: 'success',
+          amount_paid: parseFloat(payhereAmount)
+        });
+
+      // 3. Deduct stock from inventory (Your existing code)
       const { data: orderItems } = await supabase
         .from('order_items')
         .select('variant_id, quantity')

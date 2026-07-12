@@ -42,7 +42,7 @@ export async function POST(request: Request) {
         order_id: order.id,
         variant_id: item.id, 
         quantity: item.quantity,
-        cost_price_at_sale: item.price,
+        cost_price_at_sale: item.cost_price,
         selling_price_at_sale: item.discounted_price || item.price
       }));
 

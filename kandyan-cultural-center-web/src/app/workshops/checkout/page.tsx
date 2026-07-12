@@ -11,13 +11,21 @@ type Workshop = {
   id: string;
   category?: "workshop" | "show";
   title: string;
-  craftsman: string;
+  artisan_id?: string;
+  artisans?: {
+    id: string;
+    name?: string;
+    guild?: string;
+    bio?: string;
+    avatar_url?: string;
+  };
   image: string;
   gallery: string[];
   price: number;
   duration: string;
   description: string;
   highlights: string[];
+  
 };
 
 function formatTimeForDisplay(timeStr: string) {
@@ -179,62 +187,51 @@ export default function WorkshopCheckoutPage() {
   }
 
   return (
-    <main className="min-h-screen bg-white py-10">
+    <main className="min-h-screen bg-slate-50">
+      {/* --- FIXED BACKGROUND FOR GLASS BLUR EFFECT --- */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-[#F8F9FA] to-rose-50 opacity-80"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-amber-200/30 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-rose-200/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+      </div>
+
+      {/* --- MAIN SCROLLING CONTENT --- */}
+      <div className="relative z-10 py-24">
+     
       <div className="mx-auto max-w-6xl px-6">
-        {/* Stepper */}
-        <div className="mb-8">
-          <ol className="flex items-center gap-4 text-sm">
-            <li className="flex items-center gap-2 text-slate-500">
-              <span className="h-6 w-6 flex items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700">1</span>
-              <span>Workshop Details</span>
-            </li>
-            <li className="flex items-center gap-2 text-amber-600">
-              <span className="h-6 w-6 flex items-center justify-center rounded-full bg-amber-600 text-white">2</span>
-              <span className="font-semibold">Booking</span>
-            </li>
-            <li className="flex items-center gap-2 text-slate-500">
-              <span className="h-6 w-6 flex items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700">3</span>
-              <span>Payment</span>
-            </li>
-            <li className="flex items-center gap-2 text-slate-500">
-              <span className="h-6 w-6 flex items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700">4</span>
-              <span>Confirmation</span>
-            </li>
-          </ol>
-        </div>
-
-        {/* Hero / Booking header */}
-        <div className="mb-8 rounded-[20px] bg-[#072146] text-white p-6 shadow-md">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-3">
-                <span className="bg-amber-600 text-white px-3 py-1 rounded-full text-xs font-semibold">Wood Craft Workshop</span>
-                <h1 className="text-2xl md:text-3xl font-extrabold">{selectedWorkshop.title}</h1>
-              </div>
-              <p className="mt-2 text-slate-200">You're booking a spot — your profile details are pre-filled below.</p>
-
-              <div className="mt-4 flex flex-wrap gap-3">
+        <section className="mb-10">
+          <div className="bg-white/40 backdrop-blur-xl border border-white/60 p-8 md:p-14 rounded-[3rem] shadow-[0_20px_50px_rgba(31,38,135,0.08)] max-w-5xl mx-auto relative overflow-hidden">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-amber-400/20 blur-[50px] rounded-full pointer-events-none"></div>
+            <div className="relative z-10 text-center">
+              <h2 className="text-amber-600 font-bold tracking-widest uppercase text-xs mb-4 flex items-center justify-center gap-4">
+              </h2>
+              <h1 className="text-4xl md:text-6xl font-black text-slate-900 leading-tight mb-5">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-rose-600">{selectedWorkshop.title}</span>
+              </h1>
+              <p className="text-slate-600 max-w-3xl mx-auto text-lg leading-relaxed">
+                Complete your booking with a seamless checkout made for Kandyan craft experiences.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
                 <ChipIcon label={selectedWorkshop.duration} icon={<DurationIcon />} />
-              </div>
-            </div>
-            <div className="hidden md:flex items-center gap-4">
-              <img src={selectedWorkshop.image} alt="workshop" className="h-24 w-24 rounded-lg object-cover border border-slate-200" />
-              <div className="text-right">
-                <p className="text-sm text-slate-300">From</p>
-                <p className="text-2xl font-bold text-amber-400">{formatPrice(selectedWorkshop.price)}</p>
+                <Badge>{selectedWorkshop.category === 'show' ? 'Show Ticket' : 'Workshop'}</Badge>
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
         <div className="grid gap-8 lg:grid-cols-[1fr_0.45fr]">
           <div className="rounded-[20px] bg-white p-6 shadow-sm border border-slate-100">
             {/* Workshop info card */}
             <div className="mb-6 flex gap-4">
-              <img src={selectedWorkshop.image} alt={selectedWorkshop.title} className="h-20 w-20 rounded-lg object-cover" />
+              <img
+                src={selectedWorkshop.image || selectedWorkshop.artisans?.avatar_url || '/default-workshop.jpg'}
+                alt={selectedWorkshop.title}
+                className="h-20 w-20 rounded-lg object-cover"
+              />
               <div>
                 <h2 className="text-xl font-semibold">{selectedWorkshop.title}</h2>
-                <p className="text-sm text-slate-500">by {selectedWorkshop.craftsman}</p>
+                <p className="text-sm text-slate-500">by {selectedWorkshop.artisans?.name || 'Artisan'}</p>
                 <div className="mt-3 flex gap-2 flex-wrap">
                   <Badge>Hands-on Experience</Badge>
                   <Badge>Custom Keepsake</Badge>
@@ -265,7 +262,7 @@ export default function WorkshopCheckoutPage() {
           </div>
 
           {/* Sticky summary */}
-          <aside className="sticky top-24">
+          <aside className="lg:col-start-2 lg:sticky lg:top-24 self-start">
             <div className="rounded-[20px] bg-white p-6 shadow-lg border border-slate-100 w-full">
               <p className="text-sm text-slate-500">Booking summary</p>
               <div className="mt-4 space-y-3 text-slate-700">
@@ -274,7 +271,7 @@ export default function WorkshopCheckoutPage() {
                     <WorkshopIcon />
                     <div>
                       <div className="text-sm font-medium">{selectedWorkshop.title}</div>
-                      <div className="text-xs text-slate-500">{selectedWorkshop.craftsman}</div>
+                      <div className="text-xs text-slate-500">{selectedWorkshop.artisans?.name || 'Artisan'}</div>
                     </div>
                   </div>
                   <div className="font-medium">{formatPrice(selectedWorkshop.price)}</div>
@@ -297,9 +294,11 @@ export default function WorkshopCheckoutPage() {
                 <div className="h-px bg-slate-100" />
 
                 <div className="text-sm text-slate-600">
-                  <div className="flex justify-between"><span>Date</span><span>{bookingState?.selectedDate ? new Date(bookingState.selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Choose date'}</span></div>
-                  <div className="flex justify-between"><span>Time</span><span>{bookingState?.selectedTime ? formatTimeForDisplay(bookingState.selectedTime) : 'Choose time'}</span></div>
-                  <div className="flex justify-between"><span>Guests</span><span>{bookingState?.guests ?? 1}</span></div>
+                  <div className="flex justify-between gap-3"><span>Workshop</span><span className="text-right font-medium text-slate-700">{selectedWorkshop.title}</span></div>
+                  <div className="flex justify-between gap-3"><span>Booker</span><span className="text-right font-medium text-slate-700">{bookingState?.name?.trim() || 'Not provided'}</span></div>
+                  <div className="flex justify-between gap-3"><span>Date</span><span className="text-right font-medium text-slate-700">{bookingState?.selectedDate ? new Date(bookingState.selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Choose date'}</span></div>
+                  <div className="flex justify-between gap-3"><span>Time</span><span className="text-right font-medium text-slate-700">{bookingState?.selectedTime ? formatTimeForDisplay(bookingState.selectedTime) : 'Choose time'}</span></div>
+                  <div className="flex justify-between gap-3"><span>Guests</span><span className="text-right font-medium text-slate-700">{bookingState?.guests ?? 1}</span></div>
                 </div>
 
                 {bookingState?.availability?.message && (
@@ -323,7 +322,7 @@ export default function WorkshopCheckoutPage() {
                   !bookingState?.selectedDate ||
                   !bookingState?.selectedTime
                 }
-                className="mt-6 w-full rounded-lg bg-[#072146] px-5 py-3 text-white font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#031426]"
+                className="mt-6 w-full rounded-lg bg-amber-600 px-5 py-3 text-white font-semibold shadow-[0_8px_20px_rgba(217,119,6,0.25)] transition-all duration-300 hover:bg-amber-700 hover:shadow-[0_12px_25px_rgba(217,119,6,0.35)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {bookingState?.loading ? 'Processing...' : 'Proceed to Pay'}
               </button>
@@ -336,6 +335,7 @@ export default function WorkshopCheckoutPage() {
             </div>
           </aside>
         </div>
+      </div>
       </div>
     </main>
   );

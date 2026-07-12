@@ -4,6 +4,14 @@ import { forwardRef, ForwardedRef, useEffect, useImperativeHandle, useState } fr
 import { supabase } from '@/lib/supabase';
 import { useCurrency } from '@/context/CurrencyContext';
 
+// Check if a date is a Sunday
+function isSunday(dateString: string): boolean {
+  // Parse as UTC to ensure consistent timezone handling
+  const [year, month, day] = dateString.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCDay() === 0;
+}
+
 // Convert time string "HH:MM" to 12-hour display format
 function timeTo12Hour(timeStr: string): string {
   if (!timeStr) return '';
@@ -32,7 +40,15 @@ type Workshop = {
   category?: "workshop" | "show";
   title: string;
   price: number;
-  craftsman: string;
+  no_of_guests?: number;
+  artisan_id?: string;
+  artisans?: {
+    id: string;
+    name?: string;
+    guild?: string;
+    bio?: string;
+    avatar_url?: string;
+  };
 };
 
 function formatDateForDisplay(dateString: string) {
@@ -92,14 +108,17 @@ function BookingPanel(
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   
   const [error, setError] = useState('');
+  const [dateError, setDateError] = useState('');
   const [loading, setLoading] = useState(false);
   const [blockedDates, setBlockedDates] = useState<Record<string, string>>({});
   const [bookedTimes, setBookedTimes] = useState<Set<string>>(new Set());
   const [timeSlots, setTimeSlots] = useState<string[]>([]);
+  const [bookedCounts, setBookedCounts] = useState<Record<string, number>>({});
 
   const today = new Date().toISOString().slice(0, 10);
   const allTimesForDate = timeSlots;
   const { formatPrice } = useCurrency();
+  const workshopCraftsman = workshop.category === 'show' ? null : workshop.artisans?.name ?? 'Artisan';
 
   const blockedReason = selectedDate ? blockedDates[selectedDate] : undefined;
   const isSelectedDateBlocked = !!blockedReason;
@@ -152,6 +171,7 @@ function BookingPanel(
   useEffect(() => {
     if (!selectedDate) {
       setBookedTimes(new Set());
+      setBookedCounts({});
       return;
     }
 
@@ -161,6 +181,7 @@ function BookingPanel(
         if (!res.ok) return;
         const data = await res.json();
         setBookedTimes(new Set((data.bookedTimes || []).map((time: string) => normalizeTimeTo24(time))));
+        setBookedCounts(data.bookedCounts || {});
       } catch (err) {
         console.warn('Failed to load booked times', err);
       }
@@ -199,7 +220,7 @@ function BookingPanel(
             booked_date: selectedDate,
             booked_time: normalizedTime,
             workshop_id: workshop.id ?? null,
-            craftsman: workshop.category === 'show' ? null : workshop.craftsman,
+            craftsman: workshop.category === 'show' ? null : workshopCraftsman,
           }),
         });
 
@@ -214,7 +235,7 @@ function BookingPanel(
 
     const timer = setTimeout(checkAvailability, 300);
     return () => clearTimeout(timer);
-  }, [selectedDate, selectedTime, workshop.id, workshop.craftsman, workshop.category]);
+  }, [selectedDate, selectedTime, workshop.id, workshopCraftsman, workshop.category]);
 
   const handleBooking = async () => {
     setError('');
@@ -240,7 +261,7 @@ function BookingPanel(
           workshop_title: workshop.title,
           experience_title: workshop.title,
           category: workshop.category ?? 'workshop',
-          craftsman: workshop.category === 'show' ? null : workshop.craftsman,
+          craftsman: workshop.category === 'show' ? null : workshopCraftsman,
           booked_date: selectedDate,
           booked_time: normalizedTime,
           customer_name: name,
@@ -388,12 +409,36 @@ function BookingPanel(
             value={selectedDate}
             min={today}
             onChange={(e) => {
-              setSelectedDate(e.target.value);
+              const selectedDateValue = e.target.value;
+              
+              // Check if date is Sunday
+              if (isSunday(selectedDateValue)) {
+                setDateError('Sundays are not available for bookings.');
+                setSelectedDate('');
+                setSelectedTime('');
+                return;
+              }
+              
+              // Check if date is blocked from database
+              if (blockedDates[selectedDateValue]) {
+                setDateError(`This date is not available: ${blockedDates[selectedDateValue]}`);
+                setSelectedDate('');
+                setSelectedTime('');
+                return;
+              }
+              
+              setSelectedDate(selectedDateValue);
               setSelectedTime('');
+              setDateError('');
               setError('');
             }}
             className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm"
           />
+          {dateError && (
+            <div className="mt-2 rounded-3xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              <strong>Not Available:</strong> {dateError}
+            </div>
+          )}
           {selectedDate && isSelectedDateBlocked && (
             <div className="mt-2 rounded-3xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700">
               <strong>Unavailable:</strong> {blockedReason}
@@ -412,10 +457,14 @@ function BookingPanel(
             <option value="">Choose a time</option>
             {allTimesForDate.map((time) => {
               const normalizedTime = normalizeTimeTo24(time);
-              const isBooked = bookedTimes.has(normalizedTime);
+              const bookedCount = bookedCounts[normalizedTime] || 0;
+              const maxGuests = workshop.no_of_guests || 0;
+              const remainingSpots = maxGuests - bookedCount;
+              const isFull = remainingSpots <= 0;
+              
               return (
-                <option key={time} value={normalizedTime} disabled={isBooked}>
-                  {timeTo12Hour(normalizedTime)} {isBooked ? '(Booked)' : ''}
+                <option key={time} value={normalizedTime} disabled={isFull}>
+                  {timeTo12Hour(normalizedTime)} {isFull ? '(Full)' : `(${remainingSpots} spot${remainingSpots === 1 ? '' : 's'} left)`}
                 </option>
               );
             })}
@@ -452,13 +501,89 @@ function BookingPanel(
         </div>
         <div>
           <label className="block mb-2 font-medium">Guests</label>
-          <input
-            type="number"
-            min={1}
-            value={guests}
-            onChange={(e) => setGuests(Number(e.target.value))}
-            className="w-full rounded-3xl border border-slate-200 px-4 py-3 text-sm"
-          />
+          {selectedTime && selectedDate && (
+            (() => {
+              const bookedCount = bookedCounts[selectedTime] || 0;
+              const maxGuests = workshop.no_of_guests || 1;
+              const availableSpots = maxGuests - bookedCount;
+              
+              return (
+                <>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (guests > 1) setGuests(guests - 1);
+                      }}
+                      className="flex-shrink-0 w-10 h-10 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-lg font-semibold text-slate-600 transition"
+                      aria-label="Decrease guests"
+                    >
+                      −
+                    </button>
+                    <input
+                      type="number"
+                      min={1}
+                      max={availableSpots}
+                      value={guests}
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+                        if (value <= availableSpots && value >= 1) {
+                          setGuests(value);
+                        }
+                      }}
+                      className="flex-1 text-center rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (guests < availableSpots) setGuests(guests + 1);
+                      }}
+                      disabled={guests >= availableSpots}
+                      className="flex-shrink-0 w-10 h-10 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-lg font-semibold text-slate-600 transition"
+                      aria-label="Increase guests"
+                    >
+                      +
+                    </button>
+                  </div>
+                  {availableSpots < guests && (
+                    <p className="mt-2 text-sm text-rose-600">Only {availableSpots} spot{availableSpots === 1 ? '' : 's'} available</p>
+                  )}
+                </>
+              );
+            })()
+          )}
+          {(!selectedTime || !selectedDate) && (
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (guests > 1) setGuests(guests - 1);
+                }}
+                className="flex-shrink-0 w-10 h-10 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-lg font-semibold text-slate-600 transition"
+                aria-label="Decrease guests"
+              >
+                −
+              </button>
+              <input
+                type="number"
+                min={1}
+                value={guests}
+                onChange={(e) => setGuests(Number(e.target.value))}
+                className="flex-1 text-center rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium"
+                placeholder="1"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setGuests(guests + 1);
+                }}
+                className="flex-shrink-0 w-10 h-10 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-lg font-semibold text-slate-600 transition"
+                aria-label="Increase guests"
+              >
+                +
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -470,18 +595,18 @@ function BookingPanel(
             {selectedTime ? timeTo12Hour(selectedTime) : '--:--'}
           </div>
           <div className="text-sm text-slate-600 mt-1">
-            {workshop.craftsman || 'Workshop'} · {guests} guest{guests === 1 ? '' : 's'} · {formatPrice(workshop.price)}
+            {workshopCraftsman || 'Workshop'} · {guests} guest{guests === 1 ? '' : 's'} · {formatPrice(workshop.price)}
           </div>
         </div>
       )}
 
-      {error && <div className="mb-4 text-sm text-rose-700">{error}</div>}
+      {error && <div className="mb-4 text-sm text-rose-700 bg-amber-600">{error}</div>}
 
       {showSubmitButton && (
         <button
           onClick={handleBooking}
           disabled={loading || !availability?.available || checkingAvailability}
-          className="w-full rounded-3xl bg-rose-700 px-5 py-3 text-white font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-rose-800 enabled:hover:bg-rose-800"
+          className="w-full rounded-3xl bg-orange-500 px-5 py-3 text-white font-semibold shadow-md transition-all duration-300 hover:bg-orange-600 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? 'Processing...' : 'Proceed to Pay'}
         </button>
@@ -493,4 +618,3 @@ function BookingPanel(
 }
 
 export default forwardRef(BookingPanel);
-  
