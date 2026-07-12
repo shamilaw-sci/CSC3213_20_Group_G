@@ -115,6 +115,10 @@ export default async function WorkshopDetailsPage({ params }: Props) {
                 ))}
               </div>
             </div>
+            <h1 className="text-4xl md:text-6xl font-black text-slate-900 leading-tight mb-5 tracking-tight">{experience.title}</h1>
+            <p className="max-w-3xl text-lg text-slate-600 font-medium leading-relaxed">{experience.description}</p>
+          </div>
+        </div>
 
               {/* About Workshop */}
               <div className="rounded-[2.5rem] bg-white/60 backdrop-blur-xl p-8 sm:p-10 shadow-[0_10px_30px_rgba(31,38,135,0.05)] border border-white/80">
@@ -147,17 +151,11 @@ export default async function WorkshopDetailsPage({ params }: Props) {
                 <InfoCard label="Language" value="English / Sinhala" />
                 <InfoCard label="Craftsman" value={experience.artisans?.name} />
               </div>
-            </div>
 
-            {/* Masonry gallery */}
-            <div>
-              <h3 className="text-xl font-semibold mb-4">Photo gallery</h3>
-              <div className="columns-2 md:columns-3 gap-4 space-y-4">
-                {experience.gallery.map((img) => (
-                  <div key={img} className="break-inside rounded-lg overflow-hidden border border-slate-100 shadow-sm">
-                    <img src={img} alt="gallery" className="w-full object-cover" style={{ minHeight: 120 }} />
-                  </div>
-                ))}
+              {/* About Workshop */}
+              <div className="rounded-[2.5rem] bg-white/60 backdrop-blur-xl p-8 sm:p-10 shadow-[0_10px_30px_rgba(31,38,135,0.05)] border border-white/80">
+                <h2 className="text-2xl font-black text-slate-900 mb-5 tracking-tight">About this workshop</h2>
+                <p className="text-slate-700 leading-relaxed font-medium">{experience.about || experience.description}</p>
               </div>
 
               {/* Related Workshops */}
@@ -195,6 +193,8 @@ export default async function WorkshopDetailsPage({ params }: Props) {
                   <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Duration</p>
                   <p className="font-bold text-slate-900 bg-white px-2 py-1 text-sm rounded-lg border border-slate-100 shadow-sm">{experience.duration}</p>
                 </div>
+              )}
+            </div>
 
                 <Link href={`/workshops/checkout?workshop=${encodeURIComponent(experience.id)}`} className="w-full text-center rounded-[1.25rem] bg-amber-600 hover:bg-amber-500 px-4 py-3 text-white font-bold transition-all shadow-[0_8px_20px_rgba(217,119,6,0.25)] hover:shadow-[0_12px_25px_rgba(217,119,6,0.35)] transform hover:-translate-y-1 text-base flex items-center justify-center gap-2">
                   Book Now
