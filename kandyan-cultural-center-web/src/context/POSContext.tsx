@@ -78,6 +78,7 @@ const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
           color: item.color_name || null, 
           hexCode: item.hex_code || null,
           imageUrl: item.image_url || null,
+          costPrice: item.cost_price || 0,
         }));
         
         setCachedProducts(formattedProducts);
@@ -100,33 +101,39 @@ const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
   };
 
   // 3. PROCESS ORDER (ONLINE VS OFFLINE)
-  const processOrder = async (orderData: any, currentCart: any[]) => {
+  const processOrder = async (orderData: any, orderItemsData: any[], currentCart: any[]) => {
     if (isOnline) {
       try {
-        // Try to save directly to Supabase
-        const { error } = await supabase.from('orders').insert(orderData);
-        if (error) throw error;
+        // First, insert the parent order header
+        const { error: orderError } = await supabase.from('orders').insert(orderData);
+        if (orderError) throw orderError;
 
-        //For a complete system, also loop through currentCart here 
-        // and run an UPDATE on artifact_variants to deduct stock in Supabase.
+        // Second, insert the child items array
+        const { error: itemsError } = await supabase.from('order_items').insert(orderItemsData);
+        if (itemsError) throw itemsError;
+
+        console.log("Order and items saved to Supabase successfully!");
+
       } catch (error) {
-        console.error("Supabase error, queuing order offline instead.", error);
-        queueOrderOffline(orderData, currentCart);
+        console.error("Supabase dual-insert error, queuing offline instead.", error);
+        queueOrderOffline(orderData, orderItemsData, currentCart);
       }
     } else {
-      // We are offline, send straight to the queue
-      queueOrderOffline(orderData, currentCart);
+      // Offline mode: queue it all
+      queueOrderOffline(orderData, orderItemsData, currentCart);
     }
   };
 
   // 4. THE OFFLINE QUEUE
-  const queueOrderOffline = (orderData: any, currentCart: any[]) => {
+  const queueOrderOffline = (orderData: any, orderItemsData: any[], currentCart: any[]) => {
     const existingQueue = JSON.parse(localStorage.getItem('kaa_offline_queue') || '[]');
+    
+    // Package everything together in one neat offline envelope
     const newOrder = {
-      ...orderData,
-      id: crypto.randomUUID(), // Assign a temporary local ID
+      orderData,
+      orderItemsData,
       queued_at: new Date().toISOString(),
-      items: currentCart // Save the items to deduct later
+      items: currentCart
     };
     
     existingQueue.push(newOrder);
@@ -136,10 +143,11 @@ const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
     const updatedCache = cachedProducts.map(product => {
       const soldItem = currentCart.find(c => c.id === product.id);
       if (soldItem) {
-        return { ...product, stock: (product.stock || 0) - (soldItem.quantity || 0) };
+        return { ...product, stock: (product.stock || 0) - soldItem.quantity };
       }
       return product;
     });
+    
     setCachedProducts(updatedCache);
     localStorage.setItem('kaa_product_cache', JSON.stringify(updatedCache));
   };
@@ -150,27 +158,30 @@ const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
     if (queue.length === 0) return;
 
     console.log(`Syncing ${queue.length} offline orders to Supabase...`);
+    const remainingQueue = []; // Holds orders that fail to sync
 
     // Loop through the queue and push each one
-    for (let i = queue.length - 1; i >= 0; i--) {
+    for (let i = 0; i < queue.length; i++) {
       const order = queue[i];
       try {
-        // Strip out the temporary local fields before sending to DB
-        const { id, queued_at, items, ...cleanOrderData } = order;
-        
-        const { error } = await supabase.from('orders').insert(cleanOrderData);
-        if (error) throw error;
+        // Push Header
+        const { error: orderError } = await supabase.from('orders').insert(order.orderData);
+        if (orderError) throw orderError;
 
-        // If successful, remove it from the queue array
-        queue.splice(i, 1);
+        // Push Items
+        const { error: itemsError } = await supabase.from('order_items').insert(order.orderItemsData);
+        if (itemsError) throw itemsError;
+
+        console.log(`Successfully synced offline order ${order.orderData.invoice_number}`);
+        // If successful, it does NOT get added to the remainingQueue
       } catch (err) {
-        console.error("Failed to sync order", order.invoice_number);
-        // It remains in the array to try again next time
+        console.error("Failed to sync order, retaining in queue.", err);
+        remainingQueue.push(order); 
       }
     }
 
-    // Save the remaining (or empty) queue back to local storage
-    localStorage.setItem('kaa_offline_queue', JSON.stringify(queue));
+    // Overwrite the local storage with whatever is left (empty if 100% successful)
+    localStorage.setItem('kaa_offline_queue', JSON.stringify(remainingQueue));
   };
 
   const updateQuantity = (id: string, newQuantity: number) => {

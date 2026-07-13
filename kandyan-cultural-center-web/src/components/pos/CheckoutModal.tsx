@@ -31,23 +31,41 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
     setError(null);
 
     try {
+      // 1. Generate the master UUID locally in the browser
+      const masterOrderId = crypto.randomUUID();
+
+      // 2. Build the Orders Header payload
       const orderData = {
-        invoice_number: orderNumber,
-        total_amount: cartTotal,
-        discount_percentage: discountValue,
-        final_amount: finalTotal,
+        id: masterOrderId,              // We pass our own ID instead of letting the DB do it
+        invoice_number: orderNumber,    // Custom S26... number
+        //user_id: currentCashierId,
+        total_amount: finalTotal,        
+        discount_percentage: discountValue, //the actual final paid amount
         payment_method: paymentMethod,
         status: 'completed',
+        created_at: new Date().toISOString(), // Captures the exact offline time
+        sales_channel: 'in-store',           // Uses the enum value
       };
 
-      // 1. Hand the data to the Context engine
-      // whether to push to Supabase or queue locally
-      await processOrder(orderData, cart);
+      // 3. Build the Order Items payload array (THIS IS WHAT WAS MISSING!)
+      const orderItemsData = cart.map((item) => {
+        const sellingPrice = item.customPrice !== undefined ? item.customPrice : item.price;
+        
+        return {
+          id: crypto.randomUUID(),      // Unique ID for this specific row
+          order_id: masterOrderId,      // This perfectly links the item to the parent order
+          variant_id: item.id,
+          quantity: item.quantity,
+          cost_price_at_sale: item.costPrice || 0, // Fallback just in case
+          selling_price_at_sale: sellingPrice,
+        };
+      });
 
-      // 2. Set the timestamp for the receipt
+      // 4. Send BOTH payloads to the offline-capable Context engine
+      await processOrder(orderData, orderItemsData, cart);
+
+      // 5. Set the timestamp and show the receipt
       setOrderTimestamp(new Date());
-      
-      // 3. Show the receipt
       setShowReceipt(true);
 
     } catch (err: any) {
