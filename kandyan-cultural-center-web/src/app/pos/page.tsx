@@ -84,8 +84,7 @@ export default function POSPage() {
   // VIEW 1: LOADING STATE
   // ==========================================
   if (loading) {
-    // A blank screen that matches your app's background color.
-    // No "Authenticating" text to give away the system's existence.
+    // A blank screen that matches the app's background color.
     return <div className="min-h-screen bg-stone-100"></div>;
   }
 

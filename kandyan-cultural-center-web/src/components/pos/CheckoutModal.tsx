@@ -47,7 +47,7 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
         sales_channel: 'in-store',           // Uses the enum value
       };
 
-      // 3. Build the Order Items payload array (THIS IS WHAT WAS MISSING!)
+      // 3.Order Items payload array
       const orderItemsData = cart.map((item) => {
         const sellingPrice = item.customPrice !== undefined ? item.customPrice : item.price;
         
