@@ -8,11 +8,13 @@ import CartDrawer from "@/components/CartDrawer";
 
 export default function StoreLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAdminPage = pathname?.startsWith('/admin');
+  
+  // Check if we are in the admin panel OR the POS system
+  const isHiddenRoute = pathname?.startsWith('/admin') || pathname?.startsWith('/pos');
 
-  // If we are in the admin panel, ONLY render the children (no header/footer)
-  if (isAdminPage) {
-    return <main className="flex-grow bg-slate-50">{children}</main>;
+  // If we are on a hidden route, ONLY render the children (no header/footer)
+  if (isHiddenRoute) {
+    return <main className="flex-grow flex flex-col">{children}</main>;
   }
 
   // If we are on the public storefront, render everything

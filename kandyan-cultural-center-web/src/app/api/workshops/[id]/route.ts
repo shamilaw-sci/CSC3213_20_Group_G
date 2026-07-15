@@ -12,7 +12,7 @@ export async function GET(request: Request) {
 
   const { data: workshop, error } = await supabaseServer
     .from('workshops')
-    .select('*')
+    .select('*, artisans(id,name,guild,bio,avatar_url)')
     .eq('id', id)
     .single();
 
