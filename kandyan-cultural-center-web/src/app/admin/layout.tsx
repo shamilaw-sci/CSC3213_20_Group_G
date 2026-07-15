@@ -10,12 +10,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string | null>(null);
   
   // Mobile menu state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const verifyAdmin = async () => {
+    const verifyAccess = async () => {
       // 1. Check if logged in
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -24,25 +25,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return;
       }
 
-      // 2. Check if the user is an admin
+      // 2. Fetch the new role enum
       const { data: profile } = await supabase
         .from('profiles')
-        .select('is_admin')
+        .select('role')
         .eq('id', user.id)
         .single();
 
-      if (!profile?.is_admin) {
+      // 3. Check if they have admin OR cashier privileges
+      if (!profile || (profile.role !== 'admin')) {
         // Intruder! Kick them to the homepage
         router.push('/');
         return;
       }
 
-      // 3. User is verified!
+      // 4. User is verified!
+      setUserRole(profile.role);
       setIsAuthorized(true);
       setIsLoading(false);
     };
 
-    verifyAdmin();
+    verifyAccess();
   }, [router]);
 
   // Light theme loading screen
@@ -51,7 +54,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="flex h-screen w-screen items-center justify-center bg-[#F8F9FA]">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-slate-200 border-t-amber-600 rounded-full animate-spin"></div>
-          <p className="text-amber-600 font-bold tracking-widest uppercase text-sm">Verifying Admin...</p>
+          <p className="text-amber-600 font-bold tracking-widest uppercase text-sm">Verifying Access...</p>
         </div>
       </div>
     );
@@ -85,7 +88,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="h-16 lg:h-20 flex items-center justify-between px-6 lg:px-8 border-b border-white/60 shrink-0 bg-white/40">
           <div className="flex items-center gap-3">
              <div className="w-8 h-8 rounded-[0.6rem] bg-amber-100 flex items-center justify-center text-amber-600 font-black text-sm shadow-sm border border-amber-200/50">K</div>
-             <span className="text-slate-900 font-extrabold tracking-widest uppercase text-sm">Admin</span>
+             <span className="text-slate-900 font-extrabold tracking-widest uppercase text-sm">
+               {userRole === 'admin' ? 'Admin' : 'POS Cashier'}
+             </span>
           </div>
           {/* Close button for mobile */}
           <button 
@@ -104,7 +109,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           <SidebarLink href="/admin/orders" icon="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" label="Orders & POS" pathname={pathname} onClick={() => setIsMobileMenuOpen(false)} />
           <SidebarLink href="/admin/inventory" icon="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" label="Inventory" pathname={pathname} onClick={() => setIsMobileMenuOpen(false)} />
-          <SidebarLink href="/admin/reports" icon="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" label="Financial Reports" pathname={pathname} onClick={() => setIsMobileMenuOpen(false)} />
+          
+          {/* RBAC: Only true admins can see Financial Reports */}
+          {userRole === 'admin' && (
+            <SidebarLink href="/admin/reports" icon="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" label="Financial Reports" pathname={pathname} onClick={() => setIsMobileMenuOpen(false)} />
+          )}
           
           <div className="pt-6 pb-2">
             <p className="px-4 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Facilities</p>
@@ -134,7 +143,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             onClick={() => setIsMobileMenuOpen(true)} 
             className="text-slate-500 hover:text-amber-600 focus:outline-none p-2 -mr-2 bg-white/60 rounded-xl border border-white/80 shadow-sm transition-colors"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
           </button>
         </header>
 

@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import { createClient } from '@supabase/supabase-js';
 
 export const metadata: Metadata = {
-  title: 'Admin Dashboard | KCC',
+  title: 'Admin Dashboard | Kandyan Cultural Centre',
 };
 
 // Initialize Supabase for secure Server-Side data fetching
