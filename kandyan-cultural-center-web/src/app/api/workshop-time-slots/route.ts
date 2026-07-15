@@ -44,7 +44,7 @@ export async function GET(request: Request) {
 
     const { data, error } = await supabase
       .from('workshops')
-      .select('id, time_slots, slot_times, available_slots, booking_times, timeSlots, slots')
+      .select('time_slots')
       .eq('id', workshopId)
       .maybeSingle();
 

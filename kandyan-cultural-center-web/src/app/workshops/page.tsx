@@ -31,8 +31,6 @@ export default async function WorkshopsPage() {
     );
   }
 
-  const workshop = workshops[0];
-
   return (
     <main className="min-h-screen bg-slate-50">
       {/* --- FIXED BACKGROUND FOR GLASS BLUR EFFECT --- */}
@@ -49,19 +47,25 @@ export default async function WorkshopsPage() {
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-28 bg-amber-400/12 blur-[40px] rounded-full pointer-events-none"></div>
           <div className="relative z-10 ">
             <h2 className="text-amber-600 font-bold tracking-widest uppercase text-xs mb-4 flex items-center justify-center gap-4">
-              <span className="w-10 h-px bg-amber-600"></span> Workshops <span className="w-10 h-px bg-amber-600"></span>
+              <span className="w-10 h-px bg-amber-600"></span> Create, Learn & Experience <span className="w-10 h-px bg-amber-600"></span>
             </h2>
             <h1 className="text-4xl md:text-6xl font-black text-slate-900 leading-tight mb-6">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-rose-600">Create, Learn & Experience</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-rose-600"> The Workshops </span>
             </h1>
             <p className="text-slate-600 max-w-2xl mx-auto text-lg font-light leading-relaxed">{'Join a focused session led by an experienced instructor — book your spot with one simple flow.'}</p>
           </div>
         </div>
       </section>
-        {/* Featured Workshop Card */}
+        {/* Workshop Cards Grid */}
         <section className="container mx-auto max-w-7xl px-4 sm:px-6 pb-20">
-          <div className="w-full sm:max-w-md">
-            <WorkshopCard workshop={workshop} />
+          <div className="w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {workshops.map((w: any) => (
+                <div key={w.id} className="w-full">
+                  <WorkshopCard workshop={w} />
+                </div>
+              ))}
+            </div>
           </div>
         </section>
     </main>
