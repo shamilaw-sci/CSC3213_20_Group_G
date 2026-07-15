@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react';
 import { usePOS } from '../../context/POSContext';
 import ProductGrid from '../../components/pos/ProductGrid';
 import CartSidebar from '../../components/pos/CartSidebar';
-import { supabase } from '../../lib/supabase'; // Ensure this path matches your setup
+import CameraScanner from '../../components/pos/CameraScanner'; 
+import { supabase } from '../../lib/supabase'; 
 
 export default function POSPage() {
-  const { cartTotal } = usePOS();
+  const { cartTotal, setCashierId } = usePOS();
   
   // --- AUTH & ACCESS STATE ---
   const [loading, setLoading] = useState(true);
@@ -19,7 +20,9 @@ export default function POSPage() {
   // --- UI & POS STATE ---
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
-  const [scannerMode, setScannerMode] = useState<'barcode' | 'camera'>('barcode');
+  
+  // Replaced scannerMode with a boolean to control the camera overlay
+  const [isCameraActive, setIsCameraActive] = useState(false); 
   const [searchQuery, setSearchQuery] = useState('');
   const [isOnline, setIsOnline] = useState(true); 
 
@@ -29,7 +32,6 @@ export default function POSPage() {
       try {
         const { data: { session }, error: authError } = await supabase.auth.getSession();
         
-        // Stealth redirect if not logged in at all
         if (authError || !session) {
           window.location.replace('/');
           return;
@@ -43,19 +45,19 @@ export default function POSPage() {
           .eq('id', currentUserId)
           .single();
 
-        // Stealth redirect if database fails or profile doesn't exist
         if (profileError || !profile) {
           window.location.replace('/');
           return;
         }
 
-        // Grant access ONLY if they are an admin or cashier
         if (profile.role === 'admin' || profile.role === 'cashier') {
           setHasAccess(true);
           setCashierName(profile.full_name || 'Cashier'); 
           setUserRole(profile.role);
+          
+          // Ensure your context has this method available!
+          if (setCashierId) setCashierId(currentUserId); 
         } else {
-          // Stealth redirect if they are logged in but lack the proper role (e.g., standard customer)
           window.location.replace('/');
         }
       } catch (err) {
@@ -67,34 +69,38 @@ export default function POSPage() {
     };
 
     checkAccess();
-  }, []);
+  }, [setCashierId]);
 
-  // --- 2. LOGOUT HANDLER ---
+  // --- 2. HANDLERS ---
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setIsDropdownOpen(false);
     setIsLogoutConfirmOpen(false);
-    window.location.reload(); // Refresh to trigger the route guard and lock the terminal
+    window.location.reload(); 
   };
 
-  // Mock function to test network toggle
   const toggleNetwork = () => setIsOnline(!isOnline);
 
+  const handleBarcodeScanned = (barcode: string) => {
+    console.log("Scanned Barcode value:", barcode);
+    setSearchQuery(barcode); // Auto-fill the search bar
+    setIsCameraActive(false); // Close the camera automatically
+    
+    // Add logic here to automatically add the item to the cart if desired
+    alert(`Barcode scanned: ${barcode}`);
+  };
+
   // ==========================================
-  // VIEW 1: LOADING STATE
+  // VIEW 1: STEALTH LOADING STATE
   // ==========================================
   if (loading) {
-    // A blank screen that matches the app's background color.
     return <div className="min-h-screen bg-stone-100"></div>;
   }
 
   // ==========================================
-  // VIEW 2: RESTRICTED ACCESS (Padlock Screen)
+  // VIEW 2: THE INVISIBLE WALL
   // ==========================================
   if (!hasAccess) {
-    // If they aren't authorized, render absolutely nothing (null).
-    // This holds the screen completely blank while the browser 
-    // processes the window.location.replace('/') redirect.
     return null; 
   }
 
@@ -105,14 +111,12 @@ export default function POSPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-stone-900 font-sans p-4 z-[100]">
         <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-300">
-          
           <div className="bg-amber-700 p-6 text-center">
             <div className="w-16 h-16 bg-white text-amber-700 rounded-full flex items-center justify-center mx-auto mb-3 text-3xl shadow-md">
               ⚖️
             </div>
             <h2 className="text-2xl font-black text-white tracking-wide">Session Accountability</h2>
           </div>
-
           <div className="p-8">
             <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 mb-6">
               <div className="flex justify-between border-b border-stone-200 pb-2 mb-2">
@@ -124,13 +128,11 @@ export default function POSPage() {
                 <span className="font-bold text-amber-700 uppercase">{userRole}</span>
               </div>
             </div>
-
             <p className="text-stone-600 text-sm leading-relaxed mb-8 text-justify">
               By proceeding, you acknowledge that you are operating under your personal credentials. 
               <strong> All sales, discounts, and inventory modifications will be permanently logged to this account. </strong> 
               You are fully responsible for this POS terminal and its cash drawer until you formally log out of the system.
             </p>
-
             <div className="flex gap-4">
               <button 
                 onClick={handleLogout}
@@ -160,17 +162,21 @@ export default function POSPage() {
       {/* --- TOP ACTION BAR --- */}
       <header className="relative flex justify-between items-center bg-white px-6 py-4 shadow-sm border-b border-stone-200 z-30 shrink-0">
         <div className="flex items-center w-1/4">
-          <div className="w-12 h-12 bg-amber-700 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-inner">
-            KAA
-          </div>
+          {/* Logo updated here */}
+          <img 
+            src="/logo.png" 
+            alt="Kandyan Cultural Centre Logo" 
+            className="w-12 h-12 rounded-full object-cover border border-stone-200 shadow-sm"
+          />
           <span className="ml-3 font-semibold text-stone-600 hidden md:block">
             POS Terminal
           </span>
         </div>
 
         <div className="absolute left-1/2 transform -translate-x-1/2 w-1/2 text-center">
+          {/* Title updated here */}
           <h1 className="text-xl md:text-2xl font-black text-stone-800 tracking-wide">
-            The Kandyan Art Association
+            Kandyan Cultural Centre
           </h1>
         </div>
 
@@ -229,24 +235,8 @@ export default function POSPage() {
         {/* --- SECONDARY ACTION BAR (SEARCH & CONTROLS) --- */}
         <div className="flex justify-between items-center bg-white px-6 py-3 border-b border-stone-200 shrink-0 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
           
-          {/* Left: Input Toggle */}
-          <div className="flex bg-stone-100 p-1 rounded-lg border border-stone-200 w-56">
-            <button
-              onClick={() => setScannerMode('barcode')}
-              className={`flex-1 flex items-center justify-center py-1.5 text-sm font-semibold rounded-md transition-all ${scannerMode === 'barcode' ? 'bg-white text-amber-700 shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}
-            >
-              <span className="mr-2">🔫</span> Scanner
-            </button>
-            <button
-              onClick={() => setScannerMode('camera')}
-              className={`flex-1 flex items-center justify-center py-1.5 text-sm font-semibold rounded-md transition-all ${scannerMode === 'camera' ? 'bg-white text-amber-700 shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}
-            >
-              <span className="mr-2">📸</span> Camera
-            </button>
-          </div>
-
-          {/* Center: Search/Barcode Input */}
-          <div className="flex-1 max-w-2xl mx-8 relative">
+          {/* Center: Search/Barcode Input with embedded Camera Toggle */}
+          <div className="flex-1 max-w-3xl relative mr-8">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
               <span className="text-stone-400">🔍</span>
             </div>
@@ -254,14 +244,22 @@ export default function POSPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={scannerMode === 'barcode' ? "Scan barcode or search item name..." : "Camera active. Search manually..."}
-              className="w-full pl-12 pr-4 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-600 focus:bg-white transition-all text-stone-800 font-medium shadow-inner"
+              placeholder="Scan barcode with gun or search item name..."
+              className="w-full pl-12 pr-14 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-600 focus:bg-white transition-all text-stone-800 font-medium shadow-inner"
               autoFocus
             />
+            {/* Embedded Camera Button */}
+            <button
+              onClick={() => setIsCameraActive(!isCameraActive)}
+              className={`absolute inset-y-0 right-2 px-2 flex items-center justify-center transition-colors ${isCameraActive ? 'text-amber-700' : 'text-stone-400 hover:text-amber-600'}`}
+              title={isCameraActive ? "Close Camera" : "Open Camera Scanner"}
+            >
+              <span className="text-2xl">📸</span>
+            </button>
           </div>
 
           {/* Right: Network Status */}
-          <div className="w-56 flex justify-end">
+          <div className="w-56 flex justify-end shrink-0">
             <button 
               onClick={toggleNetwork}
               className={`flex items-center px-4 py-2 rounded-full border transition-colors shadow-sm ${isOnline ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100' : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'}`}
@@ -279,7 +277,19 @@ export default function POSPage() {
         <div className="flex flex-1 overflow-hidden">
           {/* Left Side: Product Discovery */}
           <div className="flex-1 bg-white p-6 rounded-2xl shadow-sm border border-stone-200 overflow-y-auto">
-            <ProductGrid searchQuery={searchQuery} />
+            {isCameraActive ? (
+              <div className="py-8 flex flex-col items-center justify-center animate-in fade-in duration-200">
+                <CameraScanner onScanSuccess={handleBarcodeScanned} />
+                <button 
+                  onClick={() => setIsCameraActive(false)}
+                  className="mt-6 text-sm font-bold text-stone-600 hover:text-stone-800 bg-stone-100 px-6 py-3 rounded-xl border border-stone-200 transition-colors"
+                >
+                  Close Camera
+                </button>
+              </div>
+            ) : (
+              <ProductGrid searchQuery={searchQuery} />
+            )}
           </div>
           {/* Right Side: Cart Sidebar */}
           <div className="flex-[1] min-w-[350px] bg-white border-l border-stone-200 p-6 flex flex-col shadow-[-4px_0_24px_-8px_rgba(0,0,0,0.05)]">
