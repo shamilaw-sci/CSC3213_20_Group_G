@@ -101,22 +101,6 @@ export default async function WorkshopDetailsPage({ params }: Props) {
           {/* Main left column */}
           <div className="space-y-8">
             
-            {/* Title block info
-            <div className="space-y-4">
-              <div>
-                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600 uppercase tracking-widest bg-amber-50 px-3 py-1 rounded-full border border-amber-200/60">
-                  ✨ {categoryLabel}
-                </span>
-              </div>
-              
-              <h1 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight tracking-tight">
-                {experience.title}
-              </h1>
-              <p className="text-slate-600 text-lg font-light leading-relaxed max-w-3xl">
-                {experience.description}
-              </p>
-            </div> */}
-
             {/* Interactive gallery component */}
             <GallerySection 
               initialImage={experience.image}
@@ -134,7 +118,7 @@ export default async function WorkshopDetailsPage({ params }: Props) {
             <div className="rounded-[20px] bg-white p-6 shadow-sm border border-slate-100">
               <h3 className="text-xl font-bold mb-4 tracking-tight">What you'll learn</h3>
               <div className="grid gap-3 sm:grid-cols-2">
-                {experience.highlights?.map((h) => (
+                {experience.highlights?.map((h: string) => (
                   <div key={h} className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4 shadow-sm flex items-start gap-3">
                     <span className="flex-shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 text-xs font-bold border border-emerald-100">✓</span>
                     <p className="text-sm font-medium text-slate-700 pt-0.5">{h}</p>
@@ -159,7 +143,7 @@ export default async function WorkshopDetailsPage({ params }: Props) {
               <div className="pt-8 border-t border-slate-200/60">
                 <h3 className="text-2xl font-black text-slate-900 mb-6 tracking-tight">Related Experiences</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                  {relatedWorkshops.map((w) => (
+                  {relatedWorkshops.map((w: any) => (
                     <Link href={`/workshops/${w.id}`} key={w.id} className="group rounded-[2rem] bg-white/50 backdrop-blur-md p-3 border border-white/80 shadow-sm hover:shadow-[0_10px_30px_rgba(31,38,135,0.05)] transition-all flex flex-col">
                       <div className="overflow-hidden rounded-[1.5rem] bg-slate-50 mb-3 aspect-square">
                         <img src={w.image} alt={w.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -181,17 +165,17 @@ export default async function WorkshopDetailsPage({ params }: Props) {
               <div className="flex flex-col gap-4">
                 
                 <div className="pb-1">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200/50">
+                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200/50 inline-block mb-2">
                     {categoryLabel}
-                    <h1 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight tracking-tight">
-                      {experience.title}
-                    </h1>
-                  </span>
+                  </div>
+                  <h1 className="text-3xl font-black text-slate-900 leading-tight tracking-tight">
+                    {experience.title}
+                  </h1>
                 </div>
 
                 <div className="pb-4 border-b border-slate-100">
                   <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1">Starting from</p>
-                  <p className="text-3xl font-black text-slate-900 tracking-tight"><WorkshopPrice price={experience.price} /></p>
+                  <div className="text-3xl font-black text-slate-900 tracking-tight"><WorkshopPrice price={experience.price} /></div>
                 </div>
 
                 <div className="flex items-center justify-between pb-4 border-b border-slate-100">
