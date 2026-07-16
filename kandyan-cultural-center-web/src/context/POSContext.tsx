@@ -6,6 +6,7 @@ const POSContext = createContext<POSContextType | undefined>(undefined);
 
 export const POSProvider = ({ children }: { children: React.ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [cashierId, setCashierId] = useState<string | null>(null);
 
   const generateOrderNumber = () => {
   const now = new Date();
@@ -241,7 +242,21 @@ const applyCustomPrice = (id: string, price: number) => {
   
 
   return (
-    <POSContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, cartTotal, updateQuantity, applyDiscount, applyCustomPrice, orderNumber, isOnline, processOrder, cachedProducts, loadProducts}}>
+    <POSContext.Provider value={{ 
+      cart,
+      addToCart, 
+      removeFromCart, 
+      clearCart, 
+      cartTotal, 
+      updateQuantity, 
+      applyDiscount, 
+      applyCustomPrice, 
+      orderNumber, isOnline, 
+      processOrder, 
+      cachedProducts, 
+      loadProducts, 
+      cashierId,
+      setCashierId}}>
       {children}
     </POSContext.Provider>
   );
