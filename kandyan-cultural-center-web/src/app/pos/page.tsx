@@ -5,10 +5,13 @@ import { usePOS } from '../../context/POSContext';
 import ProductGrid from '../../components/pos/ProductGrid';
 import CartSidebar from '../../components/pos/CartSidebar';
 import CameraScanner from '../../components/pos/CameraScanner'; 
+import CalculatorModal from '../../components/pos/CalculatorModal';
 import { supabase } from '../../lib/supabase'; 
 
 export default function POSPage() {
   const { cartTotal, setCashierId } = usePOS();
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   
   // --- AUTH & ACCESS STATE ---
   const [loading, setLoading] = useState(true);
@@ -310,9 +313,20 @@ export default function POSPage() {
             </button>
           </div>
 
-          {/* Right: Empty Area for Future Buttons */}
+          {/* Right: Action Buttons */}
           <div className="flex-1 flex justify-end items-center gap-3">
-             {/* Future buttons go here */}
+             <button 
+                onClick={() => setIsHistoryOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 text-sm font-semibold rounded-xl border border-stone-200 transition-colors shadow-sm"
+             >
+                <span className="text-lg">🧾</span> History
+             </button>
+             <button 
+                onClick={() => setIsCalculatorOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 text-sm font-semibold rounded-xl border border-stone-200 transition-colors shadow-sm"
+             >
+                <span className="text-lg">🖩</span> Calculator
+             </button>
           </div>
         </div>
 
@@ -442,6 +456,31 @@ export default function POSPage() {
                 Yes, Log Out
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* --- CALCULATOR MODAL --- */}
+      {isCalculatorOpen && (
+        <CalculatorModal onClose={() => setIsCalculatorOpen(false)} />
+      )}
+
+      {/* --- HISTORY MODAL (Placeholder for future development) --- */}
+      {isHistoryOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 p-6 text-center">
+            <div className="w-16 h-16 bg-stone-100 text-stone-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl border border-stone-200">
+              🧾
+            </div>
+            <h3 className="text-xl font-black text-stone-800 mb-2">Transaction History</h3>
+            <p className="text-stone-500 text-sm mb-6 leading-relaxed">
+              The bill history and reprint interface is currently scheduled for a future development phase.
+            </p>
+            <button 
+              onClick={() => setIsHistoryOpen(false)}
+              className="w-full py-3 font-bold text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors border border-stone-200"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
