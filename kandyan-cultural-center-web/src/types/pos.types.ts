@@ -9,6 +9,7 @@ export interface POSItem {
   imageUrl?: string;
   stock?: number;
   costPrice: number;
+  category?: string;
 }
 
 export interface CartItem extends POSItem {

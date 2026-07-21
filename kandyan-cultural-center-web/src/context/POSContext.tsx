@@ -64,16 +64,15 @@ const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
   const loadProducts = async () => {
     if (isOnline) {
       try {
-        const { data, error } = await supabase.from('artifact_variants').select('*, artifacts(name)');
+        const { data, error } = await supabase.from('artifact_variants').select('*, artifacts(name, category)');
         if (error) throw error;
 
         const formattedProducts = data.map((item: any) => ({
           id: item.id.toString(), 
           name: item.artifacts?.name || `Variant #${item.id}`, 
+          category: item.artifacts?.category || 'Uncategorized',
           price: item.price || 0,
           stock: item.stock || 0,
-          
-          // Add these missing properties back!
           barcode: item.barcode || null,
           type: 'merchandise' as const, // Assuming all are merchandise for error solving; adjust as needed
           color: item.color_name || null, 
