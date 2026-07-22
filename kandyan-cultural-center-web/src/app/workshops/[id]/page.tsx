@@ -4,7 +4,7 @@ import GallerySection from "./GallerySection";
 import WorkshopPrice from "./WorkshopPrice";
 
 type Props = {
-  params: Promise<{ id: string | string[] }> | { id: string | string[] };
+  params: Promise<{ id: string | string[] }>;
 };
 
 type Experience = {
