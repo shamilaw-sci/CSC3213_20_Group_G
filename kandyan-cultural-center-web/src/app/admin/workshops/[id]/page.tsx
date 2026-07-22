@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import EditWorkshopForm from "./EditWorkshopForm";
 
 type Props = {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 };
 
 export default async function EditWorkshopPage({ params }: Props) {
