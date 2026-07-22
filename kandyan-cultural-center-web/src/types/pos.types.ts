@@ -9,6 +9,7 @@ export interface POSItem {
   imageUrl?: string;
   stock?: number;
   costPrice: number;
+  category?: string;
 }
 
 export interface CartItem extends POSItem {
@@ -41,4 +42,6 @@ export interface POSContextType {
   cachedProducts: POSItem[];
   loadProducts: () => Promise<void>;
   processOrder: (orderData: any, orderItemsData: any[], cartItems: any[]) => Promise<void>;
+  cashierId: string | null;
+  setCashierId: (id: string | null) => void;
 }

@@ -6,6 +6,7 @@ const POSContext = createContext<POSContextType | undefined>(undefined);
 
 export const POSProvider = ({ children }: { children: React.ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [cashierId, setCashierId] = useState<string | null>(null);
 
   const generateOrderNumber = () => {
   const now = new Date();
@@ -63,16 +64,15 @@ const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
   const loadProducts = async () => {
     if (isOnline) {
       try {
-        const { data, error } = await supabase.from('artifact_variants').select('*, artifacts(name)');
+        const { data, error } = await supabase.from('artifact_variants').select('*, artifacts(name, category)');
         if (error) throw error;
 
         const formattedProducts = data.map((item: any) => ({
           id: item.id.toString(), 
           name: item.artifacts?.name || `Variant #${item.id}`, 
+          category: item.artifacts?.category || 'Uncategorized',
           price: item.price || 0,
           stock: item.stock || 0,
-          
-          // Add these missing properties back!
           barcode: item.barcode || null,
           type: 'merchandise' as const, // Assuming all are merchandise for error solving; adjust as needed
           color: item.color_name || null, 
@@ -241,7 +241,21 @@ const applyCustomPrice = (id: string, price: number) => {
   
 
   return (
-    <POSContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, cartTotal, updateQuantity, applyDiscount, applyCustomPrice, orderNumber, isOnline, processOrder, cachedProducts, loadProducts}}>
+    <POSContext.Provider value={{ 
+      cart,
+      addToCart, 
+      removeFromCart, 
+      clearCart, 
+      cartTotal, 
+      updateQuantity, 
+      applyDiscount, 
+      applyCustomPrice, 
+      orderNumber, isOnline, 
+      processOrder, 
+      cachedProducts, 
+      loadProducts, 
+      cashierId,
+      setCashierId}}>
       {children}
     </POSContext.Provider>
   );
