@@ -7,7 +7,6 @@ import CheckoutModal from './CheckoutModal';
 export default function CartSidebar() {
   const { cart, cartTotal, updateQuantity, removeFromCart, applyCustomPrice, clearCart, orderNumber } = usePOS();
   
-
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   
@@ -33,13 +32,12 @@ export default function CartSidebar() {
     <>
       <div className="flex-[1] min-w-[350px] bg-white border-l border-stone-200 p-6 flex flex-col shadow-[-4px_0_24px_-8px_rgba(0,0,0,0.05)] h-full z-10">
         
-        {/* 2. THE UPDATED HEADER */}
+        {/* THE HEADER */}
         <div className="flex justify-between items-end mb-6 pb-4 border-b border-stone-100 shrink-0">
           
           <div className="flex items-baseline gap-3">
             <h2 className="text-xl font-bold text-stone-800">Current Order</h2>
             
-            {/* NEW: Bill Number Badge */}
             <span className="text-sm font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 shadow-sm">
               #{orderNumber}
             </span>
@@ -80,10 +78,35 @@ export default function CartSidebar() {
                   )}
 
                   <div className="flex justify-between items-start mb-2">
-                    <div className="pr-4">
-                      <span className="font-bold text-stone-800 text-sm leading-tight block mb-1">
+                    
+                    {/* --- NEW: Inline Layout for Name, Barcode, and Color --- */}
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pr-4 flex-1">
+                      
+                      {/* 1. Name (Left) */}
+                      <span className="font-bold text-stone-800 text-sm leading-tight">
                         {item.name}
                       </span>
+                      
+                      {/* 2. Barcode (Middle) */}
+                      <span className="text-xs text-stone-500 font-mono tracking-wider">
+                        {item.barcode ? item.barcode : 'No Barcode'}
+                      </span>
+                      
+                      {/* 3. Color Dot & Pill (Right) */}
+                      {item.color && (
+                        <div className="flex items-center gap-1">
+                          {item.hexCode && (
+                            <span 
+                              className="w-2.5 h-2.5 rounded-full border border-stone-300 shadow-sm block"
+                              style={{ backgroundColor: item.hexCode }}
+                            />
+                          )}
+                          <span className="text-[10px] font-bold bg-stone-200 text-stone-600 px-1.5 py-0.5 rounded-sm uppercase tracking-wider">
+                            {item.color}
+                          </span>
+                        </div>
+                      )}
+
                       {item.customPrice !== undefined && (
                         <span className="text-[10px] font-black bg-purple-100 text-purple-700 px-2 py-0.5 rounded-sm uppercase tracking-wider">
                           CUSTOM PRICE
@@ -94,7 +117,8 @@ export default function CartSidebar() {
                     {!isEditing && (
                       <div className="flex gap-1 flex-shrink-0">
                         <button onClick={() => { setEditingPriceId(item.id); setEditValue(''); }} className="w-8 h-8 flex items-center justify-center bg-stone-200 hover:bg-stone-300 text-stone-600 rounded-lg text-xs font-bold transition-colors" title="Edit Manual Price">Rs</button>
-                        <button onClick={() => removeFromCart(item.id)} className="w-8 h-8 flex items-center justify-center text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-colors ml-1" title="Remove item">🗑️</button>
+                        
+                        <button onClick={() => removeFromCart(item.id)} className="w-8 h-8 flex items-center justify-center text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-colors ml-1 font-black text-sm" title="Remove item">✕</button>
                       </div>
                     )}
                   </div>
@@ -150,9 +174,9 @@ export default function CartSidebar() {
           <button 
             disabled={cart.length === 0} 
             onClick={() => setIsCheckoutOpen(true)} 
-            className="w-full py-5 bg-amber-700 hover:bg-amber-800 disabled:bg-stone-300 disabled:text-stone-500 disabled:cursor-not-allowed text-white text-2xl font-black rounded-xl transition-all shadow-lg active:scale-[0.98] flex items-center justify-center"
+            className="w-full py-5 bg-amber-700 hover:bg-amber-800 disabled:bg-stone-300 disabled:text-stone-500 disabled:cursor-not-allowed text-white text-2xl font-black rounded-xl transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-3"
           >
-            <span className="mr-3">💳</span> CHECKOUT
+            CHECKOUT <span className="text-3xl leading-none">→</span>
           </button>
         </div>
       </div>
@@ -161,7 +185,6 @@ export default function CartSidebar() {
         <CheckoutModal onClose={() => setIsCheckoutOpen(false)} />
       )}
 
-      {/* NEW: Cancel Order Confirmation Modal */}
       {isClearConfirmOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">

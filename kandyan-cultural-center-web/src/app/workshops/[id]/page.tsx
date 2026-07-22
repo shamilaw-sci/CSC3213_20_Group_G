@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+﻿﻿import Link from "next/link";
 import { supabaseServer } from '@/lib/supabase';
 import GallerySection from "./GallerySection";
 import WorkshopPrice from "./WorkshopPrice";
@@ -20,6 +20,13 @@ type Experience = {
   about?: string;
   no_of_guests: number;
   highlights: string[];
+  artisans?: {
+    id: string;
+    name: string;
+    guild: string;
+    bio: string;
+    avatar_url: string;
+  };
 };
 
 function formatDate(dateString: string) {
@@ -146,7 +153,7 @@ export default async function WorkshopDetailsPage({ params }: Props) {
                   {relatedWorkshops.map((w: any) => (
                     <Link href={`/workshops/${w.id}`} key={w.id} className="group rounded-[2rem] bg-white/50 backdrop-blur-md p-3 border border-white/80 shadow-sm hover:shadow-[0_10px_30px_rgba(31,38,135,0.05)] transition-all flex flex-col">
                       <div className="overflow-hidden rounded-[1.5rem] bg-slate-50 mb-3 aspect-square">
-                        <img src={w.image} alt={w.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <img src={w.image ?? w.gallery?.[0]} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       </div>
                       <div className="px-2 pb-2 flex flex-col flex-grow">
                         <h4 className="font-bold text-slate-900 text-sm mb-1 group-hover:text-amber-600 transition-colors line-clamp-2">{w.title}</h4>

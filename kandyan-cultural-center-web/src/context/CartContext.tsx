@@ -47,14 +47,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const addToCart = (item: CartItem) => {
     setCart((prevCart) => {
       const existingItem = prevCart.find((cartItem) => cartItem.id === item.id);
+      // Determine the maximum allowed stock (fallback to Infinity if stock is undefined)
+      const maxStock = item.stock !== undefined ? item.stock : Infinity;
+
       if (existingItem) {
-        return prevCart.map((cartItem) =>
-          cartItem.id === item.id
-            ? { ...cartItem, quantity: cartItem.quantity + (item.quantity || 1) }
-            : cartItem
-        );
+        return prevCart.map((cartItem) => {
+          if (cartItem.id === item.id) {
+            // Calculate the new requested quantity
+            const requestedQuantity = cartItem.quantity + (item.quantity || 1);
+            // Lock it to the maxStock ceiling
+            return { ...cartItem, quantity: Math.min(requestedQuantity, maxStock) };
+          }
+          return cartItem;
+        });
       }
-      return [...prevCart, { ...item, quantity: item.quantity || 1 }];
+      
+      // For brand new items, ensure the initial amount doesn't exceed stock
+      const initialQuantity = Math.min(item.quantity || 1, maxStock);
+      return [...prevCart, { ...item, quantity: initialQuantity }];
     });
   };
 
@@ -64,9 +74,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const updateQuantity = (id: string, quantity: number) => {
     setCart((prevCart) =>
-      prevCart.map((item) =>
-        item.id === id ? { ...item, quantity: Math.max(1, quantity) } : item
-      )
+      prevCart.map((item) => {
+        if (item.id === id) {
+          const maxStock = item.stock !== undefined ? item.stock : Infinity;
+          // Math.max ensures it never drops below 1
+          // Math.min ensures it never goes above the available stock
+          const boundedQuantity = Math.min(Math.max(1, quantity), maxStock);
+          return { ...item, quantity: boundedQuantity };
+        }
+        return item;
+      })
     );
   };
 

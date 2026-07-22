@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
+import { useCart } from '@/context/CartContext'; // <-- ADDED: Import Cart Context
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -12,11 +13,19 @@ const supabase = createClient(
 export default function SuccessPage() {
   const [bookingInfo, setBookingInfo] = useState<any | null>(null);
   const [orderInfo, setOrderInfo] = useState<any | null>(null);
+  
+  // <-- ADDED: Extract clearCart from your context
+  const { clearCart } = useCart(); 
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const bookingId = params.get('booking');
     const orderId = params.get('order');
+
+    // <-- ADDED: Clear the cart if they arrived here from a shop order
+    if (orderId && clearCart) {
+      clearCart();
+    }
 
     (async () => {
       try {
@@ -31,7 +40,7 @@ export default function SuccessPage() {
         console.warn('Failed to fetch transaction details', e);
       }
     })();
-  }, []);
+  }, [clearCart]); // Added clearCart to the dependency array
 
   return (
     <main className="relative min-h-screen flex flex-col items-center justify-center px-4 py-24 bg-[#F8F9FA]">

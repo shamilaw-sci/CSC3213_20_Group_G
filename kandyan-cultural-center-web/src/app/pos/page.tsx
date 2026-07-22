@@ -5,10 +5,13 @@ import { usePOS } from '../../context/POSContext';
 import ProductGrid from '../../components/pos/ProductGrid';
 import CartSidebar from '../../components/pos/CartSidebar';
 import CameraScanner from '../../components/pos/CameraScanner'; 
+import CalculatorModal from '../../components/pos/CalculatorModal';
 import { supabase } from '../../lib/supabase'; 
 
 export default function POSPage() {
   const { cartTotal, setCashierId } = usePOS();
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   
   // --- AUTH & ACCESS STATE ---
   const [loading, setLoading] = useState(true);
@@ -20,11 +23,16 @@ export default function POSPage() {
   // --- UI & POS STATE ---
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
-  
-  // Replaced scannerMode with a boolean to control the camera overlay
   const [isCameraActive, setIsCameraActive] = useState(false); 
   const [searchQuery, setSearchQuery] = useState('');
   const [isOnline, setIsOnline] = useState(true); 
+
+  // --- SORTING & FILTERING STATE ---
+  const [sortBy, setSortBy] = useState<string>('name-asc');
+  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string>('All');
+  const [inStockOnly, setInStockOnly] = useState<boolean>(false);
+  const [outOfStockOnly, setOutOfStockOnly] = useState<boolean>(false);
 
   // --- 1. SUPABASE AUTH & RBAC CHECK ---
   useEffect(() => {
@@ -55,7 +63,6 @@ export default function POSPage() {
           setCashierName(profile.full_name || 'Cashier'); 
           setUserRole(profile.role);
           
-          // Ensure your context has this method available!
           if (setCashierId) setCashierId(currentUserId); 
         } else {
           window.location.replace('/');
@@ -83,10 +90,8 @@ export default function POSPage() {
 
   const handleBarcodeScanned = (barcode: string) => {
     console.log("Scanned Barcode value:", barcode);
-    setSearchQuery(barcode); // Auto-fill the search bar
-    setIsCameraActive(false); // Close the camera automatically
-    
-    // Add logic here to automatically add the item to the cart if desired
+    setSearchQuery(barcode); 
+    setIsCameraActive(false); 
     alert(`Barcode scanned: ${barcode}`);
   };
 
@@ -161,26 +166,35 @@ export default function POSPage() {
       
       {/* --- TOP ACTION BAR --- */}
       <header className="relative flex justify-between items-center bg-white px-6 py-4 shadow-sm border-b border-stone-200 z-30 shrink-0">
-        <div className="flex items-center w-1/4">
-          {/* Logo updated here */}
+        
+        {/* Left: Logo & Network Status */}
+        <div className="flex items-center w-1/3 gap-4">
           <img 
             src="/logo.png" 
             alt="Kandyan Cultural Centre Logo" 
             className="w-12 h-12 rounded-full object-cover border border-stone-200 shadow-sm"
           />
-          <span className="ml-3 font-semibold text-stone-600 hidden md:block">
-            POS Terminal
-          </span>
+          <button 
+            onClick={toggleNetwork}
+            className={`flex items-center px-3 py-1.5 rounded-full border transition-colors shadow-sm ${isOnline ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100' : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'}`}
+            title="Toggle Network Status"
+          >
+            <span className={`w-2.5 h-2.5 rounded-full mr-2 shadow-sm ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></span>
+            <span className="text-xs font-bold uppercase tracking-wider">
+              {isOnline ? 'Online' : 'Offline'}
+            </span>
+          </button>
         </div>
 
-        <div className="absolute left-1/2 transform -translate-x-1/2 w-1/2 text-center">
-          {/* Title updated here */}
-          <h1 className="text-xl md:text-2xl font-black text-stone-800 tracking-wide">
-            Kandyan Cultural Centre
+        {/* Center: Main Title */}
+        <div className="w-1/3 text-center flex justify-center">
+          <h1 className="text-xl md:text-2xl font-black text-stone-800 tracking-wide whitespace-nowrap">
+            Kandyan Cultural Centre <span className="text-stone-400 font-medium px-2">|</span> POS Terminal
           </h1>
         </div>
 
-        <div className="flex items-center justify-end w-1/4 relative">
+        {/* Right: Cashier Dropdown */}
+        <div className="flex items-center justify-end w-1/3 relative">
           <div>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -232,11 +246,53 @@ export default function POSPage() {
       {/* --- MAIN BODY AREA --- */}
       <div className="flex flex-col flex-1 overflow-hidden z-10">
         
-        {/* --- SECONDARY ACTION BAR (SEARCH & CONTROLS) --- */}
+        {/* --- SECONDARY ACTION BAR --- */}
         <div className="flex justify-between items-center bg-white px-6 py-3 border-b border-stone-200 shrink-0 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
           
-          {/* Center: Search/Barcode Input with embedded Camera Toggle */}
-          <div className="flex-1 max-w-3xl relative mr-8">
+          {/* Left: Sorting & Filtering Controls */}
+          <div className="flex-1 flex justify-start items-center gap-3">
+            <select 
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              // Added pr-10 to push the text away from the dropdown arrow
+              className="bg-stone-50 border border-stone-200 text-stone-700 text-sm font-semibold rounded-xl pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-600 cursor-pointer shadow-sm"
+            >
+              <option value="name-asc">Sort: A to Z</option>
+              <option value="name-desc">Sort: Z to A</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+            </select>
+
+            <button 
+              onClick={() => setIsFilterMenuOpen(!isFilterMenuOpen)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-colors shadow-sm ${
+                isFilterMenuOpen || activeCategory !== 'All' || inStockOnly || outOfStockOnly 
+                  ? 'bg-amber-100 border-amber-300 text-amber-800' 
+                  : 'bg-stone-50 border-stone-200 text-stone-700 hover:bg-stone-100'
+              }`}
+            >
+              <span>Filters</span>
+              
+              {/* Show the 'X' button only when a filter is active */}
+              {(activeCategory !== 'All' || inStockOnly || outOfStockOnly) && (
+                <div 
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevents the menu from opening when clicking 'X'
+                    setActiveCategory('All');
+                    setInStockOnly(false);
+                    setOutOfStockOnly(false);
+                  }}
+                  className="ml-1 flex items-center justify-center w-5 h-5 rounded-full bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold transition-colors"
+                  title="Clear all filters"
+                >
+                  ✕
+                </div>
+              )}
+            </button>
+          </div>
+
+          {/* Center: Search/Barcode Input */}
+          <div className="w-[500px] relative shrink-0">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
               <span className="text-stone-400">🔍</span>
             </div>
@@ -248,7 +304,6 @@ export default function POSPage() {
               className="w-full pl-12 pr-14 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-600 focus:bg-white transition-all text-stone-800 font-medium shadow-inner"
               autoFocus
             />
-            {/* Embedded Camera Button */}
             <button
               onClick={() => setIsCameraActive(!isCameraActive)}
               className={`absolute inset-y-0 right-2 px-2 flex items-center justify-center transition-colors ${isCameraActive ? 'text-amber-700' : 'text-stone-400 hover:text-amber-600'}`}
@@ -258,20 +313,88 @@ export default function POSPage() {
             </button>
           </div>
 
-          {/* Right: Network Status */}
-          <div className="w-56 flex justify-end shrink-0">
-            <button 
-              onClick={toggleNetwork}
-              className={`flex items-center px-4 py-2 rounded-full border transition-colors shadow-sm ${isOnline ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100' : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'}`}
-              title="Click to simulate connection drop"
-            >
-              <span className={`w-3 h-3 rounded-full mr-2 shadow-sm ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></span>
-              <span className="text-sm font-bold uppercase tracking-wider">
-                {isOnline ? 'Online' : 'Offline'}
-              </span>
-            </button>
+          {/* Right: Action Buttons */}
+          <div className="flex-1 flex justify-end items-center gap-3">
+             <button 
+                onClick={() => setIsHistoryOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 text-sm font-semibold rounded-xl border border-stone-200 transition-colors shadow-sm"
+             >
+                <span className="text-lg">🧾</span> History
+             </button>
+             <button 
+                onClick={() => setIsCalculatorOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 text-sm font-semibold rounded-xl border border-stone-200 transition-colors shadow-sm"
+             >
+                <span className="text-lg">🖩</span> Calculator
+             </button>
           </div>
         </div>
+
+        {/* --- FILTER POPOVER MENU --- */}
+        {isFilterMenuOpen && (
+          <>
+            {/* Invisible Backdrop for click-away closing */}
+            <div 
+              className="fixed inset-0 z-40" 
+              onClick={() => setIsFilterMenuOpen(false)} 
+            />
+            
+            <div className="absolute top-[140px] left-6 z-50 w-72 bg-white rounded-xl shadow-2xl border border-stone-200 p-5 animate-in slide-in-from-top-2">
+              <h3 className="font-bold text-stone-800 mb-3 border-b border-stone-100 pb-2">Filter Inventory</h3>
+              
+              <div className="mb-4">
+                <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider block mb-2">Category</label>
+                <select 
+                  value={activeCategory}
+                  onChange={(e) => setActiveCategory(e.target.value)}
+                  className="w-full bg-stone-50 border border-stone-200 text-stone-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500"
+                >
+                  <option value="All">All Categories</option>
+                  <option value="Lacquerware">Lacquerware</option>
+                  <option value="Masks">Masks</option>
+                  <option value="Weaving">Weaving</option>
+                  <option value="Wood Carvings">Wood Carvings</option>
+                  <option value="Brassware">Brassware</option>
+                  <option value="Paintings">Paintings</option>
+                </select>
+              </div>
+
+              <div className="flex items-center justify-between mt-2 pt-4 border-t border-stone-100">
+                <span className="text-sm font-semibold text-stone-700">In Stock Only</span>
+                <button 
+                  onClick={() => {
+                    setInStockOnly(!inStockOnly);
+                    if (!inStockOnly) setOutOfStockOnly(false); // Make toggles mutually exclusive
+                  }}
+                  className={`w-11 h-6 rounded-full transition-colors relative ${inStockOnly ? 'bg-emerald-500' : 'bg-stone-300'}`}
+                >
+                  <span className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${inStockOnly ? 'translate-x-5' : 'translate-x-0'}`}></span>
+                </button>
+              </div>
+
+              {/* NEW: Out of Stock Toggle */}
+              <div className="flex items-center justify-between mt-4">
+                <span className="text-sm font-semibold text-stone-700">Out of Stock Only</span>
+                <button 
+                  onClick={() => {
+                    setOutOfStockOnly(!outOfStockOnly);
+                    if (!outOfStockOnly) setInStockOnly(false); // Make toggles mutually exclusive
+                  }}
+                  className={`w-11 h-6 rounded-full transition-colors relative ${outOfStockOnly ? 'bg-red-500' : 'bg-stone-300'}`}
+                >
+                  <span className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${outOfStockOnly ? 'translate-x-5' : 'translate-x-0'}`}></span>
+                </button>
+              </div>
+              
+              <button 
+                onClick={() => setIsFilterMenuOpen(false)}
+                className="w-full mt-5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold py-2 rounded-lg text-sm transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          </>
+        )}
 
         {/* --- PRODUCT & CART AREA --- */}
         <div className="flex flex-1 overflow-hidden">
@@ -288,7 +411,13 @@ export default function POSPage() {
                 </button>
               </div>
             ) : (
-              <ProductGrid searchQuery={searchQuery} />
+              <ProductGrid 
+                searchQuery={searchQuery} 
+                sortBy={sortBy}
+                activeCategory={activeCategory}
+                inStockOnly={inStockOnly}
+                outOfStockOnly={outOfStockOnly}
+              />
             )}
           </div>
           {/* Right Side: Cart Sidebar */}
@@ -327,6 +456,31 @@ export default function POSPage() {
                 Yes, Log Out
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* --- CALCULATOR MODAL --- */}
+      {isCalculatorOpen && (
+        <CalculatorModal onClose={() => setIsCalculatorOpen(false)} />
+      )}
+
+      {/* --- HISTORY MODAL (Placeholder for future development) --- */}
+      {isHistoryOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 p-6 text-center">
+            <div className="w-16 h-16 bg-stone-100 text-stone-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl border border-stone-200">
+              🧾
+            </div>
+            <h3 className="text-xl font-black text-stone-800 mb-2">Transaction History</h3>
+            <p className="text-stone-500 text-sm mb-6 leading-relaxed">
+              The bill history and reprint interface is currently scheduled for a future development phase.
+            </p>
+            <button 
+              onClick={() => setIsHistoryOpen(false)}
+              className="w-full py-3 font-bold text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors border border-stone-200"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}

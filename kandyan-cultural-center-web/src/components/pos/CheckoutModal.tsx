@@ -131,7 +131,7 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
                     <tr key={item.id}>
                       <td className="py-2 pr-2">
                         <div className="font-bold">{item.name}</div>
-                        <div className="text-[9px] text-stone-500">ID: {item.id.slice(0,8)}</div>
+                        <div className="text-[9px] text-stone-500">Barcode: {item.id.slice(0,8)}</div>
                       </td>
                       <td className="py-2 px-2 text-right">{item.quantity}</td>
                       <td className="py-2 text-right">{((itemPrice * item.quantity)).toLocaleString()}</td>

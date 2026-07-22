@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import { createClient } from '@supabase/supabase-js';
 
 export const metadata: Metadata = {
-  title: 'Admin Dashboard | KCC',
+  title: 'Admin Dashboard | Kandyan Cultural Centre',
 };
 
 // Initialize Supabase for secure Server-Side data fetching
@@ -13,15 +13,22 @@ const supabase = createClient(
 );
 
 export default async function AdminDashboardPage() {
+  // Grab today's date string boundary (e.g., "2026-07-19") to count upcoming workshop entries
+  const todayStr = new Date().toISOString().split("T")[0];
+
   // Fetch dynamic notification counts from the database in parallel
+  // ADDED: Workshop bookings database query fetch count boundary logic
   const [
     { count: pendingOrders },
     { count: pendingBookings },
-    { count: lowStock }
+    { count: lowStock },
+    { count: upcomingWorkshopsCount } // <-- ADDED THIS ROW FULFILLMENT SELECTOR
   ] = await Promise.all([
     supabase.from('orders').select('id', { count: 'exact', head: true }).in('status', ['pending', 'processing', 'completed']),
     supabase.from('hall_bookings').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-    supabase.from('artifact_variants').select('id', { count: 'exact', head: true }).lte('stock', 5)
+    supabase.from('artifact_variants').select('id', { count: 'exact', head: true }).lte('stock', 5),
+    // Querying table rows matching dates greater or equal to today
+    supabase.from('workshop_bookings').select('id', { count: 'exact', head: true }).gte('booked_date', todayStr)
   ]);
 
   return (
@@ -33,7 +40,7 @@ export default async function AdminDashboardPage() {
         <p className="text-slate-500 mt-2 text-lg font-medium">Select a module below to manage center operations.</p>
       </div>
 
-      {/* Navigation Cards Grid (Glassmorphism) */}
+      {/* Navigation Cards Grid (Glassmorphism layout now grows organically) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-12">
         
         {/* Orders Card */}
@@ -96,6 +103,27 @@ export default async function AdminDashboardPage() {
           </p>
           <span className="text-emerald-600 font-extrabold text-sm flex items-center gap-2 group-hover:translate-x-2 transition-transform bg-white/60 px-4 py-2 rounded-xl border border-white">
             Manage Stock <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+          </span>
+        </Link>
+
+        {/* ADDED: Workshop Bookings Management Grid Card Component */}
+        <Link href="/admin/workshop-booking" className="group bg-white/60 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/80 shadow-[0_10px_30px_rgba(31,38,135,0.03)] hover:shadow-[0_20px_40px_rgba(31,38,135,0.08)] hover:-translate-y-1 hover:border-amber-400 transition-all duration-300 flex flex-col items-start cursor-pointer h-full relative overflow-hidden">
+          <div className="flex justify-between w-full items-start mb-6">
+            <div className="w-16 h-16 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm border border-amber-200/50">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            </div>
+            {upcomingWorkshopsCount ? (
+              <span className="bg-amber-100 text-amber-800 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-amber-200/50 shadow-sm animate-pulse">
+                {upcomingWorkshopsCount} Upcoming
+              </span>
+            ) : null}
+          </div>
+          <h2 className="text-2xl font-black text-slate-900 mb-3">Workshop Bookings</h2>
+          <p className="text-slate-600 text-sm leading-relaxed mb-8 flex-grow font-medium">
+            Review incoming student registration data lists, tracking upcoming reservations vs. historical customer log feeds.
+          </p>
+          <span className="text-amber-600 font-extrabold text-sm flex items-center gap-2 group-hover:translate-x-2 transition-transform bg-white/60 px-4 py-2 rounded-xl border border-white">
+            View Bookings Pipeline <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
           </span>
         </Link>
 
