@@ -326,9 +326,27 @@ export default function CheckoutPage() {
                       </div>
                       
                       <div className="flex items-center mt-3 border border-white/80 rounded-xl w-fit bg-white/60 overflow-hidden shadow-sm backdrop-blur-sm">
-                        <button onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))} className="px-3 py-1.5 sm:py-2 text-slate-500 hover:bg-white hover:text-amber-600 transition-colors font-extrabold">−</button>
-                        <span className="px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-black text-slate-900 min-w-[2.5rem] text-center border-x border-white/60">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="px-3 py-1.5 sm:py-2 text-slate-500 hover:bg-white hover:text-amber-600 transition-colors font-extrabold">+</button>
+                        <button 
+                          onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))} 
+                          className="px-3 py-1.5 sm:py-2 text-slate-500 hover:bg-white hover:text-amber-600 transition-colors font-extrabold"
+                        >
+                          −
+                        </button>
+                        <span className="px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-black text-slate-900 min-w-[2.5rem] text-center border-x border-white/60">
+                          {item.quantity}
+                        </span>
+                        <button 
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)} 
+                          // 🚨 ADDED: Disable the button if at max stock
+                          disabled={item.stock !== undefined && item.quantity >= item.stock}
+                          className={`px-3 py-1.5 sm:py-2 font-extrabold transition-colors ${
+                            item.stock !== undefined && item.quantity >= item.stock 
+                              ? 'text-slate-300 cursor-not-allowed bg-slate-50' 
+                              : 'text-slate-500 hover:bg-white hover:text-amber-600 cursor-pointer'
+                          }`}
+                        >
+                          +
+                        </button>
                       </div>
                     </div>
 
