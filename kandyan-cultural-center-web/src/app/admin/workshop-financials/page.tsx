@@ -71,6 +71,7 @@ export default function WorkshopFinancialReportsPage() {
             price
           )
         `)
+        .eq('status', 'confirmed')
         .order('booked_date', { ascending: false });
 
       if (error) {
