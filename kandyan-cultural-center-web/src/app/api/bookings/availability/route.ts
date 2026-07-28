@@ -24,21 +24,21 @@ export async function GET(req: Request) {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Fetch all bookings for this date
+    // 🚨 FIXED: Ignore failed/cancelled bookings so they don't eat up slots
     const { data: bookings, error } = await supabase
       .from('workshop_bookings')
       .select('booked_time, guests')
-      .eq('booked_date', date);
+      .eq('booked_date', date)
+      .neq('status', 'failed')
+      .neq('status', 'cancelled');
 
     if (error) {
       console.warn('Error fetching bookings:', error);
       return NextResponse.json({ bookedTimes: [], bookedCounts: {} });
     }
 
-    // Extract unique times from bookings
     const bookedTimes = bookings?.map((b) => b.booked_time) || [];
     
-    // Calculate total guests per time slot
     const bookedCounts: Record<string, number> = {};
     (bookings || []).forEach((b) => {
       const time = b.booked_time;
@@ -58,7 +58,6 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-
   try {
     const body = await req.json();
     const { booked_date, booked_time, workshop_id, craftsman } = body;
@@ -76,7 +75,6 @@ export async function POST(req: Request) {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Check if date is in blocked_dates table
     try {
       const { data: blockedData } = await supabase
         .from('blocked_dates')
@@ -95,7 +93,6 @@ export async function POST(req: Request) {
       console.warn('Blocked date check failed', e);
     }
 
-    // Check if time slot is already booked (no buffer, just capacity check)
     try {
       let capacityQuery = supabase.from('workshop_bookings').select('guests');
       if (workshop_id) {
@@ -103,16 +100,18 @@ export async function POST(req: Request) {
       } else if (craftsman) {
         capacityQuery = capacityQuery.eq('craftsman', craftsman);
       }
-      capacityQuery = capacityQuery.eq('booked_date', booked_date).eq('booked_time', booked_time);
+      
+      // 🚨 FIXED: Ignore failed/cancelled bookings in POST check as well
+      capacityQuery = capacityQuery
+        .eq('booked_date', booked_date)
+        .eq('booked_time', booked_time)
+        .neq('status', 'failed')
+        .neq('status', 'cancelled');
 
       const { data: existingBookings } = await capacityQuery;
 
       if (existingBookings && existingBookings.length > 0) {
-        // Calculate total guests already booked for this time slot
         const totalBookedGuests = existingBookings.reduce((sum, booking) => sum + (booking.guests || 1), 0);
-        
-        // Check if capacity would be exceeded (assuming max_guests is passed or available)
-        // For now, we'll allow booking if space exists
         return NextResponse.json({ available: true, message: 'Time slot is available', bookedGuests: totalBookedGuests });
       }
     } catch (e) {

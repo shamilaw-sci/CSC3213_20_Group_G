@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase"; // Uses standard Supabase client
+import { supabase } from "@/lib/supabase";
 
 type Booking = {
   id: string;
@@ -15,6 +15,7 @@ type Booking = {
   customer_phone?: string;
   guests?: number | null;
   notes?: string | null;
+  status?: string; // 🚨 ADDED
 };
 
 export default function AdminBookingsPage() {
@@ -45,12 +46,10 @@ export default function AdminBookingsPage() {
         setLoading(false);
       }
     }
-
     fetchBookings();
   }, []);
 
   const exportToPDF = async () => {
-    // Dynamic import inside client handler
     const { default: jsPDF } = await import("jspdf");
     const { default: autoTable } = await import("jspdf-autotable");
 
@@ -58,13 +57,14 @@ export default function AdminBookingsPage() {
     let totalRevenue = 0;
     let totalTickets = 0;
 
-    bookings.forEach((b) => {
+    // 🚨 FIXED: Only calculate revenue for CONFIRMED bookings!
+    const validBookings = bookings.filter(b => b.status === 'confirmed');
+
+    validBookings.forEach((b) => {
       const party = b.guests || 1;
       totalTickets += party;
       totalRevenue += party * defaultPricePerTicket;
     });
-
-    const totalProfit = totalRevenue * 0.85;
 
     const doc = new jsPDF();
 
@@ -75,7 +75,7 @@ export default function AdminBookingsPage() {
     doc.setFontSize(11);
     doc.setTextColor(71, 85, 105);
     doc.text("Workshops Booking Report", 14, 30);
-    doc.text("Reporting Framework: All Active Records", 14, 36);
+    doc.text("Reporting Framework: Confirmed Records", 14, 36);
     doc.text(`Compiled Vector: ${new Date().toLocaleDateString()}`, 14, 42);
 
     doc.setDrawColor(241, 245, 249);
@@ -85,11 +85,10 @@ export default function AdminBookingsPage() {
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.text(`Gross Booking Inflow: LKR ${totalRevenue.toLocaleString()}`, 20, 58);
-    //doc.text(`Estimated Net Margin: LKR ${totalProfit.toLocaleString()}`, 20, 66);
     doc.text(`Total Attendees Cataloged: ${totalTickets}`, 120, 58);
 
     const tableColumn = ["Workshop Experience", "Lead Artisan", "Date", "Customer", "Attendees", "Est. Yield (LKR)"];
-    const tableRows = bookings.map((b) => {
+    const tableRows = validBookings.map((b) => {
       const tickets = b.guests || 1;
       const rowYield = tickets * defaultPricePerTicket;
       return [
@@ -123,6 +122,7 @@ export default function AdminBookingsPage() {
     const XLSX = await import("xlsx");
 
     const exportData = bookings.map((b) => ({
+      "Status": (b.status || "pending").toUpperCase(),
       "Workshop Title": b.workshop_title || "N/A",
       "Craftsman": b.craftsman || "N/A",
       "Booked Date": b.booked_date,
@@ -162,11 +162,17 @@ export default function AdminBookingsPage() {
   const activeBookings = bookings.filter((b) => b.booked_date >= todayStr);
   const pastBookings = bookings.filter((b) => b.booked_date < todayStr);
 
+  // Reusable status badge component
+  const StatusBadge = ({ status }: { status?: string }) => {
+    if (status === 'confirmed') return <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-700 border border-emerald-200 uppercase tracking-widest">Confirmed</span>;
+    if (status === 'failed') return <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-100 text-rose-700 border border-rose-200 uppercase tracking-widest">Failed</span>;
+    return <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-100 text-amber-700 border border-amber-200 uppercase tracking-widest">Pending</span>;
+  };
+
   return (
     <main className="min-h-screen bg-slate-50 p-6 md:p-12 text-slate-900">
       <div className="max-w-7xl mx-auto space-y-10">
         
-        {/* Header Action Strip */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-black tracking-tight">Reservations Pipeline</h1>
@@ -182,9 +188,7 @@ export default function AdminBookingsPage() {
                 disabled={bookings.length === 0}
                 className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 Excel Export
               </button>
 
@@ -193,9 +197,7 @@ export default function AdminBookingsPage() {
                 disabled={bookings.length === 0}
                 className="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                 PDF Print
               </button>
             </div>
@@ -222,16 +224,19 @@ export default function AdminBookingsPage() {
               <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead>
                   <tr className="border-b border-slate-100 text-xs font-black uppercase text-slate-400 tracking-wider">
+                    <th className="py-3 px-4">Status</th>
                     <th className="py-3 px-4">Workshop / Craftsman</th>
                     <th className="py-3 px-4">Schedule Slot</th>
                     <th className="py-3 px-4">Customer Info</th>
                     <th className="py-3 px-4 text-center">Party Size</th>
-                    <th className="py-3 px-4">Notes</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {activeBookings.map((b) => (
-                    <tr key={b.id} className="hover:bg-slate-50/50 transition-colors">
+                    <tr key={b.id} className={`transition-colors ${b.status === 'failed' ? 'bg-rose-50/30' : 'hover:bg-slate-50/50'}`}>
+                      <td className="py-4 px-4">
+                        <StatusBadge status={b.status} />
+                      </td>
                       <td className="py-4 px-4">
                         <div className="font-black text-slate-800">{b.workshop_title || "Untitled Workshop"}</div>
                         <div className="text-xs text-slate-400 font-medium">By: {b.craftsman || "Not Assigned"}</div>
@@ -243,15 +248,11 @@ export default function AdminBookingsPage() {
                       <td className="py-4 px-4">
                         <div className="font-bold text-slate-800">{b.customer_name}</div>
                         <div className="text-xs text-slate-400 font-mono">{b.customer_email}</div>
-                        {b.customer_phone && <div className="text-xs text-slate-400 font-mono">{b.customer_phone}</div>}
                       </td>
                       <td className="py-4 px-4 text-center">
                         <span className="inline-block bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg text-xs font-black text-slate-700">
                           {b.guests || 1} {b.guests === 1 ? "Guest" : "Guests"}
                         </span>
-                      </td>
-                      <td className="py-4 px-4 max-w-xs truncate text-xs text-slate-500 italic">
-                        {b.notes || "—"}
                       </td>
                     </tr>
                   ))}
@@ -275,16 +276,19 @@ export default function AdminBookingsPage() {
               <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead>
                   <tr className="border-b border-slate-100 text-xs font-black uppercase text-slate-400 tracking-wider">
+                    <th className="py-3 px-4">Status</th>
                     <th className="py-3 px-4">Workshop</th>
                     <th className="py-3 px-4">Date / Time</th>
                     <th className="py-3 px-4">Customer</th>
                     <th className="py-3 px-4 text-center">Party Size</th>
-                    <th className="py-3 px-4">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {pastBookings.map((b) => (
                     <tr key={b.id} className="bg-slate-50/20 text-slate-500">
+                      <td className="py-3.5 px-4">
+                        <StatusBadge status={b.status} />
+                      </td>
                       <td className="py-3.5 px-4 font-bold text-slate-700">
                         {b.workshop_title}
                       </td>
@@ -298,11 +302,6 @@ export default function AdminBookingsPage() {
                       </td>
                       <td className="py-3.5 px-4 text-center text-xs">
                         {b.guests}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-slate-100 text-slate-500 border border-slate-200 uppercase tracking-widest">
-                          Completed
-                        </span>
                       </td>
                     </tr>
                   ))}
