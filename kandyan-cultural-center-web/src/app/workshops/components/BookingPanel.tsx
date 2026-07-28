@@ -314,7 +314,9 @@ function BookingPanel(
 
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = 'https://sandbox.payhere.lk/pay/checkout';
+        form.action = process.env.NEXT_PUBLIC_PAYHERE_ENV === 'live' 
+          ? 'https://www.payhere.lk/pay/checkout' 
+          : 'https://sandbox.payhere.lk/pay/checkout';
 
         const nameParts = name.trim().split(' ');
         const first_name = nameParts[0] || '';
