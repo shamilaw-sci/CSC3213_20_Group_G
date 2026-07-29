@@ -6,6 +6,7 @@ import ProductGrid from '../../components/pos/ProductGrid';
 import CartSidebar from '../../components/pos/CartSidebar';
 import CameraScanner from '../../components/pos/CameraScanner'; 
 import CalculatorModal from '../../components/pos/CalculatorModal';
+import HistoryModal from '../../components/pos/HistoryModal';
 import { supabase } from '../../lib/supabase'; 
 
 export default function POSPage() {
@@ -464,25 +465,9 @@ export default function POSPage() {
         <CalculatorModal onClose={() => setIsCalculatorOpen(false)} />
       )}
 
-      {/* --- HISTORY MODAL (Placeholder for future development) --- */}
+      {/* --- HISTORY MODAL --- */}
       {isHistoryOpen && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 p-6 text-center">
-            <div className="w-16 h-16 bg-stone-100 text-stone-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl border border-stone-200">
-              🧾
-            </div>
-            <h3 className="text-xl font-black text-stone-800 mb-2">Transaction History</h3>
-            <p className="text-stone-500 text-sm mb-6 leading-relaxed">
-              The bill history and reprint interface is currently scheduled for a future development phase.
-            </p>
-            <button 
-              onClick={() => setIsHistoryOpen(false)}
-              className="w-full py-3 font-bold text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors border border-stone-200"
-            >
-              Close
-            </button>
-          </div>
-        </div>
+        <HistoryModal onClose={() => setIsHistoryOpen(false)} />
       )}
     </div>
   );
