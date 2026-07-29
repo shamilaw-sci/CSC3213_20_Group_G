@@ -140,9 +140,22 @@ export default function CartSidebar() {
                   ) : (
                     <div className="flex justify-between items-center mt-2">
                       <div className="flex items-center space-x-1 bg-white border border-stone-200 rounded-lg p-1 shadow-sm">
-                        <button onClick={() => updateQuantity(item.id, item.quantity - 1)} disabled={item.quantity <= 1} className="w-8 h-8 flex items-center justify-center bg-stone-100 hover:bg-stone-200 disabled:opacity-50 rounded font-black text-stone-600 transition-colors">−</button>
+                        <button 
+                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        disabled={item.quantity <= 1}
+                        className="w-8 h-8 flex items-center justify-center bg-stone-200 text-stone-600 hover:bg-amber-100 hover:text-amber-700 disabled:bg-stone-100 disabled:text-stone-300 disabled:cursor-not-allowed transition-colors">−</button>
                         <span className="font-bold text-stone-800 w-8 text-center text-sm">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center bg-stone-100 hover:bg-stone-200 rounded font-black text-stone-600 transition-colors">+</button>
+                        <button
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          disabled={item.stock !== undefined && item.quantity >= item.stock}
+                          className={`w-8 h-8 flex items-center justify-center transition-colors ${
+                            item.stock !== undefined && item.quantity >= item.stock 
+                              ? 'bg-stone-100 text-stone-300 cursor-not-allowed' // Disabled state
+                              : 'bg-stone-200 text-stone-600 hover:bg-amber-100 hover:text-amber-700' // Active state
+                          }`}
+                        >
+                          +
+                        </button>
                       </div>
 
                       <div className="flex flex-col items-end">

@@ -11,7 +11,7 @@ interface CheckoutModalProps {
 type PaymentMethod = 'cash' | 'card' | 'bank_transfer';
 
 export default function CheckoutModal({ onClose }: CheckoutModalProps) {
-  const { cart, cartTotal, clearCart, orderNumber, processOrder, isOnline } = usePOS();
+  const { cart, cartTotal, clearCart, orderNumber, processOrder, isOnline, loadProducts } = usePOS();
   
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [discountPercent, setDiscountPercent] = useState<string>('');
@@ -79,6 +79,7 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
   // When the cashier finishes viewing/printing the receipt
   const handleFinishTransaction = () => {
     clearCart();
+    loadProducts();
     onClose();
   };
 

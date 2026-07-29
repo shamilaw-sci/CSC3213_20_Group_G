@@ -32,7 +32,10 @@ export default function HistoryModal({ onClose }: HistoryModalProps) {
             *,
             order_items (
               *,
+              
               artifact_variants (
+              id,
+              barcode,
                 artifacts ( name )
               )
             )
@@ -158,12 +161,16 @@ export default function HistoryModal({ onClose }: HistoryModalProps) {
                             order.order_items.map((item: any) => {
                               // Safely extract the name from the joined Supabase query
                               const itemName = item.artifact_variants?.artifacts?.name || `Variant ${item.variant_id?.substring(0,5)}`;
+                              const itemBarcode = item.artifact_variants?.barcode || item.variant_id?.substring(0,8);
                               
                               return (
                                 <div key={item.id} className="flex justify-between items-center text-sm border-b border-stone-200/60 pb-2">
                                   <div className="flex items-center gap-2">
                                     <span className="font-bold text-stone-800">{item.quantity}x</span>
                                     <span className="text-stone-600">{itemName}</span>
+                                    <span className="text-[10px] bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded font-mono border border-stone-200">
+                                      {itemBarcode}
+                                    </span>
                                   </div>
                                   <span className="font-mono text-stone-500 font-medium">
                                     Rs. {(item.selling_price_at_sale * item.quantity).toLocaleString()}

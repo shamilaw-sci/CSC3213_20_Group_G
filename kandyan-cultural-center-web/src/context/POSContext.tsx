@@ -185,14 +185,21 @@ const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
   };
 
   const updateQuantity = (id: string, newQuantity: number) => {
-  if (newQuantity < 1) return; // Prevent going below 1 via this function
-  
-  setCart(prevCart => 
-    prevCart.map(item => 
-      item.id === id ? { ...item, quantity: newQuantity } : item
-    )
-  );
-};
+    if (newQuantity < 1) return; // Prevent going below 1 via this function
+    
+    setCart(prevCart => 
+      prevCart.map(item => {
+        if (item.id === id) {
+          // Prevent the cart quantity from exceeding the actual physical stock
+          const maxStock = item.stock || 0;
+          const safeQuantity = newQuantity > maxStock ? maxStock : newQuantity;
+          
+          return { ...item, quantity: safeQuantity };
+        }
+        return item;
+      })
+    );
+  };
 
   const removeFromCart = (id: string) => {
   setCart(prevCart => prevCart.filter(item => item.id !== id));
