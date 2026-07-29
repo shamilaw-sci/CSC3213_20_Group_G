@@ -175,15 +175,21 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
           <div className="flex gap-4 mt-8 w-80">
             <button 
               onClick={() => alert("Printing simulated. In production, this would trigger the thermal printer.")}
-              className="flex-1 py-3 bg-stone-700 hover:bg-stone-600 text-white font-bold rounded-xl shadow-lg transition-colors"
+              className="flex-1 py-3 bg-stone-700 hover:bg-stone-600 text-white font-bold rounded-xl shadow-lg transition-colors flex items-center justify-center"
             >
-              🖨️ Re-Print
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              Re-Print
             </button>
             <button 
               onClick={handleFinishTransaction}
-              className="flex-[2] py-3 bg-amber-700 hover:bg-amber-600 text-white font-black rounded-xl shadow-lg transition-colors"
+              className="flex-[2] py-3 bg-amber-700 hover:bg-amber-600 text-white font-black rounded-xl shadow-lg transition-colors flex items-center justify-center"
             >
-              NEXT ORDER ➔
+              NEXT ORDER
+              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
             </button>
           </div>
         </div>
@@ -194,6 +200,37 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
   
   // VIEW 2: THE STANDARD CHECKOUT MODAL (Shows before payment)
  
+  // Custom Payment Method Config for SVG mapping
+  const paymentMethodsConfig = [
+    { 
+      id: 'cash', 
+      label: 'Cash',
+      icon: (
+        <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      )
+    },
+    { 
+      id: 'card', 
+      label: 'Card',
+      icon: (
+        <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+        </svg>
+      )
+    },
+    { 
+      id: 'bank_transfer', 
+      label: 'Bank',
+      icon: (
+        <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+        </svg>
+      )
+    }
+  ];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
@@ -207,7 +244,9 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
             </span>
           </div>
           <button onClick={onClose} className="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 text-stone-600 rounded-full font-bold transition-colors">
-            ✕
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
@@ -223,15 +262,19 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
                 return (
                   <div key={item.id} className="flex justify-between text-sm py-2 border-b border-stone-100">
                     <div className="flex gap-2">
-                      <span className="font-bold text-stone-600">{item.quantity}x</span>
                       <span className="text-stone-800 line-clamp-1">{item.name}</span>
+                      <span className="text-xs font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 shadow-sm">
+                        {item.barcode ? item.barcode : 'No Barcode'}
+                      </span>
                     </div>
+                    <span className="font-bold text-stone-600">{item.quantity}x</span>
                     <span className="font-medium text-stone-600">Rs. {(itemPrice * item.quantity).toLocaleString()}</span>
                   </div>
                 );
               })}
             </div>
-          </div>
+          </div >
+              
 
           {/* Right Column: Payment & Discount */}
           <div className="w-1/2 p-6 bg-stone-50 flex flex-col">
@@ -255,20 +298,17 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
             <div className="mb-8">
               <label className="block text-sm font-bold text-stone-700 mb-2">Payment Method</label>
               <div className="grid grid-cols-3 gap-2">
-                {[
-                  { id: 'cash', label: '💵 Cash' },
-                  { id: 'card', label: '💳 Card' },
-                  { id: 'bank_transfer', label: '🏦 Bank' }
-                ].map((method) => (
+                {paymentMethodsConfig.map((method) => (
                   <button
                     key={method.id}
                     onClick={() => setPaymentMethod(method.id as PaymentMethod)}
-                    className={`py-3 px-2 rounded-xl text-sm font-bold border-2 transition-all ${
+                    className={`py-3 px-2 rounded-xl text-sm font-bold border-2 transition-all flex items-center justify-center ${
                       paymentMethod === method.id 
                         ? 'border-amber-600 bg-amber-50 text-amber-800' 
                         : 'border-stone-200 bg-white text-stone-500 hover:border-amber-300'
                     }`}
                   >
+                    {method.icon}
                     {method.label}
                   </button>
                 ))}

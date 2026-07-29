@@ -118,8 +118,10 @@ export default function POSPage() {
       <div className="min-h-screen flex items-center justify-center bg-stone-900 font-sans p-4 z-[100]">
         <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-300">
           <div className="bg-amber-700 p-6 text-center">
-            <div className="w-16 h-16 bg-white text-amber-700 rounded-full flex items-center justify-center mx-auto mb-3 text-3xl shadow-md">
-              ⚖️
+            <div className="w-16 h-16 bg-white text-amber-700 rounded-full flex items-center justify-center mx-auto mb-3 shadow-md">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+              </svg>
             </div>
             <h2 className="text-2xl font-black text-white tracking-wide">Session Accountability</h2>
           </div>
@@ -173,7 +175,7 @@ export default function POSPage() {
           <img 
             src="/logo.png" 
             alt="Kandyan Cultural Centre Logo" 
-            className="w-12 h-12 rounded-full object-cover border border-stone-200 shadow-sm"
+            className="w-12 "
           />
           <button 
             onClick={toggleNetwork}
@@ -205,7 +207,9 @@ export default function POSPage() {
                 {cashierName.charAt(0)}
               </div>
               <span className="mr-2">{cashierName}</span>
-              <span className="text-xs text-stone-400">▼</span>
+              <svg className="w-3.5 h-3.5 text-stone-400 ml-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
 
             {isDropdownOpen && (
@@ -221,19 +225,26 @@ export default function POSPage() {
                   <ul className="py-2">
                     <li>
                       <button 
-                        className="w-full text-left px-4 py-2 text-stone-700 hover:bg-stone-100 transition-colors"
+                        className="w-full text-left px-4 py-2 text-stone-700 hover:bg-stone-100 transition-colors flex items-center"
                         onClick={() => setIsDropdownOpen(false)}
                       >
-                        ⚙️ Settings
+                        <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Settings
                       </button>
                     </li>
                     <li>
                       <button 
                         onClick={() => setIsLogoutConfirmOpen(true)}
-                        className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 font-medium transition-colors"
+                        className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 font-medium transition-colors flex items-center"
                         title="Log out of the terminal"
                       >
-                        🚪 Log Out
+                        <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Log Out
                       </button>
                     </li>
                   </ul>
@@ -255,7 +266,6 @@ export default function POSPage() {
             <select 
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              // Added pr-10 to push the text away from the dropdown arrow
               className="bg-stone-50 border border-stone-200 text-stone-700 text-sm font-semibold rounded-xl pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-600 cursor-pointer shadow-sm"
             >
               <option value="name-asc">Sort: A to Z</option>
@@ -278,7 +288,7 @@ export default function POSPage() {
               {(activeCategory !== 'All' || inStockOnly || outOfStockOnly) && (
                 <div 
                   onClick={(e) => {
-                    e.stopPropagation(); // Prevents the menu from opening when clicking 'X'
+                    e.stopPropagation(); 
                     setActiveCategory('All');
                     setInStockOnly(false);
                     setOutOfStockOnly(false);
@@ -286,7 +296,9 @@ export default function POSPage() {
                   className="ml-1 flex items-center justify-center w-5 h-5 rounded-full bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold transition-colors"
                   title="Clear all filters"
                 >
-                  ✕
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </div>
               )}
             </button>
@@ -295,7 +307,9 @@ export default function POSPage() {
           {/* Center: Search/Barcode Input */}
           <div className="w-[500px] relative shrink-0">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <span className="text-stone-400">🔍</span>
+              <svg className="w-5 h-5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
             </div>
             <input
               type="text"
@@ -310,7 +324,10 @@ export default function POSPage() {
               className={`absolute inset-y-0 right-2 px-2 flex items-center justify-center transition-colors ${isCameraActive ? 'text-amber-700' : 'text-stone-400 hover:text-amber-600'}`}
               title={isCameraActive ? "Close Camera" : "Open Camera Scanner"}
             >
-              <span className="text-2xl">📸</span>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
             </button>
           </div>
 
@@ -320,13 +337,19 @@ export default function POSPage() {
                 onClick={() => setIsHistoryOpen(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 text-sm font-semibold rounded-xl border border-stone-200 transition-colors shadow-sm"
              >
-                <span className="text-lg">🧾</span> History
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                History
              </button>
              <button 
                 onClick={() => setIsCalculatorOpen(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 text-sm font-semibold rounded-xl border border-stone-200 transition-colors shadow-sm"
              >
-                <span className="text-lg">🖩</span> Calculator
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                Calculator
              </button>
           </div>
         </div>
@@ -434,8 +457,10 @@ export default function POSPage() {
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 text-center">
-              <div className="w-16 h-16 bg-stone-100 text-stone-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
-                👋
+              <div className="w-16 h-16 bg-stone-100 text-stone-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <svg className="w-8 h-8 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
               </div>
               <h3 className="text-xl font-black text-stone-800 mb-2">Ending Shift?</h3>
               <p className="text-stone-500 text-sm">
