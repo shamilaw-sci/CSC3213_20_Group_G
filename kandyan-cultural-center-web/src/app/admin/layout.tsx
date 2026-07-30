@@ -25,7 +25,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return;
       }
 
-      // 2. Fetch the new role enum
+      // 2. Fetch the role from profile
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
@@ -34,12 +34,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       // 3. Check if they have admin OR cashier privileges
       if (!profile || (profile.role !== 'admin')) {
-        // Intruder! Kick them to the homepage
         router.push('/');
         return;
       }
 
-      // 4. User is verified!
+      // 4. Verified!
       setUserRole(profile.role);
       setIsAuthorized(true);
       setIsLoading(false);
@@ -60,7 +59,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // Prevent rendering children if not authorized
   if (!isAuthorized) return null;
 
   return (
@@ -102,31 +100,67 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         <nav className="flex-1 px-4 py-6 lg:py-8 space-y-2 overflow-y-auto no-scrollbar">
-          <SidebarLink href="/admin" icon="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" label="Dashboard" pathname={pathname} onClick={() => setIsMobileMenuOpen(false)} />
+          <SidebarLink 
+            href="/admin" 
+            icon="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" 
+            label="Dashboard" 
+            pathname={pathname} 
+            onClick={() => setIsMobileMenuOpen(false)} 
+          />
           
           <div className="pt-6 pb-2">
             <p className="px-4 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">E-commerce</p>
           </div>
-          <SidebarLink href="/admin/orders" icon="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" label="Orders & POS" pathname={pathname} onClick={() => setIsMobileMenuOpen(false)} />
-          <SidebarLink href="/admin/inventory" icon="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" label="Inventory" pathname={pathname} onClick={() => setIsMobileMenuOpen(false)} />
+          <SidebarLink 
+            href="/admin/orders" 
+            icon="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" 
+            label="Orders & POS" 
+            pathname={pathname} 
+            onClick={() => setIsMobileMenuOpen(false)} 
+          />
+          <SidebarLink 
+            href="/admin/inventory" 
+            icon="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" 
+            label="Inventory" 
+            pathname={pathname} 
+            onClick={() => setIsMobileMenuOpen(false)} 
+          />
           
           {/* RBAC: Only true admins can see Financial Reports */}
           {userRole === 'admin' && (
-            <SidebarLink href="/admin/reports" icon="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" label="Financial Reports" pathname={pathname} onClick={() => setIsMobileMenuOpen(false)} />
+            <SidebarLink 
+              href="/admin/reports" 
+              icon="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" 
+              label="Financial Reports" 
+              pathname={pathname} 
+              onClick={() => setIsMobileMenuOpen(false)} 
+            />
           )}
           
           <div className="pt-6 pb-2">
             <p className="px-4 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Facilities</p>
           </div>
-          <SidebarLink href="/admin/hall-bookings" icon="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" label="Hall Bookings" pathname={pathname} onClick={() => setIsMobileMenuOpen(false)} />
+          <SidebarLink 
+            href="/admin/hall-bookings" 
+            icon="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" 
+            label="Hall Bookings" 
+            pathname={pathname} 
+            onClick={() => setIsMobileMenuOpen(false)} 
+          />
+
+          {/* --- WORKSHOPS SECTION --- */}
           <div className="pt-6 pb-2">
             <p className="px-4 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
               Workshops
             </p>
           </div>
-          <SidebarLink href="/admin/workshops" icon="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" label="Workshops" pathname={pathname} onClick={() => setIsMobileMenuOpen(false)} />
-
-          {/* ADDED: Workshop Bookings Roster Link */}
+          <SidebarLink 
+            href="/admin/workshops" 
+            icon="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" 
+            label="Workshops" 
+            pathname={pathname} 
+            onClick={() => setIsMobileMenuOpen(false)} 
+          />
           <SidebarLink 
             href="/admin/workshop-booking" 
             icon="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" 
@@ -138,6 +172,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             href="/admin/workshop-financials" 
             icon="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" 
             label="Workshop Financials" 
+            pathname={pathname} 
+            onClick={() => setIsMobileMenuOpen(false)} 
+          />
+
+          {/* --- NEW: ARTISANS & GUILD SECTION --- */}
+          <div className="pt-6 pb-2">
+            <p className="px-4 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+              Artisans & Guild
+            </p>
+          </div>
+          <SidebarLink 
+            href="/admin/artisans" 
+            icon="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" 
+            label="Artisans Directory" 
+            pathname={pathname} 
+            onClick={() => setIsMobileMenuOpen(false)}
+            exact={true}
+          />
+          <SidebarLink 
+            href="/admin/artisans/earnings" 
+            icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+            label="Artisan Payouts" 
             pathname={pathname} 
             onClick={() => setIsMobileMenuOpen(false)} 
           />
@@ -164,7 +220,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             onClick={() => setIsMobileMenuOpen(true)} 
             className="text-slate-500 hover:text-amber-600 focus:outline-none p-2 -mr-2 bg-white/60 rounded-xl border border-white/80 shadow-sm transition-colors"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
+            {/* FIXED: Added path 'd' attribute so hamburger icon renders properly on mobile */}
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
           </button>
         </header>
 
@@ -178,9 +235,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   );
 }
 
-// Updated SidebarLink to match Light Glass Theme
-function SidebarLink({ href, icon, label, pathname, onClick }: { href: string, icon: string, label: string, pathname: string | null, onClick: () => void }) {
-  const isActive = href === '/admin' ? pathname === href : pathname?.startsWith(href);
+// Updated SidebarLink with optional 'exact' matching so parent/child routes don't overlap
+function SidebarLink({ 
+  href, 
+  icon, 
+  label, 
+  pathname, 
+  onClick,
+  exact = false 
+}: { 
+  href: string; 
+  icon: string; 
+  label: string; 
+  pathname: string | null; 
+  onClick: () => void;
+  exact?: boolean;
+}) {
+  const isActive = exact
+    ? pathname === href || (pathname?.startsWith(`${href}/`) && !pathname?.startsWith(`${href}/earnings`))
+    : href === '/admin'
+    ? pathname === '/admin'
+    : pathname?.startsWith(href);
 
   return (
     <Link 
