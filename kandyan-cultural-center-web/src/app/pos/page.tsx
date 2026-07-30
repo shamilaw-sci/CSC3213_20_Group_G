@@ -43,7 +43,8 @@ export default function POSPage() {
   const [unsyncedCount, setUnsyncedCount] = useState(0);
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
   
-  // --- NEW: BLIND CLOSEOUT STATE ---
+  // --- BLIND CLOSEOUT STATE ---
+  const [startingCash, setStartingCash] = useState<string>(''); // NEW: Initial Float
   const [declaredCash, setDeclaredCash] = useState<string>('');
   const [varianceMessage, setVarianceMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
   const [isVerifyingCash, setIsVerifyingCash] = useState(false);
@@ -123,7 +124,6 @@ export default function POSPage() {
       startOfToday.setHours(0, 0, 0, 0);
       const isoStartOfToday = startOfToday.toISOString();
 
-      // Fetch all completed in-store orders for today to calculate expected cash
       const { data, error } = await supabase
         .from('orders')
         .select('total_amount, payment_method')
@@ -132,20 +132,31 @@ export default function POSPage() {
 
       if (error) throw error;
 
-      // Filter and sum ONLY the cash transactions
-      const expectedCash = data
+      // NEW: Calculate total Expected Cash (Starting Float + Cash Sales)
+      const initialFloat = parseFloat(startingCash) || 0;
+      const cashSales = data
         .filter(o => o.payment_method === 'cash')
         .reduce((sum, o) => sum + (o.total_amount || 0), 0);
 
+      const expectedCash = initialFloat + cashSales;
       const declared = parseFloat(declaredCash);
       const variance = declared - expectedCash;
 
       if (variance === 0) {
-        setVarianceMessage({ type: 'success', text: `Perfect match! Expected exactly Rs. ${expectedCash.toLocaleString()}` });
+        setVarianceMessage({ 
+          type: 'success', 
+          text: `Perfect match! (Float: Rs. ${initialFloat.toLocaleString()} + Sales: Rs. ${cashSales.toLocaleString()})` 
+        });
       } else if (variance > 0) {
-        setVarianceMessage({ type: 'error', text: `Drawer is OVER by Rs. ${variance.toLocaleString()} (Expected Rs. ${expectedCash.toLocaleString()})` });
+        setVarianceMessage({ 
+          type: 'error', 
+          text: `Drawer is OVER by Rs. ${variance.toLocaleString()} (Expected Rs. ${expectedCash.toLocaleString()})` 
+        });
       } else {
-        setVarianceMessage({ type: 'error', text: `Drawer is SHORT by Rs. ${Math.abs(variance).toLocaleString()} (Expected Rs. ${expectedCash.toLocaleString()})` });
+        setVarianceMessage({ 
+          type: 'error', 
+          text: `Drawer is SHORT by Rs. ${Math.abs(variance).toLocaleString()} (Expected Rs. ${expectedCash.toLocaleString()})` 
+        });
       }
       
       setIsCashVerified(true);
@@ -197,7 +208,7 @@ export default function POSPage() {
             <h2 className="text-2xl font-black text-white tracking-wide">Session Accountability</h2>
           </div>
           <div className="p-8">
-            <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 mb-6">
+            <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 mb-4">
               <div className="flex justify-between border-b border-stone-200 pb-2 mb-2">
                 <span className="text-stone-500 font-semibold text-sm">Active User:</span>
                 <span className="font-bold text-stone-800">{cashierName}</span>
@@ -207,17 +218,45 @@ export default function POSPage() {
                 <span className="font-bold text-amber-700 uppercase">{userRole}</span>
               </div>
             </div>
-            <p className="text-stone-600 text-sm leading-relaxed mb-8 text-justify">
+
+            {/* NEW: Starting Cash / Float Input */}
+            <div className="mb-6 p-4 bg-stone-50 border border-stone-200 rounded-xl">
+              <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Initial Drawer Float</h4>
+              <p className="text-xs text-stone-600 mb-3">Please count and enter the starting cash amount currently in your drawer.</p>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 font-bold">Rs.</span>
+                <input 
+                  type="number"
+                  min="0"
+                  value={startingCash}
+                  onChange={(e) => setStartingCash(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full pl-10 pr-3 py-2.5 bg-white border border-stone-200 rounded-lg font-bold text-stone-800 focus:outline-none focus:border-amber-500 shadow-sm transition-colors"
+                />
+              </div>
+            </div>
+
+            <p className="text-stone-600 text-xs leading-relaxed mb-6 text-justify">
               By proceeding, you acknowledge that you are operating under your personal credentials. 
-              <strong> All sales, discounts, and inventory modifications will be permanently logged to this account. </strong> 
-              You are fully responsible for this POS terminal and its cash drawer until you formally log out of the system.
+              All sales and modifications will be permanently logged to this account.
             </p>
             <div className="flex gap-4">
-              <button onClick={handleLogout} className="flex-[1] py-3 font-bold text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors">
-                Cancel & Log Out
+              <button 
+                onClick={handleLogout} 
+                className="flex-[1] py-3 font-bold text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors"
+              >
+                Cancel
               </button>
-              <button onClick={() => setDisclaimerAccepted(true)} className="flex-[2] py-3 font-black text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors shadow-md">
-                I ACCEPT & CONFIRM
+              <button 
+                onClick={() => setDisclaimerAccepted(true)} 
+                disabled={startingCash === ''}
+                className={`flex-[2] py-3 font-black rounded-xl transition-colors shadow-md ${
+                  startingCash === '' 
+                    ? 'bg-stone-300 text-stone-500 cursor-not-allowed' 
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                }`}
+              >
+                {startingCash === '' ? 'ENTER FLOAT TO BEGIN' : 'I ACCEPT & CONFIRM'}
               </button>
             </div>
           </div>
@@ -332,7 +371,6 @@ export default function POSPage() {
           </div>
 
           <div className="flex-1 flex justify-end items-center gap-3">
-             {/* NEW: ONLY ADMINS CAN SEE THE HISTORY BUTTON HERE */}
              {userRole === 'admin' && (
                <button onClick={() => setIsHistoryOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 text-sm font-semibold rounded-xl border border-stone-200 transition-colors shadow-sm">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg> History
@@ -460,7 +498,6 @@ export default function POSPage() {
                 </div>
               </div>
               
-              {/* NEW: Step 1: Blind Reconciliation Input */}
               <div className="mb-6 p-4 bg-stone-50 border border-stone-200 rounded-xl">
                 <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Step 1: Cash Drawer Reconciliation</h4>
                 <p className="text-sm text-stone-600 mb-4">Please count the physical cash in your drawer and enter it below to verify.</p>
@@ -485,14 +522,12 @@ export default function POSPage() {
                   </button>
                 </div>
 
-                {/* Variance Message Block */}
                 {varianceMessage && (
                   <div className={`p-3 rounded-lg text-sm font-bold border ${varianceMessage.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
                     {varianceMessage.text}
                   </div>
                 )}
 
-                {/* Admin Override to view History */}
                 {userRole === 'admin' && (
                   <div className="mt-4 pt-4 border-t border-stone-200">
                     <button onClick={() => setIsHistoryOpen(true)} className="w-full py-2 bg-white border border-stone-200 hover:border-amber-400 hover:bg-amber-50 text-stone-700 font-bold rounded-lg transition-colors flex items-center justify-center shadow-sm text-sm">
