@@ -18,7 +18,6 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // NEW: State to control showing the thermal receipt
   const [showReceipt, setShowReceipt] = useState(false);
   const [orderTimestamp, setOrderTimestamp] = useState<Date | null>(null);
 
@@ -31,40 +30,34 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
     setError(null);
 
     try {
-      // 1. Generate the master UUID locally in the browser
       const masterOrderId = crypto.randomUUID();
 
-      // 2. Build the Orders Header payload
       const orderData = {
-        id: masterOrderId,              // We pass our own ID instead of letting the DB do it
-        invoice_number: orderNumber,    // Custom S26... number
-        //user_id: currentCashierId,
+        id: masterOrderId,              
+        invoice_number: orderNumber,    
         total_amount: finalTotal,        
-        discount_percentage: discountValue, //the actual final paid amount
+        discount_percentage: discountValue, 
         payment_method: paymentMethod,
         status: 'completed',
-        created_at: new Date().toISOString(), // Captures the exact offline time
-        sales_channel: 'in-store',           // Uses the enum value
+        created_at: new Date().toISOString(), 
+        sales_channel: 'in-store',           
       };
 
-      // 3.Order Items payload array
       const orderItemsData = cart.map((item) => {
         const sellingPrice = item.customPrice !== undefined ? item.customPrice : item.price;
         
         return {
-          id: crypto.randomUUID(),      // Unique ID for this specific row
-          order_id: masterOrderId,      // This perfectly links the item to the parent order
+          id: crypto.randomUUID(),      
+          order_id: masterOrderId,      
           variant_id: item.id,
           quantity: item.quantity,
-          cost_price_at_sale: item.costPrice || 0, // Fallback just in case
+          cost_price_at_sale: item.costPrice || 0, 
           selling_price_at_sale: sellingPrice,
         };
       });
 
-      // 4. Send BOTH payloads to the offline-capable Context engine
       await processOrder(orderData, orderItemsData, cart);
 
-      // 5. Set the timestamp and show the receipt
       setOrderTimestamp(new Date());
       setShowReceipt(true);
 
@@ -76,131 +69,133 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
     }
   };
 
-  // When the cashier finishes viewing/printing the receipt
   const handleFinishTransaction = () => {
     clearCart();
     loadProducts();
     onClose();
   };
 
-
-  // VIEW 1: THE THERMAL RECEIPT PREVIEW (Shows after successful payment)
-
+  // VIEW 1: THE THERMAL RECEIPT PREVIEW 
   if (showReceipt) {
     return (
-      <div className="fixed inset-0 z-[80] flex items-center justify-center bg-stone-900/80 backdrop-blur-sm p-4">
-        <div className="flex flex-col items-center animate-in zoom-in-95 duration-300">
-          
-          {/* Virtual Thermal Paper */}
-          <div className="bg-white w-80 p-6 shadow-2xl font-mono text-stone-900 relative">
-            {/* Paper jagged top edge effect */}
-            <div className="absolute top-0 left-0 w-full h-2 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxwb2x5Z29uIHBvaW50cz0iMCwwIDQsOCA4LDAiIGZpbGw9IiNlN2U1ZTQiLz48L3N2Zz4=')] -mt-2"></div>
+      <div className="fixed inset-0 z-[80] overflow-y-auto bg-stone-900/80 backdrop-blur-sm">
+        {/* CHANGED: items-center to items-start, added pt-24 to push it down from the top edge */}
+        <div className="flex min-h-full items-start justify-center p-4 pt-24 pb-12">
+          <div className="flex flex-col items-center animate-in zoom-in-95 duration-300">
             
-            <div className="text-center mb-6">
-              <div className="text-3xl font-black mb-1">KAA</div>
-              <h2 className="font-bold text-sm uppercase">The Kandyan Art Association</h2>
-              <p className="text-[10px] text-stone-500">Central Province, Sri Lanka</p>
-            </div>
+            <div className="bg-white w-80 p-6 shadow-2xl font-mono text-stone-900 relative shrink-0">
+              <div className="absolute top-0 left-0 w-full h-2 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxwb2x5Z29uIHBvaW50cz0iMCwwIDQsOCA4LDAiIGZpbGw9IiNlN2U1ZTQiLz48L3N2Zz4=')] -mt-2"></div>
+              
+              <div className="text-center mb-6 flex flex-col items-center">
+                <img 
+                  src="/logo.png" 
+                  alt="Kandyan Cultural Centre Logo" 
+                  className="w-14 h-14 mb-2 object-contain grayscale contrast-125" 
+                />
+                <h2 className="font-bold text-sm uppercase">Kandyan Cultural Centre</h2>
+                <p className="text-[10px] text-stone-500 mt-1">No 72 Sangharaja Mawatha,</p>
+                <p className="text-[10px] text-stone-500">Kandy, Sri Lanka</p>
+                <p className="text-[10px] text-stone-500 mt-1">+94 81 222 3100</p>
+                <p className="text-[10px] text-stone-500">www.kandyanculturalcentre.lk</p>
+              </div>
 
-            <div className="border-b-2 border-dashed border-stone-300 pb-3 mb-3 text-[11px] leading-relaxed">
-              <div className="flex justify-between">
-                <span>Date: {orderTimestamp?.toLocaleDateString()}</span>
-                <span>{orderTimestamp?.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Bill No:</span>
-                <span className="font-bold">#{orderNumber}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Cashier:</span>
-                <span>Cashier 1</span>
-              </div>
-            </div>
-
-            <table className="w-full text-[11px] mb-4">
-              <thead>
-                <tr className="border-b-2 border-dashed border-stone-300 text-left">
-                  <th className="pb-2 font-bold w-full">ITEM</th>
-                  <th className="pb-2 font-bold px-2 text-right">QTY</th>
-                  <th className="pb-2 font-bold text-right">AMT</th>
-                </tr>
-              </thead>
-              <tbody className="align-top">
-                {cart.map(item => {
-                  const itemPrice = item.customPrice !== undefined ? item.customPrice : item.price;
-                  return (
-                    <tr key={item.id}>
-                      <td className="py-2 pr-2">
-                        <div className="font-bold">{item.name}</div>
-                        <div className="text-[9px] text-stone-500">Barcode: {item.id.slice(0,8)}</div>
-                      </td>
-                      <td className="py-2 px-2 text-right">{item.quantity}</td>
-                      <td className="py-2 text-right">{((itemPrice * item.quantity)).toLocaleString()}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-
-            <div className="border-t-2 border-dashed border-stone-300 pt-3 text-xs space-y-1.5">
-              <div className="flex justify-between text-stone-600">
-                <span>Subtotal</span>
-                <span>Rs. {cartTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-              </div>
-              {discountValue > 0 && (
-                <div className="flex justify-between text-stone-600">
-                  <span>Discount ({discountValue}%)</span>
-                  <span>- Rs. {discountAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+              <div className="border-b-2 border-dashed border-stone-300 pb-3 mb-3 text-[11px] leading-relaxed">
+                <div className="flex justify-between">
+                  <span>Date: {orderTimestamp?.toLocaleDateString()}</span>
+                  <span>{orderTimestamp?.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                 </div>
-              )}
-              <div className="flex justify-between font-black text-sm pt-2 mt-2 border-t-2 border-dashed border-stone-300">
-                <span>TOTAL</span>
-                <span>Rs. {finalTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                <div className="flex justify-between">
+                  <span>Bill No:</span>
+                  <span className="font-bold">#{orderNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Cashier:</span>
+                  <span>Cashier 1</span>
+                </div>
               </div>
-              <div className="flex justify-between text-[10px] text-stone-500 pt-1">
-                <span className="uppercase">Paid via {paymentMethod.replace('_', ' ')}</span>
+
+              <table className="w-full text-[11px] mb-4">
+                <thead>
+                  <tr className="border-b-2 border-dashed border-stone-300 text-left">
+                    <th className="pb-2 font-bold w-full">ITEM</th>
+                    <th className="pb-2 font-bold px-2 text-right">QTY</th>
+                    <th className="pb-2 font-bold text-right">AMT</th>
+                  </tr>
+                </thead>
+                <tbody className="align-top">
+                  {cart.map(item => {
+                    const itemPrice = item.customPrice !== undefined ? item.customPrice : item.price;
+                    return (
+                      <tr key={item.id}>
+                        <td className="py-2 pr-2">
+                          <div className="font-bold">{item.name}</div>
+                          <div className="text-[9px] text-stone-500">Barcode: {item.id.slice(0,8)}</div>
+                        </td>
+                        <td className="py-2 px-2 text-right">{item.quantity}</td>
+                        <td className="py-2 text-right">{((itemPrice * item.quantity)).toLocaleString()}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+
+              <div className="border-t-2 border-dashed border-stone-300 pt-3 text-xs space-y-1.5">
+                <div className="flex justify-between text-stone-600">
+                  <span>Subtotal</span>
+                  <span>Rs. {cartTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                </div>
+                {discountValue > 0 && (
+                  <div className="flex justify-between text-stone-600">
+                    <span>Discount ({discountValue}%)</span>
+                    <span>- Rs. {discountAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-black text-sm pt-2 mt-2 border-t-2 border-dashed border-stone-300">
+                  <span>TOTAL</span>
+                  <span>Rs. {finalTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                </div>
+                <div className="flex justify-between text-[10px] text-stone-500 pt-1">
+                  <span className="uppercase">Paid via {paymentMethod.replace('_', ' ')}</span>
+                </div>
               </div>
+
+              <div className="text-center mt-8 text-[11px] font-bold pb-2">
+                <p>THANK YOU FOR YOUR VISIT</p>
+                <p className="font-normal mt-2 text-[9px] text-stone-500 leading-tight">
+                  We accept returns within 14 days from the date of purchase. For further details on return and refund policies, please check our website.
+                </p>
+              </div>
+              
+              <div className="absolute bottom-0 left-0 w-full h-2 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxwb2x5Z29uIHBvaW50cz0iMCwwIDQsOCA4LDAiIGZpbGw9IiNlN2U1ZTQiLz48L3N2Zz4=')] -mb-2 rotate-180"></div>
             </div>
 
-            <div className="text-center mt-8 text-[11px] font-bold pb-2">
-              <p>THANK YOU FOR YOUR VISIT</p>
-              <p className="font-normal mt-1 text-[9px] text-stone-500">Please keep this receipt for your records</p>
+            <div className="flex gap-4 mt-8 w-80 shrink-0">
+              <button 
+                onClick={() => alert("Printing simulated. In production, this would trigger the thermal printer.")}
+                className="flex-1 py-3 bg-stone-700 hover:bg-stone-600 text-white font-bold rounded-xl shadow-lg transition-colors flex items-center justify-center"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                Re-Print
+              </button>
+              <button 
+                onClick={handleFinishTransaction}
+                className="flex-[2] py-3 bg-amber-700 hover:bg-amber-600 text-white font-black rounded-xl shadow-lg transition-colors flex items-center justify-center"
+              >
+                NEXT ORDER
+                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </button>
             </div>
-            
-            {/* Paper jagged bottom edge effect */}
-            <div className="absolute bottom-0 left-0 w-full h-2 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxwb2x5Z29uIHBvaW50cz0iMCwwIDQsOCA4LDAiIGZpbGw9IiNlN2U1ZTQiLz48L3N2Zz4=')] -mb-2 rotate-180"></div>
-          </div>
-
-          {/* Action Buttons underneath the paper */}
-          <div className="flex gap-4 mt-8 w-80">
-            <button 
-              onClick={() => alert("Printing simulated. In production, this would trigger the thermal printer.")}
-              className="flex-1 py-3 bg-stone-700 hover:bg-stone-600 text-white font-bold rounded-xl shadow-lg transition-colors flex items-center justify-center"
-            >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-              </svg>
-              Re-Print
-            </button>
-            <button 
-              onClick={handleFinishTransaction}
-              className="flex-[2] py-3 bg-amber-700 hover:bg-amber-600 text-white font-black rounded-xl shadow-lg transition-colors flex items-center justify-center"
-            >
-              NEXT ORDER
-              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            </button>
           </div>
         </div>
       </div>
     );
   }
 
-  
-  // VIEW 2: THE STANDARD CHECKOUT MODAL (Shows before payment)
- 
-  // Custom Payment Method Config for SVG mapping
+  // VIEW 2: THE STANDARD CHECKOUT MODAL 
   const paymentMethodsConfig = [
     { 
       id: 'cash', 
@@ -235,7 +230,6 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
         
-        {/* Header */}
         <div className="flex justify-between items-center px-6 py-4 border-b border-stone-200 bg-stone-50">
           <div className="flex items-center gap-3">
             <h2 className="text-2xl font-black text-stone-800">Checkout</h2>
@@ -250,10 +244,8 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
           </button>
         </div>
 
-        {/* Content (Two Columns) */}
         <div className="flex flex-1 overflow-hidden">
           
-          {/* Left Column: Order Summary */}
           <div className="w-1/2 p-6 border-r border-stone-200 overflow-y-auto bg-white">
             <h3 className="font-bold text-stone-500 uppercase tracking-wider text-sm mb-4">Order Details</h3>
             <div className="space-y-3">
@@ -262,21 +254,16 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
                 return (
                   <div key={item.id} className="flex justify-between text-sm py-2 border-b border-stone-100">
                     <div className="flex gap-2">
+                      <span className="font-bold text-stone-600">{item.quantity}x</span>
                       <span className="text-stone-800 line-clamp-1">{item.name}</span>
-                      <span className="text-xs font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 shadow-sm">
-                        {item.barcode ? item.barcode : 'No Barcode'}
-                      </span>
                     </div>
-                    <span className="font-bold text-stone-600">{item.quantity}x</span>
                     <span className="font-medium text-stone-600">Rs. {(itemPrice * item.quantity).toLocaleString()}</span>
                   </div>
                 );
               })}
             </div>
-          </div >
-              
+          </div>
 
-          {/* Right Column: Payment & Discount */}
           <div className="w-1/2 p-6 bg-stone-50 flex flex-col">
             
             <div className="mb-8">
