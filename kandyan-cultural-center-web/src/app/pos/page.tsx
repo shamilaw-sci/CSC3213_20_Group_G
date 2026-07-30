@@ -10,7 +10,6 @@ import HistoryModal from '../../components/pos/HistoryModal';
 import { supabase } from '../../lib/supabase'; 
 
 export default function POSPage() {
-  // NEW: Grab cachedProducts to calculate dynamic max price
   const { cartTotal, setCashierId, cachedProducts } = usePOS(); 
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -40,15 +39,20 @@ export default function POSPage() {
   const [minPrice, setMinPrice] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('');
 
+  // --- SESSION-ENDING STATE ---
   const [unsyncedCount, setUnsyncedCount] = useState(0);
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
+  
+  // --- NEW: BLIND CLOSEOUT STATE ---
+  const [declaredCash, setDeclaredCash] = useState<string>('');
+  const [varianceMessage, setVarianceMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
+  const [isVerifyingCash, setIsVerifyingCash] = useState(false);
+  const [isCashVerified, setIsCashVerified] = useState(false);
 
-  // NEW: Dynamically calculate the highest price from your inventory
   const highestPrice = cachedProducts && cachedProducts.length > 0 
     ? Math.max(...cachedProducts.map(p => p.price || 0)) 
-    : 10000; // Fallback if inventory is empty
+    : 10000; 
 
-  // Helper check to see if any filter is currently applied
   const isFilterActive = 
     activeCategory !== 'All' || 
     inStockOnly || 
@@ -109,6 +113,50 @@ export default function POSPage() {
   }, [setCashierId]);
 
   // --- 2. HANDLERS ---
+  const handleVerifyCash = async () => {
+    if (!declaredCash) return;
+    setIsVerifyingCash(true);
+    setVarianceMessage(null);
+
+    try {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const isoStartOfToday = startOfToday.toISOString();
+
+      // Fetch all completed in-store orders for today to calculate expected cash
+      const { data, error } = await supabase
+        .from('orders')
+        .select('total_amount, payment_method')
+        .eq('sales_channel', 'in-store')
+        .gte('created_at', isoStartOfToday);
+
+      if (error) throw error;
+
+      // Filter and sum ONLY the cash transactions
+      const expectedCash = data
+        .filter(o => o.payment_method === 'cash')
+        .reduce((sum, o) => sum + (o.total_amount || 0), 0);
+
+      const declared = parseFloat(declaredCash);
+      const variance = declared - expectedCash;
+
+      if (variance === 0) {
+        setVarianceMessage({ type: 'success', text: `Perfect match! Expected exactly Rs. ${expectedCash.toLocaleString()}` });
+      } else if (variance > 0) {
+        setVarianceMessage({ type: 'error', text: `Drawer is OVER by Rs. ${variance.toLocaleString()} (Expected Rs. ${expectedCash.toLocaleString()})` });
+      } else {
+        setVarianceMessage({ type: 'error', text: `Drawer is SHORT by Rs. ${Math.abs(variance).toLocaleString()} (Expected Rs. ${expectedCash.toLocaleString()})` });
+      }
+      
+      setIsCashVerified(true);
+    } catch (err) {
+      console.error("Failed to verify cash:", err);
+      setVarianceMessage({ type: 'error', text: 'System offline. Cannot verify expected cash balance.' });
+    } finally {
+      setIsVerifyingCash(false);
+    }
+  };
+
   const handleLogout = async () => {
     const queue = JSON.parse(localStorage.getItem('kaa_offline_queue') || '[]');
     if (queue.length > 0) {
@@ -129,10 +177,8 @@ export default function POSPage() {
   const toggleNetwork = () => setIsOnline(!isOnline);
 
   const handleBarcodeScanned = (barcode: string) => {
-    console.log("Scanned Barcode value:", barcode);
     setSearchQuery(barcode); 
     setIsCameraActive(false); 
-    alert(`Barcode scanned: ${barcode}`);
   };
 
   if (loading) return <div className="min-h-screen bg-stone-100"></div>;
@@ -231,6 +277,9 @@ export default function POSPage() {
                           const queue = JSON.parse(localStorage.getItem('kaa_offline_queue') || '[]');
                           setUnsyncedCount(queue.length);
                           setLogoutMessage(null);
+                          setDeclaredCash('');
+                          setVarianceMessage(null);
+                          setIsCashVerified(false);
                           setIsLogoutConfirmOpen(true);
                           setIsDropdownOpen(false);
                         }}
@@ -283,9 +332,12 @@ export default function POSPage() {
           </div>
 
           <div className="flex-1 flex justify-end items-center gap-3">
-             <button onClick={() => setIsHistoryOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 text-sm font-semibold rounded-xl border border-stone-200 transition-colors shadow-sm">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg> History
-             </button>
+             {/* NEW: ONLY ADMINS CAN SEE THE HISTORY BUTTON HERE */}
+             {userRole === 'admin' && (
+               <button onClick={() => setIsHistoryOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 text-sm font-semibold rounded-xl border border-stone-200 transition-colors shadow-sm">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg> History
+               </button>
+             )}
              <button onClick={() => setIsCalculatorOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 text-sm font-semibold rounded-xl border border-stone-200 transition-colors shadow-sm">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg> Calculator
              </button>
@@ -318,7 +370,6 @@ export default function POSPage() {
                 </select>
               </div>
 
-              {/* DYNAMIC PRICE FILTER */}
               <div className="mb-4 pt-3 border-t border-stone-100">
                 <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider block mb-2">Price Range (Rs.)</label>
                 
@@ -408,14 +459,50 @@ export default function POSPage() {
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                 </div>
               </div>
+              
+              {/* NEW: Step 1: Blind Reconciliation Input */}
               <div className="mb-6 p-4 bg-stone-50 border border-stone-200 rounded-xl">
-                <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Step 1: Reconciliation</h4>
-                <p className="text-sm text-stone-600 mb-3">Please verify the physical cash drawer matches today's transactions before ending your session.</p>
-                <button onClick={() => setIsHistoryOpen(true)} className="w-full py-2.5 bg-white border border-stone-200 hover:border-amber-400 hover:bg-amber-50 text-stone-700 font-bold rounded-lg transition-colors flex items-center justify-center shadow-sm">
-                  <svg className="w-5 h-5 mr-2 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                  View Today's History
-                </button>
+                <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Step 1: Cash Drawer Reconciliation</h4>
+                <p className="text-sm text-stone-600 mb-4">Please count the physical cash in your drawer and enter it below to verify.</p>
+                
+                <div className="flex gap-2 mb-3">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 font-bold">Rs.</span>
+                    <input 
+                      type="number"
+                      value={declaredCash}
+                      onChange={(e) => setDeclaredCash(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full pl-10 pr-3 py-2.5 bg-white border border-stone-200 rounded-lg font-bold text-stone-800 focus:outline-none focus:border-amber-500 shadow-sm"
+                    />
+                  </div>
+                  <button 
+                    onClick={handleVerifyCash}
+                    disabled={isVerifyingCash || !declaredCash}
+                    className="px-4 py-2.5 bg-stone-800 hover:bg-stone-900 disabled:bg-stone-300 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors shadow-sm"
+                  >
+                    {isVerifyingCash ? 'Checking...' : 'Verify'}
+                  </button>
+                </div>
+
+                {/* Variance Message Block */}
+                {varianceMessage && (
+                  <div className={`p-3 rounded-lg text-sm font-bold border ${varianceMessage.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                    {varianceMessage.text}
+                  </div>
+                )}
+
+                {/* Admin Override to view History */}
+                {userRole === 'admin' && (
+                  <div className="mt-4 pt-4 border-t border-stone-200">
+                    <button onClick={() => setIsHistoryOpen(true)} className="w-full py-2 bg-white border border-stone-200 hover:border-amber-400 hover:bg-amber-50 text-stone-700 font-bold rounded-lg transition-colors flex items-center justify-center shadow-sm text-sm">
+                      <svg className="w-4 h-4 mr-2 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                      Admin: View Today's History
+                    </button>
+                  </div>
+                )}
               </div>
+
               <div className="mb-2 p-4 bg-stone-50 border border-stone-200 rounded-xl">
                 <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Step 2: Data Synchronization</h4>
                 {unsyncedCount === 0 ? (
@@ -437,7 +524,13 @@ export default function POSPage() {
             </div>
             <div className="flex border-t border-stone-200 bg-stone-50">
               <button onClick={() => setIsLogoutConfirmOpen(false)} className="flex-1 py-4 font-bold text-stone-600 hover:bg-stone-100 transition-colors border-r border-stone-200">Return to POS</button>
-              <button onClick={handleLogout} disabled={unsyncedCount > 0} className={`flex-1 py-4 font-black transition-colors ${unsyncedCount > 0 ? 'bg-stone-200 text-stone-400 cursor-not-allowed' : 'text-red-600 hover:bg-red-50'}`}>End Session</button>
+              <button 
+                onClick={handleLogout} 
+                disabled={unsyncedCount > 0 || !isCashVerified} 
+                className={`flex-1 py-4 font-black transition-colors ${unsyncedCount > 0 || !isCashVerified ? 'bg-stone-200 text-stone-400 cursor-not-allowed' : 'text-red-600 hover:bg-red-50'}`}
+              >
+                End Session
+              </button>
             </div>
           </div>
         </div>
