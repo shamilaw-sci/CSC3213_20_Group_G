@@ -35,6 +35,10 @@ export default function POSPage() {
   const [inStockOnly, setInStockOnly] = useState<boolean>(false);
   const [outOfStockOnly, setOutOfStockOnly] = useState<boolean>(false);
 
+  // --- SESSION-ENDING ---
+  const [unsyncedCount, setUnsyncedCount] = useState(0);
+  const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
+
   // --- 1. SUPABASE AUTH & RBAC CHECK ---
   useEffect(() => {
     const checkAccess = async () => {
@@ -81,6 +85,18 @@ export default function POSPage() {
 
   // --- 2. HANDLERS ---
   const handleLogout = async () => {
+    // 1. Safety Check: Prevent logout if there are unsynced orders
+    const queue = JSON.parse(localStorage.getItem('kaa_offline_queue') || '[]');
+    if (queue.length > 0) {
+      if (!isOnline) {
+        setLogoutMessage(`Cannot end session. The network is offline and ${queue.length} orders are waiting to be saved. Please reconnect.`);
+      } else {
+        setLogoutMessage(`Syncing ${queue.length} pending orders to the database. Please wait a moment and try again.`);
+      }
+      return; 
+    }
+
+    // 2. If clear, proceed with Supabase logout
     await supabase.auth.signOut();
     setIsDropdownOpen(false);
     setIsLogoutConfirmOpen(false);
@@ -237,14 +253,20 @@ export default function POSPage() {
                     </li>
                     <li>
                       <button 
-                        onClick={() => setIsLogoutConfirmOpen(true)}
+                        onClick={() => {
+                          const queue = JSON.parse(localStorage.getItem('kaa_offline_queue') || '[]');
+                          setUnsyncedCount(queue.length);
+                          setLogoutMessage(null);
+                          setIsLogoutConfirmOpen(true);
+                          setIsDropdownOpen(false);
+                        }}
                         className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 font-medium transition-colors flex items-center"
                         title="Log out of the terminal"
                       >
                         <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
-                        Log Out
+                        End Shift / Log Out
                       </button>
                     </li>
                   </ul>
@@ -453,39 +475,95 @@ export default function POSPage() {
 
       </div>
       
-      {/* --- LOGOUT CONFIRMATION MODAL --- */}
+      {/* --- END OF SHIFT / LOGOUT MODAL --- */}
       {isLogoutConfirmOpen && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-6 text-center">
-              <div className="w-16 h-16 bg-stone-100 text-stone-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-                <svg className="w-8 h-8 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-black text-stone-800">End of Shift</h3>
+                <div className="w-12 h-12 bg-stone-100 text-stone-600 rounded-full flex items-center justify-center shadow-sm">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
               </div>
-              <h3 className="text-xl font-black text-stone-800 mb-2">Ending Shift?</h3>
-              <p className="text-stone-500 text-sm">
-                Are you sure you want to log out of the POS terminal?
-              </p>
+
+              {/* Step 1: Reconciliation */}
+              <div className="mb-6 p-4 bg-stone-50 border border-stone-200 rounded-xl">
+                <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Step 1: Reconciliation</h4>
+                <p className="text-sm text-stone-600 mb-3">Please verify the physical cash drawer matches today's transactions before ending your session.</p>
+                <button 
+                  onClick={() => setIsHistoryOpen(true)}
+                  className="w-full py-2.5 bg-white border border-stone-200 hover:border-amber-400 hover:bg-amber-50 text-stone-700 font-bold rounded-lg transition-colors flex items-center justify-center shadow-sm"
+                >
+                  <svg className="w-5 h-5 mr-2 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  View Today's History
+                </button>
+              </div>
+
+              {/* Step 2: Database Sync Status */}
+              <div className="mb-2 p-4 bg-stone-50 border border-stone-200 rounded-xl">
+                <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Step 2: Data Synchronization</h4>
+                
+                {unsyncedCount === 0 ? (
+                  <div className="flex items-center text-emerald-600 font-semibold text-sm">
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    All data successfully synced to server.
+                  </div>
+                ) : (
+                  <div className="flex items-start text-amber-700 font-semibold text-sm bg-amber-100/50 p-3 rounded-lg border border-amber-200">
+                    <svg className="w-5 h-5 mr-2 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div>
+                      <span className="block font-bold">Warning: {unsyncedCount} orders pending.</span>
+                      <span className="text-xs font-normal opacity-90 block mt-1">
+                        Do not log out until the network restores and data is uploaded.
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Error Message Space */}
+              {logoutMessage && (
+                <div className="mt-4 text-xs font-bold text-red-600 bg-red-50 p-3 rounded-lg text-center border border-red-100">
+                  {logoutMessage}
+                </div>
+              )}
             </div>
             
-            <div className="flex border-t border-stone-200">
+            <div className="flex border-t border-stone-200 bg-stone-50">
               <button 
                 onClick={() => setIsLogoutConfirmOpen(false)}
-                className="flex-1 py-4 font-bold text-stone-600 hover:bg-stone-50 transition-colors border-r border-stone-200"
+                className="flex-1 py-4 font-bold text-stone-600 hover:bg-stone-100 transition-colors border-r border-stone-200"
               >
-                Go Back
+                Return to POS
               </button>
               <button 
                 onClick={handleLogout}
-                className="flex-1 py-4 font-black text-amber-700 hover:bg-amber-50 transition-colors"
+                disabled={unsyncedCount > 0}
+                className={`flex-1 py-4 font-black transition-colors ${
+                  unsyncedCount > 0 
+                    ? 'bg-stone-200 text-stone-400 cursor-not-allowed' 
+                    : 'text-red-600 hover:bg-red-50'
+                }`}
               >
-                Yes, Log Out
+                End Session
               </button>
             </div>
           </div>
         </div>
       )}
+
+
+      
       {/* --- CALCULATOR MODAL --- */}
       {isCalculatorOpen && (
         <CalculatorModal onClose={() => setIsCalculatorOpen(false)} />
