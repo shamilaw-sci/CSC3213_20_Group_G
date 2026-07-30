@@ -11,14 +11,18 @@ interface ProductGridProps {
   activeCategory?: string;
   inStockOnly?: boolean;
   outOfStockOnly?: boolean;
+  minPrice?: string;
+  maxPrice?: string;
 }
 
 export default function ProductGrid({ 
   searchQuery = '', 
   sortBy = 'name-asc', 
   activeCategory = 'All', 
-  inStockOnly = false ,
-  outOfStockOnly = false
+  inStockOnly = false,
+  outOfStockOnly = false,
+  minPrice = '',
+  maxPrice = ''
 }: ProductGridProps) {
   
   const { addToCart, cachedProducts, loadProducts } = usePOS();
@@ -51,22 +55,32 @@ export default function ProductGrid({
         matchesStock = product.stock !== undefined && product.stock <= 0;
       }
 
-      return matchesSearch && matchesCategory && matchesStock;
+      // Price logic
+      const parsedMinPrice = minPrice === '' ? 0 : Number(minPrice);
+      const parsedMaxPrice = maxPrice === '' ? Infinity : Number(maxPrice);
+      
+      const productPrice = product.price || 0;
+      const passesMinPrice = productPrice >= parsedMinPrice;
+      const passesMaxPrice = productPrice <= parsedMaxPrice;
+
+      return matchesSearch && matchesCategory && matchesStock && passesMinPrice && passesMaxPrice;
     })
     .sort((a, b) => {
       // Sorting logic
       if (sortBy === 'name-asc') return a.name.localeCompare(b.name);
       if (sortBy === 'name-desc') return b.name.localeCompare(a.name);
-      if (sortBy === 'price-low') return a.price - b.price;
-      if (sortBy === 'price-high') return b.price - a.price;
+      if (sortBy === 'price-low') return (a.price || 0) - (b.price || 0);
+      if (sortBy === 'price-high') return (b.price || 0) - (a.price || 0);
       return 0;
     });
 
   if (processedProducts.length === 0 && cachedProducts.length > 0) {
     return (
       <div className="flex flex-col h-full items-center justify-center text-stone-400">
-        <span className="text-4xl mb-3">🔍</span>
-        <p className="font-semibold text-lg">No products found</p>
+        <svg className="w-16 h-16 mb-4 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <p className="font-semibold text-lg text-stone-500">No products found</p>
         <p className="text-sm">Try adjusting your filters or search query.</p>
       </div>
     );
@@ -104,8 +118,10 @@ export default function ProductGrid({
                 sizes="(max-width: 768px) 50vw, 33vw"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-stone-300 text-3xl">
-                <span>🏺</span>
+              <div className="w-full h-full flex items-center justify-center text-stone-300">
+                <svg className="w-10 h-10 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
               </div>
             )}
 
@@ -159,7 +175,7 @@ export default function ProductGrid({
             </div>
             
             <p className="text-amber-700 font-black text-lg">
-              Rs. {product.price.toLocaleString()}
+              Rs. {(product.price || 0).toLocaleString()}
             </p>
           </div>
         </button>
