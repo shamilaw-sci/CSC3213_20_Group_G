@@ -39,7 +39,7 @@ export default function WorkshopCard({ workshop }: { workshop: Workshop }) {
             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
           <div className="absolute top-4 left-4 bg-amber-500 text-white text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm">
-            Experience
+            Workshop
           </div>
         </div>
 
@@ -54,7 +54,7 @@ export default function WorkshopCard({ workshop }: { workshop: Workshop }) {
           </p>
 
           <p className="mt-3 text-xs sm:text-sm leading-relaxed text-slate-600 font-medium line-clamp-2">
-            {workshop.description}
+            {workshop.artisans?.bio }
           </p>
 
           {/* Spacer to push pricing and button to the bottom if descriptions vary in length */}

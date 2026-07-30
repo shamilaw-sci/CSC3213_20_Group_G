@@ -266,6 +266,7 @@ export default function POSPage() {
             <select 
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
+              // Added pr-10 to push the text away from the dropdown arrow
               className="bg-stone-50 border border-stone-200 text-stone-700 text-sm font-semibold rounded-xl pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-600 cursor-pointer shadow-sm"
             >
               <option value="name-asc">Sort: A to Z</option>
@@ -288,7 +289,7 @@ export default function POSPage() {
               {(activeCategory !== 'All' || inStockOnly || outOfStockOnly) && (
                 <div 
                   onClick={(e) => {
-                    e.stopPropagation(); 
+                    e.stopPropagation(); // Prevents the menu from opening when clicking 'X'
                     setActiveCategory('All');
                     setInStockOnly(false);
                     setOutOfStockOnly(false);

@@ -6,7 +6,6 @@ import { useCurrency } from '@/context/CurrencyContext';
 
 // Check if a date is a Sunday
 function isSunday(dateString: string): boolean {
-  // Parse as UTC to ensure consistent timezone handling
   const [year, month, day] = dateString.split('-').map(Number);
   const date = new Date(Date.UTC(year, month - 1, day));
   return date.getUTCDay() === 0;
@@ -25,7 +24,7 @@ function timeTo12Hour(timeStr: string): string {
 function normalizeTimeTo24(timeStr: string) {
   if (!timeStr) return timeStr;
   const m = timeStr.trim().match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);
-  if (!m) return timeStr; // return as-is if unexpected format
+  if (!m) return timeStr; 
   let hh = parseInt(m[1], 10);
   const mm = m[2];
   const ampm = m[3]?.toUpperCase();
@@ -58,7 +57,6 @@ function formatDateForDisplay(dateString: string) {
     day: 'numeric',
   });
 }
-
 
 export type BookingChangeState = {
   selectedDate: string;
@@ -124,14 +122,12 @@ function BookingPanel(
   const isSelectedDateBlocked = !!blockedReason;
   const isSelectedDateValid = !!selectedDate && !isSelectedDateBlocked;
 
-  // Load time slots from the current workshop row in the workshops table
   useEffect(() => {
     const fetchTimeSlots = async () => {
       if (!workshop.id) {
         setTimeSlots([]);
         return;
       }
-
       try {
         const res = await fetch(`/api/workshop-time-slots?workshopId=${encodeURIComponent(workshop.id)}`);
         if (!res.ok) return;
@@ -141,11 +137,9 @@ function BookingPanel(
         console.warn('Failed to load workshop time slots', err);
       }
     };
-
     fetchTimeSlots();
   }, [workshop.id]);
 
-  // Fetch blocked dates with reasons
   useEffect(() => {
     const fetchBlockedDates = async () => {
       try {
@@ -163,18 +157,15 @@ function BookingPanel(
         console.warn('Failed to load blocked dates', err);
       }
     };
-
     fetchBlockedDates();
   }, []);
 
-  // Fetch booked times for the currently selected date
   useEffect(() => {
     if (!selectedDate) {
       setBookedTimes(new Set());
       setBookedCounts({});
       return;
     }
-
     const fetchBookedTimes = async () => {
       try {
         const res = await fetch(`/api/bookings/availability?date=${selectedDate}`);
@@ -186,29 +177,24 @@ function BookingPanel(
         console.warn('Failed to load booked times', err);
       }
     };
-
     fetchBookedTimes();
   }, [selectedDate]);
 
-  // Real-time availability check
   useEffect(() => {
     if (!selectedDate || !selectedTime) {
       setAvailability(null);
       return;
     }
-
     if (blockedReason) {
       setCheckingAvailability(false);
       setAvailability({ available: false, message: `${blockedReason} — this date is not available.` });
       return;
     }
-
     if (workshop.category === 'show') {
       setCheckingAvailability(false);
       setAvailability({ available: true, message: 'Show schedule selected' });
       return;
     }
-
     const checkAvailability = async () => {
       setCheckingAvailability(true);
       try {
@@ -223,7 +209,6 @@ function BookingPanel(
             craftsman: workshop.category === 'show' ? null : workshopCraftsman,
           }),
         });
-
         const data = await res.json();
         setAvailability(data);
       } catch (err: any) {
@@ -232,7 +217,6 @@ function BookingPanel(
         setCheckingAvailability(false);
       }
     };
-
     const timer = setTimeout(checkAvailability, 300);
     return () => clearTimeout(timer);
   }, [selectedDate, selectedTime, workshop.id, workshopCraftsman, workshop.category]);
@@ -243,12 +227,10 @@ function BookingPanel(
       setError('Please fill in all fields.');
       return;
     }
-
     if (!availability?.available) {
       setError('Selected date/time is not available.');
       return;
     }
-
     setLoading(true);
     try {
       const normalizedTime = normalizeTimeTo24(selectedTime);
@@ -281,14 +263,12 @@ function BookingPanel(
       setGuests(1);
       setAvailability(null);
 
-      // After booking is created, initialize payment via /api/checkout and redirect to PayHere
       try {
         const { data: { user } } = await supabase.auth.getUser();
         const profileId = user?.id || null;
 
-        // Calculate totals: subtotal remains fixed, gateway fee (3.3%), and final total
         const subtotal = workshop.price;
-        const gatewayFee = Math.round(subtotal * 0.033); // 3.3% handling fee
+        const gatewayFee = Math.round(subtotal * 0.033);
         const totalAmount = subtotal + gatewayFee;
 
         const checkoutRes = await fetch('/api/checkout', {
@@ -297,14 +277,8 @@ function BookingPanel(
           body: JSON.stringify({
             profileId,
             totalAmount,
-            items: [
-              {
-                id: workshop.id || 'workshop',
-                name: workshop.title,
-                quantity: 1,
-                price: workshop.price,
-              },
-            ],
+            bookingId: json.booking.id, // 🚨 TELLS THE API TO SKIP DB INSERTS
+            items: [], // 🚨 PREVENTS FAKE DATA IN DB
             shippingAddress: '',
           }),
         });
@@ -314,7 +288,11 @@ function BookingPanel(
 
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = 'https://sandbox.payhere.lk/pay/checkout';
+        
+        // 🚨 DYNAMIC LIVE/SANDBOX TOGGLE FOR PRODUCTION
+        form.action = process.env.NEXT_PUBLIC_PAYHERE_ENV === 'live' 
+          ? 'https://www.payhere.lk/pay/checkout' 
+          : 'https://sandbox.payhere.lk/pay/checkout';
 
         const nameParts = name.trim().split(' ');
         const first_name = nameParts[0] || '';
@@ -383,9 +361,6 @@ function BookingPanel(
         Book Your {workshop.category === "show" ? "Show Ticket" : "Workshop"}
       </h2>
 
-      {/* Booking inputs moved into Guest Details section below */}
-
-      {/* Availability Status */}
       {selectedDate && selectedTime && (
         <div
           className={`mb-4 rounded-3xl border px-4 py-3 text-sm ${
@@ -400,7 +375,6 @@ function BookingPanel(
         </div>
       )}
 
-      {/* Guest Details */}
       <div className="grid gap-3 mb-5">
         <div>
           <label className="block mb-2 font-medium">Select Date</label>
@@ -411,7 +385,6 @@ function BookingPanel(
             onChange={(e) => {
               const selectedDateValue = e.target.value;
               
-              // Check if date is Sunday
               if (isSunday(selectedDateValue)) {
                 setDateError('Sundays are not available for bookings.');
                 setSelectedDate('');
@@ -419,7 +392,6 @@ function BookingPanel(
                 return;
               }
               
-              // Check if date is blocked from database
               if (blockedDates[selectedDateValue]) {
                 setDateError(`This date is not available: ${blockedDates[selectedDateValue]}`);
                 setSelectedDate('');
@@ -611,8 +583,6 @@ function BookingPanel(
           {loading ? 'Processing...' : 'Proceed to Pay'}
         </button>
       )}
-
-      
     </div>
   );
 }
