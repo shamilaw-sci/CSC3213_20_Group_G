@@ -7,19 +7,7 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 function validateBody(body: any) {
   const required = ['workshop_title', 'booked_date', 'booked_time', 'customer_name', 'customer_email'];
   const missing = required.filter((k) => !body || body[k] === undefined || body[k] === null || String(body[k]).trim() === '');
-  if (missing.length === 0) {
-    return { valid: true, missing };
-  }
-
-  if (body?.category === 'show') {
-    const showRequired = ['experience_title', 'booked_date', 'booked_time', 'customer_name', 'customer_email'];
-    const showMissing = showRequired.filter(
-      (k) => !body || body[k] === undefined || body[k] === null || String(body[k]).trim() === ''
-    );
-    return { valid: showMissing.length === 0, missing: showMissing };
-  }
-
-  return { valid: false, missing };
+  return { valid: missing.length === 0, missing };
 }
 
 // Convert time string "HH:MM" to minutes since midnight
@@ -45,35 +33,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: `Missing required fields: ${missing.join(', ')}` }, { status: 400 });
     }
 
-    const isShowBooking = body.category === 'show';
-    const insert = isShowBooking
-      ? {
-          experience_id: body.experience_id ?? body.workshop_id ?? null,
-          experience_title: body.experience_title ?? body.workshop_title,
-          booked_date: body.booked_date,
-          booked_time: body.booked_time,
-          customer_name: body.customer_name,
-          customer_email: body.customer_email,
-          customer_phone: body.customer_phone ?? null,
-          guests: body.guests ?? 1,
-          notes: body.notes ?? null,
-        }
-      : {
-          workshop_id: body.workshop_id ?? null,
-          workshop_title: body.workshop_title ?? body.experience_title,
-          craftsman: body.craftsman ?? null,
-          booked_date: body.booked_date,
-          booked_time: body.booked_time,
-          customer_name: body.customer_name,
-          customer_email: body.customer_email,
-          customer_phone: body.customer_phone ?? null,
-          guests: body.guests ?? 1,
-          notes: body.notes ?? null,
-        };
+    // Unified insert payload for workshop_bookings
+    const insert = {
+      user_id: body.user_id ?? null,
+      workshop_id: body.workshop_id ?? body.experience_id ?? null,
+      workshop_title: body.workshop_title ?? body.experience_title,
+      craftsman: body.craftsman ?? null,
+      booked_date: body.booked_date,
+      booked_time: body.booked_time,
+      customer_name: body.customer_name,
+      customer_email: body.customer_email,
+      customer_phone: body.customer_phone ?? null,
+      guests: body.guests ?? 1,
+      notes: body.notes ?? null,
+      status: 'pending'
+    };
 
-    const targetTable = isShowBooking ? 'show_bookings' : 'workshop_bookings';
-
-    // Prevent booking on blocked dates (checks existing `blocked_dates` table)
+    // 1. Prevent booking on blocked dates
     try {
       const { data: blockedData, error: blockedError } = await supabase
         .from('blocked_dates')
@@ -90,15 +66,20 @@ export async function POST(req: Request) {
       console.warn('Blocked date check exception', e);
     }
 
-    // Prevent duplicate bookings for the same workshop (or same craftsman) at the same date/time (with 15-minute buffer)
+    // 2. Prevent time slot conflicts (checks workshop_bookings and ignores failed/cancelled rows)
     try {
-      let conflictQuery = supabase.from('bookings').select('booked_time');
+      let conflictQuery = supabase
+        .from('workshop_bookings')
+        .select('booked_time')
+        .eq('booked_date', insert.booked_date)
+        .neq('status', 'failed')
+        .neq('status', 'cancelled');
+
       if (insert.workshop_id) {
         conflictQuery = conflictQuery.eq('workshop_id', insert.workshop_id);
       } else if (insert.craftsman) {
         conflictQuery = conflictQuery.eq('craftsman', insert.craftsman);
       }
-      conflictQuery = conflictQuery.eq('booked_date', insert.booked_date);
 
       const { data: conflictData, error: conflictError } = await conflictQuery;
       if (conflictError) {
@@ -106,10 +87,8 @@ export async function POST(req: Request) {
       } else if (conflictData && conflictData.length > 0) {
         const selectedTimeMinutes = timeToMinutes(insert.booked_time);
 
-        // Check if selected time conflicts with any booked time (15-minute buffer)
         for (const booking of conflictData) {
           const bookedTimeMinutes = timeToMinutes(booking.booked_time);
-          // If selected time is within 15 minutes after booked time
           if (selectedTimeMinutes >= bookedTimeMinutes && selectedTimeMinutes < bookedTimeMinutes + 15) {
             return NextResponse.json({ error: 'Selected time slot is unavailable (15-minute buffer for previous booking)' }, { status: 409 });
           }
@@ -119,7 +98,7 @@ export async function POST(req: Request) {
       console.warn('Conflict check exception', e);
     }
 
-    const { data, error } = await supabase.from(targetTable).insert([insert]).select().single();
+    const { data, error } = await supabase.from('workshop_bookings').insert([insert]).select().single();
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

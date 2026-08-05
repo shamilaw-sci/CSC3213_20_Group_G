@@ -11,7 +11,6 @@ export default async function EditWorkshopPage({ params }: Props) {
   const resolvedParams = await params;
   const id = decodeURIComponent(String(resolvedParams.id || ""));
 
-  // Fetch the current row snapshot data on the server
   const { data: workshop, error } = await supabaseServer
     .from("workshops")
     .select("*")
@@ -25,7 +24,6 @@ export default async function EditWorkshopPage({ params }: Props) {
   return (
     <main className="min-h-screen bg-slate-50 p-6 md:p-12 text-slate-900">
       <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-sm border border-slate-200/60 p-6 md:p-10">
-        
         <div className="mb-6">
           <Link 
             href="/admin/workshops" 
@@ -42,9 +40,7 @@ export default async function EditWorkshopPage({ params }: Props) {
           </p>
         </div>
 
-        {/* Hand data over to client-side component interface */}
         <EditWorkshopForm workshop={workshop} />
-
       </div>
     </main>
   );

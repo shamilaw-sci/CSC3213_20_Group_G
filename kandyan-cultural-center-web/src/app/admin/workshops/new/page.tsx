@@ -17,7 +17,6 @@ export default function NewWorkshopPage() {
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingGallery, setUploadingGallery] = useState(false);
 
-  // Added custom category tracking
   const [categoryType, setCategoryType] = useState<"wood" | "brass" | "other">("wood");
   const [customCategory, setCustomCategory] = useState("");
 
@@ -25,7 +24,7 @@ export default function NewWorkshopPage() {
     title: "",
     price: "",
     artisan_id: "",
-    duration: "2", // Store just the number
+    duration: "2",
     description: "",
     no_of_guests: "10",
     highlights: "",
@@ -34,7 +33,6 @@ export default function NewWorkshopPage() {
   const [coverImageUrl, setCoverImageUrl] = useState<string>("");
   const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
 
-  // Fetch artisans from database
   useEffect(() => {
     async function fetchArtisans() {
       const { data, error } = await supabase
@@ -56,14 +54,14 @@ export default function NewWorkshopPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Safe file upload helper to your 'workshop -images' Storage Bucket
   const uploadImageFile = async (file: File): Promise<string | null> => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random()}.${fileExt}`;
     const filePath = `workshops/${fileName}`;
 
+    // FIXED TYPO: Changed 'workshop -images' to 'workshop-images'
     const { error: uploadError } = await supabase.storage
-      .from('workshop -images')
+      .from('workshop-images')
       .upload(filePath, file);
 
     if (uploadError) {
@@ -71,7 +69,7 @@ export default function NewWorkshopPage() {
       return null;
     }
 
-    const { data } = supabase.storage.from('workshop -images').getPublicUrl(filePath);
+    const { data } = supabase.storage.from('workshop-images').getPublicUrl(filePath);
     return data.publicUrl;
   };
 
@@ -108,7 +106,6 @@ export default function NewWorkshopPage() {
       return;
     }
 
-    // Determine final category string
     const finalCategory = categoryType === "other" 
       ? customCategory.trim().toLowerCase() 
       : categoryType;
@@ -125,22 +122,16 @@ export default function NewWorkshopPage() {
       .map((item) => item.trim())
       .filter((item) => item !== "");
 
-    const generatedId = formData.title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)+/g, "");
-
-    // Format duration string neatly (e.g. "2 Hours")
     const formattedDuration = formData.duration 
       ? `${formData.duration.trim()} Hours` 
       : "2 Hours";
 
+    // REMOVED manual 'id' generation so Supabase automatically assigns a UUID
     const payload = {
-      id: generatedId,
       title: formData.title,
       category: finalCategory,
       price: parseFloat(formData.price),
-      artisan_id: formData.artisan_id,
+      artisan_id: formData.artisan_id || null,
       duration: formattedDuration,
       description: formData.description,
       no_of_guests: parseInt(formData.no_of_guests, 10),
@@ -171,8 +162,6 @@ export default function NewWorkshopPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          
-          {/* Title & Category Options */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Workshop Title</label>
@@ -191,7 +180,6 @@ export default function NewWorkshopPage() {
                 <option value="other">Other...</option>
               </select>
 
-              {/* Custom Category Field if "Other..." is selected */}
               {categoryType === "other" && (
                 <input
                   required
@@ -205,7 +193,6 @@ export default function NewWorkshopPage() {
             </div>
           </div>
 
-          {/* Artisan & Simplified Price Field */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Assigned Artisan</label>
@@ -231,7 +218,6 @@ export default function NewWorkshopPage() {
             </div>
           </div>
 
-          {/* Time & Capacity Controls */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Duration</label>
@@ -256,13 +242,11 @@ export default function NewWorkshopPage() {
             </div>
           </div>
 
-          {/* Cover Image Upload */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Cover Image</label>
             <div className="border-2 border-dashed border-slate-200 rounded-2xl p-4 bg-slate-50/50 flex flex-col items-center justify-center">
               {coverImageUrl ? (
                 <div className="text-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={coverImageUrl} alt="Cover Preview" className="h-32 w-auto object-cover rounded-xl mx-auto shadow-sm mb-2" />
                   <button type="button" onClick={() => setCoverImageUrl("")} className="text-xs font-bold text-rose-500 hover:underline">Remove and select another</button>
                 </div>
@@ -278,19 +262,16 @@ export default function NewWorkshopPage() {
             </div>
           </div>
 
-          {/* Description Block */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Description</label>
             <textarea required name="description" rows={4} value={formData.description} onChange={handleChange} className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-amber-500 focus:outline-none" placeholder="Provide a detailed breakdown of the complete workshop experience..." />
           </div>
 
-          {/* Highlights Field */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">What they'll learn (Comma separated)</label>
             <input type="text" name="highlights" value={formData.highlights} onChange={handleChange} className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-amber-500 focus:outline-none" placeholder="Chisel grip techniques, Brass embossing patterns" />
           </div>
 
-          {/* Gallery Showcase */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Workshop Gallery Showcase</label>
             <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 bg-slate-50/50">
@@ -305,7 +286,6 @@ export default function NewWorkshopPage() {
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-2">
                   {galleryUrls.map((url, index) => (
                     <div key={index} className="relative group rounded-xl overflow-hidden aspect-square bg-slate-100 border border-slate-200">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={url} alt={`Gallery index ${index}`} className="w-full h-full object-cover" />
                       <button
                         type="button"

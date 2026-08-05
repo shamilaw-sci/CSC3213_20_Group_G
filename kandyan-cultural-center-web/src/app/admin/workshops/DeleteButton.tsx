@@ -1,4 +1,3 @@
-// src/app/admin/workshops/DeleteButton.tsx
 'use client';
 
 import { useRouter } from 'next/navigation';
