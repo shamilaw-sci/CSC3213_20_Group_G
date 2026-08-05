@@ -166,11 +166,11 @@ const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
       try {
         // Push Header
         const { error: orderError } = await supabase.from('orders').insert(order.orderData);
-        if (orderError) throw orderError;
+        if (orderError && orderError.code !== '23505') throw orderError; // If the error is anything OTHER than "Duplicate Key", throw it.
 
         // Push Items
         const { error: itemsError } = await supabase.from('order_items').insert(order.orderItemsData);
-        if (itemsError) throw itemsError;
+        if (itemsError && itemsError.code !== '23505') throw itemsError; // If the error is anything OTHER than "Duplicate Key", throw it.
 
         console.log(`Successfully synced offline order ${order.orderData.invoice_number}`);
         // If successful, it does NOT get added to the remainingQueue
