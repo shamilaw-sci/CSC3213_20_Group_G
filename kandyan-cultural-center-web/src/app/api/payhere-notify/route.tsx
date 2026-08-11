@@ -33,7 +33,6 @@ export async function POST(request: Request) {
     const statusCode = formData.get('status_code') as string;
     const md5sig = formData.get('md5sig') as string;
     
-    // 🚨 THE MAGIC ROUTER: Distinguish bookings from shop orders
     const custom1 = formData.get('custom_1') as string;
     const isWorkshopBooking = custom1 && custom1.startsWith('booking:');
     const bookingId = isWorkshopBooking ? custom1.split(':')[1] : null;
@@ -85,57 +84,51 @@ export async function POST(request: Request) {
                 <p>Please arrive 10 minutes early. We look forward to hosting you!</p>
               </div>
             `,
-          }).catch(console.error); // Catch email errors without failing the webhook response
+          }).catch(console.error);
         }
 
       // ==========================================
-      // FLOW B: PHYSICAL SHOP ORDER
+      // FLOW B: PHYSICAL SHOP ORDER (Atomic Fulfillment)
       // ==========================================
       } else {
         
-        await supabase.from('orders').update({ status: 'completed' }).eq('id', orderId);
-        
-        await supabase.from('transactions').insert({
-          order_id: orderId,
-          gateway_reference: paymentId,
-          status: 'success',
-          amount_paid: parseFloat(payhereAmount)
+        // 🚨 ATOMIC RPC: Safely locks items, checks inventory, decrements stock, and records transactions
+        const { data: rpcRes, error: rpcError } = await supabase.rpc('complete_shop_order_atomic', {
+          p_order_id: orderId,
+          p_payment_id: paymentId,
+          p_amount: parseFloat(payhereAmount)
         });
-        
-        // Deduct Stock Safely
-        const { data: orderItems } = await supabase.from('order_items').select('variant_id, quantity').eq('order_id', orderId);
-        if (orderItems) {
-          for (const item of orderItems) {
-            const { data: variant } = await supabase.from('artifact_variants').select('stock').eq('id', item.variant_id).single();
-            if (variant) {
-              await supabase.from('artifact_variants').update({ stock: Math.max(0, variant.stock - item.quantity) }).eq('id', item.variant_id);
-            }
-          }
+
+        if (rpcError || !rpcRes?.success) {
+          console.error("Atomic order fulfillment failed or item out of stock:", rpcError || rpcRes?.error);
+          return new Response('OK', { status: 200 }); // Return 200 so PayHere stops retrying
         }
 
-        // Fetch Customer & Send Shop Email
-        const { data: orderData } = await supabase.from('orders').select('*, profiles!orders_user_id_fkey(email, full_name)').eq('id', orderId).single();
-        
-        if (orderData && orderData.profiles?.email) {
-          await transporter.sendMail({
-            from: `"Kandyan Cultural Centre" <${process.env.NEXT_PUBLIC_SITE_EMAIL}>`,
-            to: orderData.profiles.email,
-            subject: '📦 Order Confirmed - Kandyan Cultural Centre',
-            html: `
-              <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <h2 style="color: #d97706;">Payment Successful!</h2>
-                <p>Thank you for your order. We have successfully received your payment.</p>
-                <p><strong>Order ID:</strong> ${orderId}</p>
-                <p>We are preparing your authentic artifacts for shipment to:</p>
-                <p style="background: #f8f9fa; padding: 15px; border-radius: 8px;">${orderData.shipping_address}</p>
-              </div>
-            `,
-          }).catch(console.error);
+        // Only email confirmation if the atomic fulfillment succeeded and wasn't already processed
+        if (!rpcRes.already_processed) {
+          const { data: orderData } = await supabase.from('orders').select('*, profiles!orders_user_id_fkey(email, full_name)').eq('id', orderId).single();
+          
+          if (orderData && orderData.profiles?.email) {
+            await transporter.sendMail({
+              from: `"Kandyan Cultural Centre" <${process.env.NEXT_PUBLIC_SITE_EMAIL}>`,
+              to: orderData.profiles.email,
+              subject: '📦 Order Confirmed - Kandyan Cultural Centre',
+              html: `
+                <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+                  <h2 style="color: #d97706;">Payment Successful!</h2>
+                  <p>Thank you for your order. We have successfully received your payment.</p>
+                  <p><strong>Order ID:</strong> ${orderId}</p>
+                  <p>We are preparing your authentic artifacts for shipment to:</p>
+                  <p style="background: #f8f9fa; padding: 15px; border-radius: 8px;">${orderData.shipping_address}</p>
+                </div>
+              `,
+            }).catch(console.error);
+          }
         }
       }
 
     } else {
-      // Segregated Payment Failed Logic
+      // Payment Failed Handling
       if (isWorkshopBooking && bookingId) {
         await supabase.from('workshop_bookings').update({ status: 'failed' }).eq('id', bookingId);
         await supabase.from('transactions').insert({ booking_id: bookingId, gateway_reference: paymentId, status: `failed_code_${statusCode}`, amount_paid: parseFloat(payhereAmount) });
