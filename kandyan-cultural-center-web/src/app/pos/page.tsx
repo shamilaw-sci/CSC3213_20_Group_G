@@ -8,11 +8,13 @@ import CameraScanner from '../../components/pos/CameraScanner';
 import CalculatorModal from '../../components/pos/CalculatorModal';
 import HistoryModal from '../../components/pos/HistoryModal';
 import { supabase } from '../../lib/supabase'; 
+import OnlineOrdersModal from '@/components/pos/OnlineOrdersModal';
 
 export default function POSPage() {
   const { cartTotal, setCashierId, cachedProducts } = usePOS(); 
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isOnlineOrdersOpen, setIsOnlineOrdersOpen] = useState(false);
   
   // --- AUTH & ACCESS STATE ---
   const [loading, setLoading] = useState(true);
@@ -371,6 +373,16 @@ export default function POSPage() {
           </div>
 
           <div className="flex-1 flex justify-end items-center gap-3">
+            {/* ONLINE ORDERS QUEUE */}
+             <button onClick={() => setIsOnlineOrdersOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-sky-50 border-sky-200 hover:bg-sky-100 text-sky-800 text-sm font-bold rounded-xl border transition-colors shadow-sm relative">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                </svg> 
+                Web Orders
+                {/* Optional: Add a red ping dot here if there are pending orders! */}
+             </button>
+
+
              {userRole === 'admin' && (
                <button onClick={() => setIsHistoryOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 text-sm font-semibold rounded-xl border border-stone-200 transition-colors shadow-sm">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg> History
@@ -573,6 +585,7 @@ export default function POSPage() {
 
       {isCalculatorOpen && <CalculatorModal onClose={() => setIsCalculatorOpen(false)} />}
       {isHistoryOpen && <HistoryModal onClose={() => setIsHistoryOpen(false)} />}
+        {isOnlineOrdersOpen && <OnlineOrdersModal onClose={() => setIsOnlineOrdersOpen(false)} />}
     </div>
   );
 }
