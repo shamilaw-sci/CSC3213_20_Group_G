@@ -12,7 +12,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { profileId, cartItems, items, shippingAddress } = await request.json();
+    // 🚨 Extract the new fields: customerPhone & shippingCost
+    const { profileId, cartItems, items, shippingAddress, customerPhone, shippingCost } = await request.json();
     
     let payhereOrderId = '';
     let authoritativeTotalAmount = 0;
@@ -47,9 +48,15 @@ export async function POST(request: Request) {
       calculatedSubtotal += actualPrice * item.quantity;
     }
 
-    // Add Gateway Fee
-    const gatewayFee = Math.round(calculatedSubtotal * 0.033);
-    authoritativeTotalAmount = calculatedSubtotal + gatewayFee;
+    // 🚨 Add Server-Side Shipping & Gateway Fee Calculation
+    const secureShippingCost = Number(shippingCost) || 0;
+    const gatewayFee = Math.ceil((calculatedSubtotal + secureShippingCost) * 0.033);
+    authoritativeTotalAmount = calculatedSubtotal + secureShippingCost + gatewayFee;
+
+    // 🚨 GENERATE SECURE INVOICE NUMBER (Format: INV-123456-ABCD)
+    const timestampPart = Date.now().toString().slice(-6); // Last 6 digits of timestamp
+    const randomPart = crypto.randomBytes(2).toString('hex').toUpperCase(); // 4 random hex chars
+    const invoiceNumber = `INV-${timestampPart}-${randomPart}`;
 
     // 2. Create the Order securely
     const { data: order, error: orderError } = await supabase
@@ -58,6 +65,9 @@ export async function POST(request: Request) {
         user_id: profileId,
         total_amount: authoritativeTotalAmount,
         shipping_address: shippingAddress,
+        customer_phone: customerPhone || null,
+        shipping_cost: secureShippingCost,
+        invoice_number: invoiceNumber,
         status: 'pending'
       })
       .select().single();
