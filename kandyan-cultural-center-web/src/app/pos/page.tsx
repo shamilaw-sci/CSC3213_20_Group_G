@@ -10,6 +10,7 @@ import HistoryModal from '../../components/pos/HistoryModal';
 import { supabase } from '../../lib/supabase'; 
 import OnlineOrdersModal from '@/components/pos/OnlineOrdersModal';
 
+
 export default function POSPage() {
   const { cartTotal, setCashierId, cachedProducts } = usePOS(); 
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
@@ -51,6 +52,11 @@ export default function POSPage() {
   const [varianceMessage, setVarianceMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
   const [isVerifyingCash, setIsVerifyingCash] = useState(false);
   const [isCashVerified, setIsCashVerified] = useState(false);
+
+  // --- NEW: REALTIME ONLINE ORDERS STATE ---
+  const [pendingOnlineCount, setPendingOnlineCount] = useState(0);
+  const [showNewOrderBubble, setShowNewOrderBubble] = useState(false);
+  const [hasInitiallyChecked, setHasInitiallyChecked] = useState(false);
 
   const highestPrice = cachedProducts && cachedProducts.length > 0 
     ? Math.max(...cachedProducts.map(p => p.price || 0)) 
@@ -114,6 +120,63 @@ export default function POSPage() {
 
     checkAccess();
   }, [setCashierId]);
+
+
+  // --- NEW: REALTIME ONLINE ORDERS LISTENER ---
+  useEffect(() => {
+    // Only fetch and listen AFTER they accept the shift disclaimer
+    if (!disclaimerAccepted) return;
+
+    const fetchInitialCount = async () => {
+      const { count, error } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('sales_channel', 'online')
+        .eq('status', 'order placed');
+
+      if (!error && count !== null) {
+        setPendingOnlineCount(count);
+        // Auto-open modal if there are orders and we haven't checked yet
+        if (count > 0 && !hasInitiallyChecked) {
+          setIsOnlineOrdersOpen(true);
+        }
+      }
+      setHasInitiallyChecked(true);
+    };
+
+    fetchInitialCount();
+
+    // Subscribe to database changes for real-time alerts
+    const channel = supabase
+      .channel('public:orders')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'orders' },
+        (payload) => {
+          if (payload.new.sales_channel === 'online' && payload.new.status === 'order placed') {
+            setPendingOnlineCount((prev) => prev + 1);
+            setShowNewOrderBubble(true);
+            setTimeout(() => setShowNewOrderBubble(false), 8000); // Hide bubble after 8s
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders' },
+        (payload) => {
+          // Decrement the badge count when the modal marks an order as 'reviewed'
+          if (payload.old.status === 'order placed' && payload.new.status === 'reviewed') {
+            setPendingOnlineCount((prev) => Math.max(0, prev - 1));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [disclaimerAccepted, hasInitiallyChecked]);
+
 
   // --- 2. HANDLERS ---
   const handleVerifyCash = async () => {
@@ -373,14 +436,30 @@ export default function POSPage() {
           </div>
 
           <div className="flex-1 flex justify-end items-center gap-3">
-            {/* ONLINE ORDERS QUEUE */}
-             <button onClick={() => setIsOnlineOrdersOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-sky-50 border-sky-200 hover:bg-sky-100 text-sky-800 text-sm font-bold rounded-xl border transition-colors shadow-sm relative">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                </svg> 
-                Web Orders
-                {/* Optional: Add a red ping dot here if there are pending orders! */}
-             </button>
+            {/* --- UPDATED: WEB ORDERS BUTTON WITH BADGE & BUBBLE --- */}
+             <div className="relative flex items-center">
+               {showNewOrderBubble && (
+                 <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-max animate-bounce bg-red-600 text-white text-xs font-black px-3 py-1.5 rounded-lg shadow-xl z-50">
+                   New Online Order!
+                   <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-4 border-t-red-600"></div>
+                 </div>
+               )}
+               <button 
+                  onClick={() => { setIsOnlineOrdersOpen(true); setShowNewOrderBubble(false); }} 
+                  className="flex items-center gap-2 px-4 py-2 bg-sky-50 border-sky-200 hover:bg-sky-100 text-sky-800 text-sm font-bold rounded-xl border transition-colors shadow-sm relative"
+               >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                  </svg> 
+                  Web Orders
+                  
+                  {pendingOnlineCount > 0 && (
+                    <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-black text-white shadow-md ring-2 ring-white">
+                      {pendingOnlineCount}
+                    </span>
+                  )}
+               </button>
+             </div>
 
 
              {userRole === 'admin' && (
@@ -585,7 +664,7 @@ export default function POSPage() {
 
       {isCalculatorOpen && <CalculatorModal onClose={() => setIsCalculatorOpen(false)} />}
       {isHistoryOpen && <HistoryModal onClose={() => setIsHistoryOpen(false)} />}
-        {isOnlineOrdersOpen && <OnlineOrdersModal onClose={() => setIsOnlineOrdersOpen(false)} />}
+      {isOnlineOrdersOpen && <OnlineOrdersModal onClose={() => setIsOnlineOrdersOpen(false)} />}
     </div>
   );
 }
