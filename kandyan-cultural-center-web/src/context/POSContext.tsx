@@ -14,10 +14,16 @@ export const POSProvider = ({ children }: { children: React.ReactNode }) => {
   const mm = String(now.getMonth() + 1).padStart(2, '0');
   const dd = String(now.getDate()).padStart(2, '0');
   
-  // Generates a random 4-digit number between 1000 and 9999
-  const xxxx = Math.floor(1000 + Math.random() * 9000); 
+  // Generates a random 4-digit number
+  const array = new Uint8Array(2);
+    window.crypto.getRandomValues(array);
+    const randomPart = Array.from(array, byte => byte.toString(16).padStart(2, '0'))
+      .join('')
+      .toUpperCase();
 
-  return `S${yy}${mm}${dd}${xxxx}`;
+  return `ST-${yy}${mm}${dd}-${randomPart}`;
+
+  
 };
 
 const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());

@@ -16,7 +16,6 @@ export default function OnlineOrdersModal({ onClose }: OnlineOrdersModalProps) {
   useEffect(() => {
     const fetchPendingOnlineOrders = async () => {
       try {
-        // Fetch orders that are placed and waiting for physical fulfillment
         const { data, error } = await supabase
           .from('orders')
           .select(`
@@ -26,12 +25,14 @@ export default function OnlineOrdersModal({ onClose }: OnlineOrdersModalProps) {
               artifact_variants (
                 id,
                 barcode,
+                color_name,
+                image_url,
                 artifacts ( name )
               )
             )
           `)
           .eq('sales_channel', 'online')
-          .eq('status', 'order placed') // CHANGED: New initial state
+          .eq('status', 'order placed')
           .order('created_at', { ascending: true }); 
 
         if (error) throw error;
@@ -56,7 +57,6 @@ export default function OnlineOrdersModal({ onClose }: OnlineOrdersModalProps) {
 
   const handleMarkAsPrinted = async (orderId: string) => {
     try {
-      // Update the database to the new 'reviewed' state
       const { error } = await supabase
         .from('orders')
         .update({ status: 'reviewed' })
@@ -64,11 +64,9 @@ export default function OnlineOrdersModal({ onClose }: OnlineOrdersModalProps) {
 
       if (error) throw error;
 
-      // Remove it from the POS queue UI
       setOnlineOrders(prev => prev.filter(o => o.id !== orderId));
       setPrintingOrder(null);
       
-      // Trigger the browser print for the thermal receipt
       setTimeout(() => {
         window.print();
       }, 500);
@@ -83,11 +81,11 @@ export default function OnlineOrdersModal({ onClose }: OnlineOrdersModalProps) {
   if (printingOrder) {
     const orderTimestamp = new Date(printingOrder.created_at);
     const finalTotal = printingOrder.total_amount || 0;
-    const subtotal = printingOrder.order_items?.reduce((sum: number, item: any) => sum + (item.selling_price_at_sale * item.quantity), 0) || finalTotal;
-    const discountAmount = subtotal - finalTotal;
-
-    // Placeholder for shipping until added to DB
-    const shippingAmount = 0; 
+    const shippingAmount = Number(printingOrder.shipping_cost) || 0;
+    
+    // Calculate subtotal from items
+    const subtotal = printingOrder.order_items?.reduce((sum: number, item: any) => sum + (Number(item.selling_price_at_sale) * Number(item.quantity)), 0) || 0;
+    const discountAmount = subtotal * ((Number(printingOrder.discount_percentage) || 0) / 100);
 
     return (
       <div className="fixed inset-0 z-[80] overflow-y-auto bg-stone-900/80 backdrop-blur-sm">
@@ -106,7 +104,6 @@ export default function OnlineOrdersModal({ onClose }: OnlineOrdersModalProps) {
                 <p className="text-[10px] text-stone-500">www.kandyanculturalcentre.lk</p>
               </div>
 
-              {/* DISTINCT ONLINE ORDER BADGE */}
               <div className="border-y-2 border-dashed border-stone-800 py-1.5 mb-4 text-center bg-stone-100">
                 <span className="font-black text-sm tracking-widest uppercase">*** ONLINE ORDER ***</span>
               </div>
@@ -121,7 +118,6 @@ export default function OnlineOrdersModal({ onClose }: OnlineOrdersModalProps) {
                   <span className="font-bold">#{printingOrder.invoice_number || printingOrder.id.substring(0,8)}</span>
                 </div>
                 
-                {/* NEW: Customer Shipping Details */}
                 <div className="mt-3 bg-stone-50 p-2 border border-stone-200 rounded">
                   <span className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Ship To:</span>
                   {printingOrder.shipping_address ? (
@@ -133,7 +129,7 @@ export default function OnlineOrdersModal({ onClose }: OnlineOrdersModalProps) {
                   )}
                   <p className="font-semibold text-stone-800 mt-1 flex items-center gap-1">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                    +94XXXXXXXXX
+                    {printingOrder.customer_phone || 'N/A'}
                   </p>
                 </div>
               </div>
@@ -171,13 +167,12 @@ export default function OnlineOrdersModal({ onClose }: OnlineOrdersModalProps) {
                   <span>Rs. {subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                 </div>
 
-                {/* NEW: Shipping Charges */}
                 <div className="flex justify-between text-stone-600">
                   <span>Shipping</span>
                   <span>Rs. {shippingAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                 </div>
 
-                {printingOrder.discount_percentage > 0 && (
+                {Number(printingOrder.discount_percentage) > 0 && (
                   <div className="flex justify-between text-stone-600">
                     <span>Discount</span>
                     <span>- Rs. {discountAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
@@ -186,11 +181,10 @@ export default function OnlineOrdersModal({ onClose }: OnlineOrdersModalProps) {
                 
                 <div className="flex justify-between font-black text-sm pt-2 mt-2 border-t-2 border-dashed border-stone-300">
                   <span>TOTAL PAID</span>
-                  <span>Rs. {(finalTotal + shippingAmount).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  <span>Rs. {finalTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                 </div>
               </div>
               
-              {/* NEW: Policy & Thank You Footer */}
               <div className="text-center mt-8 text-[11px] font-bold pb-2">
                 <p>THANK YOU FOR YOUR ORDER</p>
                 <p className="font-normal mt-2 text-[9px] text-stone-500 leading-tight">
@@ -311,14 +305,42 @@ export default function OnlineOrdersModal({ onClose }: OnlineOrdersModalProps) {
                           {order.order_items?.map((item: any) => {
                             const itemName = item.artifact_variants?.artifacts?.name || `Variant ${item.variant_id?.substring(0,5)}`;
                             const itemBarcode = item.artifact_variants?.barcode || item.variant_id?.substring(0,8);
+                            const itemImageUrl = item.artifact_variants?.image_url;
+                            const itemColorName = item.artifact_variants?.color_name;
+                            
                             return (
-                              <div key={item.id} className="flex justify-between items-center text-sm border-b border-stone-100 last:border-0 py-2">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-4 h-4 border-2 border-stone-300 rounded-sm"></div>
-                                  <span className="font-black text-stone-800 bg-stone-100 px-2 py-0.5 rounded">{item.quantity}x</span>
-                                  <span className="text-stone-700 font-medium">{itemName}</span>
+                              <div key={item.id} className="flex justify-between items-center text-sm border-b border-stone-100 last:border-0 py-3">
+                                <div className="flex items-center gap-4">
+                                  
+                                  {/* PRODUCT IMAGE OR FALLBACK */}
+                                  {itemImageUrl ? (
+                                    <img 
+                                      src={itemImageUrl} 
+                                      alt={itemName} 
+                                      className="w-12 h-12 object-cover rounded-md border border-stone-200 shadow-sm shrink-0" 
+                                    />
+                                  ) : (
+                                    <div className="w-12 h-12 bg-stone-100 border border-stone-200 rounded-md flex items-center justify-center text-stone-400 shrink-0">
+                                      <svg className="w-5 h-5 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    </div>
+                                  )}
+
+                                  <div className="flex flex-col">
+                                    <div className="flex items-center gap-2 mb-0.5">
+                                      <span className="font-black text-stone-800 bg-stone-100 px-2 py-0.5 rounded">{item.quantity}x</span>
+                                      <span className="text-stone-800 font-bold">{itemName}</span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                      <span className="font-mono text-stone-400 text-[10px]">{itemBarcode}</span>
+                                      {itemColorName && (
+                                        <span className="text-[10px] text-stone-500 font-semibold bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200">
+                                          Color: {itemColorName}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
                                 </div>
-                                <span className="font-mono text-stone-400 text-xs">{itemBarcode}</span>
                               </div>
                             );
                           })}
