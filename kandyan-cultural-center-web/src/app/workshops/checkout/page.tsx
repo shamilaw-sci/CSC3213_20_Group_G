@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import BookingPanel, { BookingChangeState, BookingPanelRef } from "../components/BookingPanel";
 import { useCurrency } from '@/context/CurrencyContext';
@@ -9,7 +9,7 @@ import Link from "next/link";
 
 type Workshop = {
   id: string;
-  category?: "workshop" | "show";
+  category?: string;
   title: string;
   artisan_id?: string;
   artisans?: {
@@ -38,7 +38,6 @@ function Badge({ children }: { children: React.ReactNode }) {
   return <span className="inline-block rounded-full bg-amber-50 text-amber-700 px-3 py-1 text-xs font-semibold border border-amber-200/40">{children}</span>;
 }
 
-// Fixed sizing issue and wrapped beautifully
 function WorkshopIcon() {
   return (
     <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 text-slate-700 shadow-sm flex-shrink-0">
@@ -167,6 +166,12 @@ export default function WorkshopCheckoutPage() {
 
   if (!selectedWorkshop) return null;
 
+  // 🚨 FIXED: Multiplies price by guests so summary breakdown updates dynamically
+  const guestCount = bookingState?.guests || 1;
+  const subtotal = selectedWorkshop.price * guestCount;
+  const gatewayFee = Math.round(subtotal * 0.033);
+  const totalAmount = subtotal + gatewayFee;
+
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 relative">
       {/* --- FIXED BACKGROUND FOR GLASS BLUR EFFECT --- */}
@@ -215,7 +220,7 @@ export default function WorkshopCheckoutPage() {
                 />
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2">
-                    <Badge>{selectedWorkshop.category === 'show' ? 'Show Ticket' : 'Craft Workshop'}</Badge>
+                    <Badge>Craft Workshop</Badge>
                     <span className="text-xs font-medium text-slate-400">• {selectedWorkshop.duration}</span>
                   </div>
                   <h2 className="text-2xl font-black text-slate-900 tracking-tight">{selectedWorkshop.title}</h2>
@@ -256,15 +261,15 @@ export default function WorkshopCheckoutPage() {
                     <WorkshopIcon />
                     <div>
                       <div className="text-sm font-bold text-slate-900 line-clamp-1">{selectedWorkshop.title}</div>
-                      <div className="text-xs text-slate-400 font-medium">Standard ticket pricing</div>
+                      <div className="text-xs text-slate-400 font-medium">{guestCount} Guest{guestCount > 1 ? 's' : ''}</div>
                     </div>
                   </div>
-                  <div className="font-black text-slate-900 text-sm">{formatPrice(selectedWorkshop.price)}</div>
+                  <div className="font-black text-slate-900 text-sm">{formatPrice(subtotal)}</div>
                 </div>
 
                 <div className="flex justify-between items-center text-sm px-1">
                   <span className="text-slate-500 font-medium">Platform Gateway fee (3.3%)</span>
-                  <span className="font-semibold text-slate-700">{formatPrice(Math.round(selectedWorkshop.price * 0.033))}</span>
+                  <span className="font-semibold text-slate-700">{formatPrice(gatewayFee)}</span>
                 </div>
 
                 <div className="h-px bg-slate-100 my-2" />
@@ -273,7 +278,7 @@ export default function WorkshopCheckoutPage() {
                   <div>
                     <div className="text-xs font-bold text-amber-800/80 uppercase tracking-wider">Total Booking Amount</div>
                     <div className="text-2xl font-black text-slate-900 tracking-tight mt-0.5">
-                      {formatPrice(Math.round(selectedWorkshop.price + Math.round(selectedWorkshop.price * 0.033)))}
+                      {formatPrice(totalAmount)}
                     </div>
                   </div>
                 </div>
@@ -296,7 +301,7 @@ export default function WorkshopCheckoutPage() {
                   </div>
                   <div className="flex justify-between gap-3">
                     <span className="text-slate-400 font-medium">Reserved Spots</span>
-                    <span className="text-right font-black text-amber-600">{bookingState?.guests ?? 1} Head(s)</span>
+                    <span className="text-right font-black text-amber-600">{guestCount} Head(s)</span>
                   </div>
                 </div>
 

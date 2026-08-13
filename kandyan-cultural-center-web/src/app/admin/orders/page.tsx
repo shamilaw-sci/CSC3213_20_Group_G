@@ -58,7 +58,6 @@ export default function OrdersPage() {
     { value: 'delivered', label: 'Delivered', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
     { value: 'cancelled', label: 'Cancelled', color: 'bg-rose-100 text-rose-700 border-rose-200' },
   ];
-
   const getStatusColor = (status: string) => {
     const s = status.toLowerCase();
     const config = statusOptions.find(opt => opt.value === s);

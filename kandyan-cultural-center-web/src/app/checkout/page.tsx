@@ -121,74 +121,76 @@ export default function CheckoutPage() {
   };
 
   const handlePay = async () => {
-    if (!isFormValid || !userId) return;
-    setIsProcessing(true);
-    
-    try {
-      const fullShippingAddress = `${deliveryData.address}, ${deliveryData.city}, ${deliveryData.country}`;
-      const finalAmountToChargeLKR = total.toFixed(2);
+      if (!isFormValid || !userId) return;
+      setIsProcessing(true);
+      
+      try {
+        const fullShippingAddress = `${deliveryData.address}, ${deliveryData.city}, ${deliveryData.country}`;
+        const finalAmountToChargeLKR = total.toFixed(2);
 
-      const response = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          profileId: userId,
-          totalAmount: finalAmountToChargeLKR,
-          currency: 'LKR', 
-          shippingAddress: fullShippingAddress,
-          cartItems: cart
-        })
-      });
-
-      const paymentConfig = await response.json();
-
-      if (response.ok) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        
-        form.action = process.env.NEXT_PUBLIC_PAYHERE_ENV === 'live' 
-          ? 'https://www.payhere.lk/pay/checkout' 
-          : 'https://sandbox.payhere.lk/pay/checkout';
-
-        const fields = {
-          merchant_id: paymentConfig.merchantId,
-          return_url: `https://kandyanculturalcentre.lk/success?order=${paymentConfig.orderId}`,
-          cancel_url: `https://kandyanculturalcentre.lk/payment-cancelled`,
-          notify_url: `https://kandyanculturalcentre.lk/api/payhere-notify`,
-          order_id: paymentConfig.orderId,
-          items: 'KCC Authentic Artifacts',
-          currency: 'LKR',
-          amount: paymentConfig.amount,
-          first_name: deliveryData.firstName,
-          last_name: deliveryData.lastName,
-          email: deliveryData.email,
-          phone: deliveryData.phone,
-          address: deliveryData.address,
-          city: deliveryData.city,
-          country: deliveryData.country,
-          hash: paymentConfig.hash,
-          custom_1: deliveryData.notes 
-        };
-
-        Object.entries(fields).forEach(([key, value]) => {
-          const input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = key;
-          input.value = value as string;
-          form.appendChild(input);
+        const response = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            profileId: userId,
+            totalAmount: finalAmountToChargeLKR,
+            currency: 'LKR', 
+            shippingAddress: fullShippingAddress,
+            customerPhone: deliveryData.phone, // 🚨 ADDED
+            shippingCost: shippingFee,         // 🚨 ADDED
+            cartItems: cart
+          })
         });
 
-        document.body.appendChild(form);
-        form.submit();
-      } else {
-        alert(paymentConfig.error || 'Could not initialize gateway configuration.');
+        const paymentConfig = await response.json();
+
+        if (response.ok) {
+          const form = document.createElement('form');
+          form.method = 'POST';
+          
+          form.action = process.env.NEXT_PUBLIC_PAYHERE_ENV === 'live' 
+            ? 'https://www.payhere.lk/pay/checkout' 
+            : 'https://sandbox.payhere.lk/pay/checkout';
+
+          const fields = {
+            merchant_id: paymentConfig.merchantId,
+            return_url: `https://kandyanculturalcentre.lk/success?order=${paymentConfig.orderId}`,
+            cancel_url: `https://kandyanculturalcentre.lk/payment-cancelled`,
+            notify_url: `https://kandyanculturalcentre.lk/api/payhere-notify`,
+            order_id: paymentConfig.orderId,
+            items: 'KCC Authentic Artifacts',
+            currency: 'LKR',
+            amount: paymentConfig.amount,
+            first_name: deliveryData.firstName,
+            last_name: deliveryData.lastName,
+            email: deliveryData.email,
+            phone: deliveryData.phone,
+            address: deliveryData.address,
+            city: deliveryData.city,
+            country: deliveryData.country,
+            hash: paymentConfig.hash,
+            custom_1: deliveryData.notes 
+          };
+
+          Object.entries(fields).forEach(([key, value]) => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = value as string;
+            form.appendChild(input);
+          });
+
+          document.body.appendChild(form);
+          form.submit();
+        } else {
+          alert(paymentConfig.error || 'Could not initialize gateway configuration.');
+          setIsProcessing(false);
+        }
+      } catch (err) {
+        console.error("Payment initiation failed:", err);
         setIsProcessing(false);
       }
-    } catch (err) {
-      console.error("Payment initiation failed:", err);
-      setIsProcessing(false);
-    }
-  };
+    };
 
   if (isLoading) {
     return (

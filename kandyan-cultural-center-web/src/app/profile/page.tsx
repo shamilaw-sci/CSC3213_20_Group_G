@@ -27,7 +27,7 @@ interface Order {
   order_items: OrderItem[];
 }
 
-interface Booking {
+interface HallBooking {
   id: string;
   created_at: string;
   booking_date: string;
@@ -37,16 +37,38 @@ interface Booking {
   status: string; 
 }
 
+interface WorkshopBooking {
+  id: string;
+  created_at: string;
+  booked_date: string;
+  booked_time: string;
+  workshop_title: string;
+  craftsman: string;
+  customer_name: string;
+  customer_email: string;
+  guests: number;
+  notes?: string;
+  status: string;
+}
+
 export default function Profile() {
   const [profile, setProfile] = useState<any>(null);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [hallBookings, setHallBookings] = useState<HallBooking[]>([]);
+  const [workshopBookings, setWorkshopBookings] = useState<WorkshopBooking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [imgError, setImgError] = useState(false);
 
+  // Pagination Toggles ("Show More" for > 5 items)
+  const [showAllOrders, setShowAllOrders] = useState(false);
+  const [showAllUpcomingWorkshops, setShowAllUpcomingWorkshops] = useState(false);
+  const [showAllPastWorkshops, setShowAllPastWorkshops] = useState(false);
+  const [showAllHallBookings, setShowAllHallBookings] = useState(false);
+
   // Modal States
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [selectedHallBooking, setSelectedHallBooking] = useState<HallBooking | null>(null);
+  const [selectedWorkshopBooking, setSelectedWorkshopBooking] = useState<WorkshopBooking | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -57,7 +79,7 @@ export default function Profile() {
         return;
       }
 
-      // Fetch Profile
+      // 1. Fetch Profile
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
@@ -65,7 +87,7 @@ export default function Profile() {
         .single();
       setProfile(profileData);
 
-      // Fetch Orders WITH nested items and artifact details
+      // 2. Fetch Orders WITH nested items
       const { data: ordersData } = await supabase
         .from('orders')
         .select(`
@@ -85,14 +107,23 @@ export default function Profile() {
 
       if (ordersData) setOrders(ordersData as any);
 
-      // Fetch Hall Bookings
+      // 3. Fetch Workshop Bookings
+      const { data: wsBookingsData } = await supabase
+        .from('workshop_bookings')
+        .select('*')
+        .eq('user_id', userData.user.id)
+        .order('booked_date', { ascending: false });
+
+      if (wsBookingsData) setWorkshopBookings(wsBookingsData as any);
+
+      // 4. Fetch Hall Bookings
       const { data: bookingsData } = await supabase
         .from('hall_bookings')
         .select('*')
         .eq('user_id', userData.user.id)
         .order('created_at', { ascending: false });
 
-      if (bookingsData) setBookings(bookingsData);
+      if (bookingsData) setHallBookings(bookingsData);
 
       setIsLoading(false);
     };
@@ -100,7 +131,6 @@ export default function Profile() {
     load();
   }, []);
 
-  // Determine logical stage for Order Tracker
   const getOrderStep = (status: string) => {
     const s = status.toLowerCase();
     if (s === 'pending') return 1; 
@@ -110,8 +140,7 @@ export default function Profile() {
     return 0; 
   };
 
-  // Determine Hall Booking Status
-  const getBookingDisplayStatus = (booking: Booking) => {
+  const getHallBookingDisplayStatus = (booking: HallBooking) => {
     const isPast = new Date(booking.booking_date) < new Date();
     const s = booking.status.toLowerCase();
 
@@ -119,6 +148,13 @@ export default function Profile() {
     if (s === 'approved') return { label: 'Approved', color: 'bg-emerald-50/80 text-emerald-700 border-emerald-200' };
     if (s === 'rejected') return { label: 'Rejected', color: 'bg-rose-50/80 text-rose-700 border-rose-200' };
     return { label: 'Pending Review', color: 'bg-amber-50/80 text-amber-700 border-amber-200' };
+  };
+
+  const getWorkshopBookingBadge = (status: string) => {
+    const s = (status || 'pending').toLowerCase();
+    if (s === 'confirmed') return { label: 'Confirmed', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+    if (s === 'failed' || s === 'cancelled') return { label: 'Failed', color: 'bg-rose-50 text-rose-700 border-rose-200' };
+    return { label: 'Pending', color: 'bg-amber-50 text-amber-700 border-amber-200' };
   };
 
   if (isLoading) {
@@ -138,6 +174,11 @@ export default function Profile() {
   }
 
   const hasValidAvatar = profile.avatar_url && !imgError;
+
+  // Split workshop bookings into Upcoming and Past
+  const todayStr = new Date().toISOString().split('T')[0];
+  const upcomingWorkshops = workshopBookings.filter((b) => b.booked_date >= todayStr);
+  const pastWorkshops = workshopBookings.filter((b) => b.booked_date < todayStr);
 
   return (
     <main className="relative min-h-screen pt-32 md:pt-40 pb-24 px-4 sm:px-8 bg-[#F8F9FA]">
@@ -174,7 +215,7 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* --- ORDERS SECTION --- */}
+        {/* --- 1. ARTIFACT ORDERS SECTION --- */}
         <div>
           <h3 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-4">
             <span className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-sm border border-amber-200/50">
@@ -189,47 +230,158 @@ export default function Profile() {
               <Link href="/shop" className="text-amber-600 font-bold hover:underline">Explore the Shop →</Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              {orders.map((order) => {
-                const step = getOrderStep(order.status);
-                const isFailed = order.status.toLowerCase() === 'cancelled' || order.status.toLowerCase() === 'failed';
-                
-                return (
-                  <div 
-                    key={order.id} 
-                    onClick={() => setSelectedOrder(order)}
-                    className="bg-white/60 backdrop-blur-xl rounded-[2rem] p-6 sm:p-8 border border-white/80 hover:shadow-[0_10px_30px_rgba(31,38,135,0.05)] hover:border-amber-300 transition-all cursor-pointer group shadow-sm"
-                  >
-                    <div className="flex justify-between items-start mb-6">
-                      <div>
-                        <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">Order #{order.id.slice(0, 8)}</p>
-                        <p className="text-xl font-black text-slate-900">LKR {order.total_amount?.toLocaleString()}</p>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {(showAllOrders ? orders : orders.slice(0, 5)).map((order) => {
+                  const step = getOrderStep(order.status);
+                  const isFailed = order.status.toLowerCase() === 'cancelled' || order.status.toLowerCase() === 'failed';
+                  
+                  return (
+                    <div 
+                      key={order.id} 
+                      onClick={() => setSelectedOrder(order)}
+                      className="bg-white/60 backdrop-blur-xl rounded-[2rem] p-6 sm:p-8 border border-white/80 hover:shadow-[0_10px_30px_rgba(31,38,135,0.05)] hover:border-amber-300 transition-all cursor-pointer group shadow-sm"
+                    >
+                      <div className="flex justify-between items-start mb-6">
+                        <div>
+                          <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">Order #{order.id.slice(0, 8)}</p>
+                          <p className="text-xl font-black text-slate-900">LKR {order.total_amount?.toLocaleString()}</p>
+                        </div>
+                        <span className={`text-[10px] font-black px-3 py-1.5 rounded-lg border uppercase tracking-widest ${
+                          isFailed ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                          step === 4 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                          step >= 2 ? 'bg-amber-100 text-amber-700 border-amber-300' :
+                          'bg-white text-slate-600 border-slate-200'
+                        }`}>
+                          {order.status === 'completed' ? 'Paid / Processing' : order.status}
+                        </span>
                       </div>
-                      <span className={`text-[10px] font-black px-3 py-1.5 rounded-lg border uppercase tracking-widest ${
-                        isFailed ? 'bg-rose-50 text-rose-700 border-rose-200' :
-                        step === 4 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                        step >= 2 ? 'bg-amber-100 text-amber-700 border-amber-300' :
-                        'bg-white text-slate-600 border-slate-200'
-                      }`}>
-                        {order.status === 'completed' ? 'Paid / Processing' : order.status}
-                      </span>
+                      
+                      <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/60">
+                        <p className="text-sm font-medium text-slate-500">{new Date(order.created_at).toLocaleDateString()}</p>
+                        <span className="text-xs font-bold text-amber-600 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                          View Details <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path></svg>
+                        </span>
+                      </div>
                     </div>
-                    
-                    <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/60">
-                      <p className="text-sm font-medium text-slate-500">{new Date(order.created_at).toLocaleDateString()}</p>
-                      <span className="text-xs font-bold text-amber-600 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                        View Details <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path></svg>
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+
+              {orders.length > 5 && (
+                <div className="text-center mt-6">
+                  <button 
+                    onClick={() => setShowAllOrders(!showAllOrders)}
+                    className="px-6 py-2.5 bg-white/70 hover:bg-white text-slate-700 font-bold text-xs uppercase tracking-widest rounded-xl border border-white/80 shadow-sm transition-all"
+                  >
+                    {showAllOrders ? 'Show Less ↑' : `Show More (${orders.length - 5} more) ↓`}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
 
-        {/* --- HALL BOOKINGS SECTION --- */}
-        <div className="pt-6">
+        {/* --- 2. UPCOMING WORKSHOP BOOKINGS --- */}
+        <div>
+          <h3 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-4">
+            <span className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-sm border border-amber-200/50">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </span>
+            Upcoming Workshop Bookings
+          </h3>
+
+          {upcomingWorkshops.length === 0 ? (
+            <div className="bg-white/40 backdrop-blur-md rounded-[2rem] p-8 border border-white/80 shadow-sm text-center">
+              <p className="text-slate-500 font-medium mb-3">No upcoming workshop sessions booked.</p>
+              <Link href="/workshops" className="text-amber-600 font-bold hover:underline">Browse Craft Workshops →</Link>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 gap-4">
+                {(showAllUpcomingWorkshops ? upcomingWorkshops : upcomingWorkshops.slice(0, 5)).map((wb) => {
+                  const badge = getWorkshopBookingBadge(wb.status);
+                  return (
+                    <div
+                      key={wb.id}
+                      onClick={() => setSelectedWorkshopBooking(wb)}
+                      className="bg-white/60 backdrop-blur-xl rounded-[2rem] p-6 sm:p-7 border border-white/80 hover:shadow-[0_10px_30px_rgba(31,38,135,0.05)] hover:border-amber-300 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-l-[6px] border-l-amber-500 group"
+                    >
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-extrabold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-md border border-amber-200/50 uppercase tracking-widest">
+                            {wb.booked_date} at {wb.booked_time}
+                          </span>
+                        </div>
+                        <h4 className="text-xl font-black text-slate-900">{wb.workshop_title || 'Craft Workshop'}</h4>
+                        <p className="text-xs text-slate-500 mt-1">Instructor: {wb.craftsman || 'Master Artisan'} • {wb.guests} Guest(s)</p>
+                      </div>
+                      <div className="flex items-center gap-3 self-start sm:self-auto">
+                        <span className={`px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest border shadow-sm ${badge.color}`}>
+                          {badge.label}
+                        </span>
+                        <svg className="w-5 h-5 text-slate-300 group-hover:text-amber-600 transition-colors hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path></svg>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {upcomingWorkshops.length > 5 && (
+                <div className="text-center mt-5">
+                  <button
+                    onClick={() => setShowAllUpcomingWorkshops(!showAllUpcomingWorkshops)}
+                    className="px-6 py-2.5 bg-white/70 hover:bg-white text-slate-700 font-bold text-xs uppercase tracking-widest rounded-xl border border-white/80 shadow-sm transition-all"
+                  >
+                    {showAllUpcomingWorkshops ? 'Show Less ↑' : `Show More (${upcomingWorkshops.length - 5} more) ↓`}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* --- 3. PAST WORKSHOP HISTORY --- */}
+        {pastWorkshops.length > 0 && (
+          <div>
+            <h3 className="text-xl font-bold text-slate-500 mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+              Past Workshop History
+            </h3>
+
+            <div className="grid grid-cols-1 gap-3 opacity-75">
+              {(showAllPastWorkshops ? pastWorkshops : pastWorkshops.slice(0, 5)).map((wb) => (
+                <div
+                  key={wb.id}
+                  onClick={() => setSelectedWorkshopBooking(wb)}
+                  className="bg-white/50 backdrop-blur-md rounded-[1.5rem] p-5 border border-white/70 hover:bg-white/70 transition-all cursor-pointer flex justify-between items-center"
+                >
+                  <div>
+                    <h4 className="font-bold text-slate-700">{wb.workshop_title}</h4>
+                    <p className="text-xs text-slate-400 font-mono">{wb.booked_date} at {wb.booked_time} • {wb.guests} Guest(s)</p>
+                  </div>
+                  <span className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest bg-slate-100 text-slate-500 border border-slate-200">
+                    Completed
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {pastWorkshops.length > 5 && (
+              <div className="text-center mt-4">
+                <button
+                  onClick={() => setShowAllPastWorkshops(!showAllPastWorkshops)}
+                  className="px-5 py-2 bg-white/50 hover:bg-white text-slate-600 font-bold text-xs uppercase tracking-widest rounded-xl border border-white/80 shadow-sm transition-all"
+                >
+                  {showAllPastWorkshops ? 'Show Less ↑' : `Show More (${pastWorkshops.length - 5} more) ↓`}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* --- 4. HALL BOOKINGS SECTION --- */}
+        <div className="pt-4">
           <h3 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-4">
             <span className="w-12 h-12 rounded-2xl bg-white text-slate-900 flex items-center justify-center shadow-sm border border-slate-200">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
@@ -237,47 +389,59 @@ export default function Profile() {
             Hall Bookings
           </h3>
 
-          {bookings.length === 0 ? (
+          {hallBookings.length === 0 ? (
             <div className="bg-white/40 backdrop-blur-md rounded-[2rem] p-10 border border-white/80 shadow-sm text-center">
               <p className="text-slate-500 font-medium mb-4">You have no hall booking requests.</p>
               <Link href="/facilities" className="text-amber-600 font-bold hover:underline">Book the Grand Heritage Hall →</Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-5">
-              {bookings.map((booking) => {
-                const display = getBookingDisplayStatus(booking);
-                return (
-                  <div 
-                    key={booking.id} 
-                    onClick={() => setSelectedBooking(booking)}
-                    className="bg-white/60 backdrop-blur-xl rounded-[2rem] p-6 sm:p-8 border border-white/80 shadow-sm hover:shadow-[0_10px_30px_rgba(31,38,135,0.05)] hover:border-amber-300 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-l-[6px] border-l-amber-500 group"
+            <>
+              <div className="grid grid-cols-1 gap-5">
+                {(showAllHallBookings ? hallBookings : hallBookings.slice(0, 5)).map((booking) => {
+                  const display = getHallBookingDisplayStatus(booking);
+                  return (
+                    <div 
+                      key={booking.id} 
+                      onClick={() => setSelectedHallBooking(booking)}
+                      className="bg-white/60 backdrop-blur-xl rounded-[2rem] p-6 sm:p-8 border border-white/80 shadow-sm hover:shadow-[0_10px_30px_rgba(31,38,135,0.05)] hover:border-amber-300 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-l-[6px] border-l-amber-500 group"
+                    >
+                      <div>
+                        <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">Event Date: {new Date(booking.booking_date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        <p className="text-2xl font-black text-slate-900 tracking-tight">{booking.event_name}</p>
+                        <p className="text-sm font-medium text-slate-500 mt-2">Requested on {new Date(booking.created_at).toLocaleDateString()}</p>
+                      </div>
+                      <div className="flex items-center gap-4 self-start sm:self-auto">
+                        <span className={`inline-flex items-center px-4 py-2 font-bold rounded-xl text-sm border shadow-sm backdrop-blur-md ${display.color}`}>
+                          {display.label}
+                        </span>
+                        <svg className="w-5 h-5 text-slate-300 group-hover:text-amber-600 transition-colors hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path></svg>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {hallBookings.length > 5 && (
+                <div className="text-center mt-6">
+                  <button 
+                    onClick={() => setShowAllHallBookings(!showAllHallBookings)}
+                    className="px-6 py-2.5 bg-white/70 hover:bg-white text-slate-700 font-bold text-xs uppercase tracking-widest rounded-xl border border-white/80 shadow-sm transition-all"
                   >
-                    <div>
-                      <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">Event Date: {new Date(booking.booking_date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                      <p className="text-2xl font-black text-slate-900 tracking-tight">{booking.event_name}</p>
-                      <p className="text-sm font-medium text-slate-500 mt-2">Requested on {new Date(booking.created_at).toLocaleDateString()}</p>
-                    </div>
-                    <div className="flex items-center gap-4 self-start sm:self-auto">
-                      <span className={`inline-flex items-center px-4 py-2 font-bold rounded-xl text-sm border shadow-sm backdrop-blur-md ${display.color}`}>
-                        {display.label}
-                      </span>
-                      <svg className="w-5 h-5 text-slate-300 group-hover:text-amber-600 transition-colors hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path></svg>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    {showAllHallBookings ? 'Show Less ↑' : `Show More (${hallBookings.length - 5} more) ↓`}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
 
       {/* ========================================= */}
-      {/* MODAL: ORDER DETAILS                        */}
+      {/* MODAL: ORDER DETAILS                      */}
       {/* ========================================= */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white/80 backdrop-blur-3xl border border-white rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.15)] animate-in zoom-in-95 duration-200">
-            {/* Header */}
             <div className="p-6 sm:p-8 border-b border-white/60 flex justify-between items-center bg-white/40">
               <div>
                 <h3 className="text-2xl font-black text-slate-900 tracking-tight">Order #{selectedOrder.id.slice(0, 8)}</h3>
@@ -288,10 +452,7 @@ export default function Profile() {
               </button>
             </div>
 
-            {/* Body */}
             <div className="p-6 sm:p-8 overflow-y-auto flex-1 space-y-8 no-scrollbar">
-              
-              {/* STATUS TRACKER */}
               <div className="bg-white/60 backdrop-blur-md p-6 sm:p-8 rounded-[2rem] border border-white/80 shadow-sm">
                 <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-6">Delivery Status</h4>
                 {selectedOrder.status.toLowerCase() === 'cancelled' || selectedOrder.status.toLowerCase() === 'failed' ? (
@@ -320,7 +481,6 @@ export default function Profile() {
                 )}
               </div>
 
-              {/* ADDRESS & SUMMARY */}
               <div className="grid sm:grid-cols-2 gap-6">
                 <div className="bg-white/60 backdrop-blur-md p-6 rounded-[2rem] border border-white/80 shadow-sm">
                   <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-3">Shipping Address</h4>
@@ -334,7 +494,6 @@ export default function Profile() {
                 </div>
               </div>
 
-              {/* ITEMS LIST */}
               <div>
                 <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-4">Purchased Items</h4>
                 <div className="space-y-4">
@@ -370,59 +529,115 @@ export default function Profile() {
       )}
 
       {/* ========================================= */}
-      {/* MODAL: HALL BOOKING DETAILS                 */}
+      {/* MODAL: WORKSHOP BOOKING DETAILS           */}
       {/* ========================================= */}
-      {selectedBooking && (
+      {selectedWorkshopBooking && (
         <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white/80 backdrop-blur-3xl border border-white rounded-[2.5rem] w-full max-w-lg overflow-hidden flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.15)] animate-in zoom-in-95 duration-200">
-            {/* Header */}
             <div className="p-6 sm:p-8 border-b border-white/60 flex justify-between items-center bg-white/40">
               <div>
-                <h3 className="text-2xl font-black text-slate-900 tracking-tight">Hall Booking</h3>
-                <p className="text-sm font-medium text-slate-500 mt-1">Ref #{selectedBooking.id.slice(0, 8)}</p>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight">Workshop Session</h3>
+                <p className="text-sm font-medium text-slate-500 mt-1">Ref #{selectedWorkshopBooking.id.slice(0, 8)}</p>
               </div>
-              <button onClick={() => setSelectedBooking(null)} className="p-2.5 bg-white/60 hover:bg-white rounded-full text-slate-500 hover:text-rose-600 transition-colors shadow-sm border border-white/80">
+              <button onClick={() => setSelectedWorkshopBooking(null)} className="p-2.5 bg-white/60 hover:bg-white rounded-full text-slate-500 hover:text-rose-600 transition-colors shadow-sm border border-white/80">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
               </button>
             </div>
 
-            {/* Body */}
+            <div className="p-6 sm:p-8 space-y-5">
+              <div className="flex justify-between items-center bg-white/60 backdrop-blur-sm p-5 rounded-2xl border border-white/80 shadow-sm">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500">Booking Status</span>
+                <span className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest border shadow-sm ${getWorkshopBookingBadge(selectedWorkshopBooking.status).color}`}>
+                  {getWorkshopBookingBadge(selectedWorkshopBooking.status).label}
+                </span>
+              </div>
+
+              <div className="bg-white/60 backdrop-blur-sm p-6 rounded-[1.5rem] border border-white/80 shadow-sm">
+                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-1">Craft Workshop</label>
+                <p className="text-2xl font-black text-slate-900 tracking-tight">{selectedWorkshopBooking.workshop_title}</p>
+                <p className="text-xs text-amber-600 font-bold mt-1">Instructor: {selectedWorkshopBooking.craftsman || 'Master Artisan'}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/60 backdrop-blur-sm p-6 rounded-[1.5rem] border border-white/80 shadow-sm">
+                  <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-1">Date & Time</label>
+                  <p className="text-base font-black text-slate-900">{selectedWorkshopBooking.booked_date}</p>
+                  <p className="text-xs text-slate-500 font-bold mt-0.5">{selectedWorkshopBooking.booked_time}</p>
+                </div>
+                <div className="bg-white/60 backdrop-blur-sm p-6 rounded-[1.5rem] border border-white/80 shadow-sm">
+                  <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-1">Reserved Spots</label>
+                  <p className="text-lg font-black text-slate-900">{selectedWorkshopBooking.guests} Person(s)</p>
+                </div>
+              </div>
+
+              {selectedWorkshopBooking.notes && (
+                <div className="bg-white/60 backdrop-blur-sm p-6 rounded-[1.5rem] border border-white/80 shadow-sm">
+                  <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-1">Customer Notes</label>
+                  <p className="text-sm font-medium text-slate-700">{selectedWorkshopBooking.notes}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 pt-2 flex justify-end">
+              <button onClick={() => setSelectedWorkshopBooking(null)} className="px-8 py-3.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 font-bold rounded-2xl transition-all shadow-sm">
+                Close Window
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================= */}
+      {/* MODAL: HALL BOOKING DETAILS               */}
+      {/* ========================================= */}
+      {selectedHallBooking && (
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white/80 backdrop-blur-3xl border border-white rounded-[2.5rem] w-full max-w-lg overflow-hidden flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.15)] animate-in zoom-in-95 duration-200">
+            <div className="p-6 sm:p-8 border-b border-white/60 flex justify-between items-center bg-white/40">
+              <div>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight">Hall Booking</h3>
+                <p className="text-sm font-medium text-slate-500 mt-1">Ref #{selectedHallBooking.id.slice(0, 8)}</p>
+              </div>
+              <button onClick={() => setSelectedHallBooking(null)} className="p-2.5 bg-white/60 hover:bg-white rounded-full text-slate-500 hover:text-rose-600 transition-colors shadow-sm border border-white/80">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+
             <div className="p-6 sm:p-8 space-y-6">
-              
               <div className="flex justify-between items-center bg-white/60 backdrop-blur-sm p-5 rounded-2xl border border-white/80 shadow-sm">
                 <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500">Current Status</span>
-                <span className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest border shadow-sm ${getBookingDisplayStatus(selectedBooking).color}`}>
-                  {getBookingDisplayStatus(selectedBooking).label}
+                <span className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest border shadow-sm ${getHallBookingDisplayStatus(selectedHallBooking).color}`}>
+                  {getHallBookingDisplayStatus(selectedHallBooking).label}
                 </span>
               </div>
 
               <div className="space-y-5">
                 <div className="bg-white/60 backdrop-blur-sm p-6 rounded-[1.5rem] border border-white/80 shadow-sm">
                   <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-1">Event Type</label>
-                  <p className="text-2xl font-black text-slate-900 tracking-tight">{selectedBooking.event_name}</p>
+                  <p className="text-2xl font-black text-slate-900 tracking-tight">{selectedHallBooking.event_name}</p>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white/60 backdrop-blur-sm p-6 rounded-[1.5rem] border border-white/80 shadow-sm">
                     <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-1">Reserved Date</label>
-                    <p className="text-lg font-black text-slate-900">{new Date(selectedBooking.booking_date).toLocaleDateString()}</p>
+                    <p className="text-lg font-black text-slate-900">{new Date(selectedHallBooking.booking_date).toLocaleDateString()}</p>
                   </div>
                   <div className="bg-white/60 backdrop-blur-sm p-6 rounded-[1.5rem] border border-white/80 shadow-sm">
                     <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-1">Expected Guests</label>
-                    <p className="text-lg font-black text-slate-900">{selectedBooking.expected_guests} People</p>
+                    <p className="text-lg font-black text-slate-900">{selectedHallBooking.expected_guests} People</p>
                   </div>
                 </div>
 
                 <div className="bg-white/60 backdrop-blur-sm p-6 rounded-[1.5rem] border border-white/80 shadow-sm">
                   <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-2">Special Requirements</label>
                   <div className="text-sm font-medium text-slate-700 min-h-[4rem] leading-relaxed">
-                    {selectedBooking.special_requirements || <span className="italic text-slate-400">None provided.</span>}
+                    {selectedHallBooking.special_requirements || <span className="italic text-slate-400">None provided.</span>}
                   </div>
                 </div>
               </div>
 
               <div className="pt-2 flex justify-end">
-                <button onClick={() => setSelectedBooking(null)} className="px-8 py-3.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 font-bold rounded-2xl transition-all shadow-sm">
+                <button onClick={() => setSelectedHallBooking(null)} className="px-8 py-3.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 font-bold rounded-2xl transition-all shadow-sm">
                   Close Window
                 </button>
               </div>
