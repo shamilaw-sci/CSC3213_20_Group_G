@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     // 🚨 GENERATE SECURE INVOICE NUMBER (Format: INV-123456-ABCD)
     const timestampPart = Date.now().toString().slice(-6); // Last 6 digits of timestamp
     const randomPart = crypto.randomBytes(2).toString('hex').toUpperCase(); // 4 random hex chars
-    const invoiceNumber = `INV-${timestampPart}-${randomPart}`;
+    const invoiceNumber = `ONL-${timestampPart}-${randomPart}`;
 
     // 2. Create the Order securely
     const { data: order, error: orderError } = await supabase
