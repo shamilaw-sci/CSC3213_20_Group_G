@@ -664,7 +664,12 @@ export default function POSPage() {
 
       {isCalculatorOpen && <CalculatorModal onClose={() => setIsCalculatorOpen(false)} />}
       {isHistoryOpen && <HistoryModal onClose={() => setIsHistoryOpen(false)} />}
-      {isOnlineOrdersOpen && <OnlineOrdersModal onClose={() => setIsOnlineOrdersOpen(false)} />}
+        {isOnlineOrdersOpen && (
+        <OnlineOrdersModal 
+          onClose={() => setIsOnlineOrdersOpen(false)} 
+          onOrderProcessed={() => setPendingOnlineCount((prev) => Math.max(0, prev - 1))}
+        />
+      )}
     </div>
   );
 }
