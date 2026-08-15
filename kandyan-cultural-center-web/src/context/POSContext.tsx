@@ -14,10 +14,16 @@ export const POSProvider = ({ children }: { children: React.ReactNode }) => {
   const mm = String(now.getMonth() + 1).padStart(2, '0');
   const dd = String(now.getDate()).padStart(2, '0');
   
-  // Generates a random 4-digit number between 1000 and 9999
-  const xxxx = Math.floor(1000 + Math.random() * 9000); 
+  // Generates a random 4-digit number
+  const array = new Uint8Array(2);
+    window.crypto.getRandomValues(array);
+    const randomPart = Array.from(array, byte => byte.toString(16).padStart(2, '0'))
+      .join('')
+      .toUpperCase();
 
-  return `S${yy}${mm}${dd}${xxxx}`;
+  return `ST-${yy}${mm}${dd}-${randomPart}`;
+
+  
 };
 
 const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
@@ -166,11 +172,11 @@ const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
       try {
         // Push Header
         const { error: orderError } = await supabase.from('orders').insert(order.orderData);
-        if (orderError) throw orderError;
+        if (orderError && orderError.code !== '23505') throw orderError; // If the error is anything OTHER than "Duplicate Key", throw it.
 
         // Push Items
         const { error: itemsError } = await supabase.from('order_items').insert(order.orderItemsData);
-        if (itemsError) throw itemsError;
+        if (itemsError && itemsError.code !== '23505') throw itemsError; // If the error is anything OTHER than "Duplicate Key", throw it.
 
         console.log(`Successfully synced offline order ${order.orderData.invoice_number}`);
         // If successful, it does NOT get added to the remainingQueue
@@ -185,14 +191,21 @@ const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
   };
 
   const updateQuantity = (id: string, newQuantity: number) => {
-  if (newQuantity < 1) return; // Prevent going below 1 via this function
-  
-  setCart(prevCart => 
-    prevCart.map(item => 
-      item.id === id ? { ...item, quantity: newQuantity } : item
-    )
-  );
-};
+    if (newQuantity < 1) return; // Prevent going below 1 via this function
+    
+    setCart(prevCart => 
+      prevCart.map(item => {
+        if (item.id === id) {
+          // Prevent the cart quantity from exceeding the actual physical stock
+          const maxStock = item.stock || 0;
+          const safeQuantity = newQuantity > maxStock ? maxStock : newQuantity;
+          
+          return { ...item, quantity: safeQuantity };
+        }
+        return item;
+      })
+    );
+  };
 
   const removeFromCart = (id: string) => {
   setCart(prevCart => prevCart.filter(item => item.id !== id));

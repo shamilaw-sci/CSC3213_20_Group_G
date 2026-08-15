@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase";
-import WorkshopPrice from "@/components/WorkshopPrice"; // Adjust path if needed
+import WorkshopPrice from "@/components/WorkshopPrice";
 import DeleteButton from "./DeleteButton";
-import BlockedSlotsManager from "@/components/BlockedSlotsManager"; // Path to your newly created component
+import BlockedSlotsManager from "@/components/BlockedSlotsManager";
 
-export const revalidate = 0; // Ensure fresh data on every load
+export const revalidate = 0;
 
 export default async function AdminWorkshopsPage() {
-  // Fetch all workshops ordered by creation date
   const { data: workshops, error } = await supabaseServer
     .from("workshops")
     .select("id, title, price, duration, category")
@@ -23,11 +22,7 @@ export default async function AdminWorkshopsPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 p-6 md:p-12 space-y-10">
-      
-      {/* 1. Workshops Table Card */}
       <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-sm border border-slate-200/60 p-6 md:p-10">
-        
-        {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 pb-6 border-b border-slate-100">
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">Workshop Admin Panel</h1>
@@ -41,7 +36,6 @@ export default async function AdminWorkshopsPage() {
           </Link>
         </div>
 
-        {/* Workshops Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -85,9 +79,7 @@ export default async function AdminWorkshopsPage() {
         </div>
       </div>
 
-      {/* 2. Blocked Dates & Time Slots Section */}
       <BlockedSlotsManager />
-
     </main>
   );
 }

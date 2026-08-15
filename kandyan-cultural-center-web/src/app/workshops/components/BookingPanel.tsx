@@ -36,7 +36,7 @@ function normalizeTimeTo24(timeStr: string) {
 
 type Workshop = {
   id?: string;
-  category?: "workshop" | "show";
+  category?: string;
   title: string;
   price: number;
   no_of_guests?: number;
@@ -116,11 +116,10 @@ function BookingPanel(
   const today = new Date().toISOString().slice(0, 10);
   const allTimesForDate = timeSlots;
   const { formatPrice } = useCurrency();
-  const workshopCraftsman = workshop.category === 'show' ? null : workshop.artisans?.name ?? 'Artisan';
+  const workshopCraftsman = workshop.artisans?.name ?? 'Artisan';
 
   const blockedReason = selectedDate ? blockedDates[selectedDate] : undefined;
   const isSelectedDateBlocked = !!blockedReason;
-  const isSelectedDateValid = !!selectedDate && !isSelectedDateBlocked;
 
   useEffect(() => {
     const fetchTimeSlots = async () => {
@@ -190,11 +189,7 @@ function BookingPanel(
       setAvailability({ available: false, message: `${blockedReason} — this date is not available.` });
       return;
     }
-    if (workshop.category === 'show') {
-      setCheckingAvailability(false);
-      setAvailability({ available: true, message: 'Show schedule selected' });
-      return;
-    }
+
     const checkAvailability = async () => {
       setCheckingAvailability(true);
       try {
@@ -206,7 +201,7 @@ function BookingPanel(
             booked_date: selectedDate,
             booked_time: normalizedTime,
             workshop_id: workshop.id ?? null,
-            craftsman: workshop.category === 'show' ? null : workshopCraftsman,
+            craftsman: workshopCraftsman,
           }),
         });
         const data = await res.json();
@@ -219,7 +214,7 @@ function BookingPanel(
     };
     const timer = setTimeout(checkAvailability, 300);
     return () => clearTimeout(timer);
-  }, [selectedDate, selectedTime, workshop.id, workshopCraftsman, workshop.category]);
+  }, [selectedDate, selectedTime, workshop.id, workshopCraftsman]);
 
   const handleBooking = async () => {
     setError('');
@@ -233,17 +228,17 @@ function BookingPanel(
     }
     setLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
       const normalizedTime = normalizeTimeTo24(selectedTime);
+      
       const res = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          user_id: user?.id || null,
           workshop_id: workshop.id ?? null,
-          experience_id: workshop.id ?? null,
           workshop_title: workshop.title,
-          experience_title: workshop.title,
-          category: workshop.category ?? 'workshop',
-          craftsman: workshop.category === 'show' ? null : workshopCraftsman,
+          craftsman: workshopCraftsman || "Kandyan Art Association Artists",
           booked_date: selectedDate,
           booked_time: normalizedTime,
           customer_name: name,
@@ -264,22 +259,18 @@ function BookingPanel(
       setAvailability(null);
 
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        const profileId = user?.id || null;
-
-        const subtotal = workshop.price;
+        // 🚨 FIXED: Total now correctly charges for ALL selected guests
+        const subtotal = workshop.price * guests;
         const gatewayFee = Math.round(subtotal * 0.033);
         const totalAmount = subtotal + gatewayFee;
 
-        const checkoutRes = await fetch('/api/checkout', {
+        // 🚨 FIXED: Dedicated workshop endpoint (Zero contact with orders table)
+        const checkoutRes = await fetch('/api/workshop-checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            profileId,
+            bookingId: json.booking.id,
             totalAmount,
-            bookingId: json.booking.id, // 🚨 TELLS THE API TO SKIP DB INSERTS
-            items: [], // 🚨 PREVENTS FAKE DATA IN DB
-            shippingAddress: '',
           }),
         });
 
@@ -289,7 +280,6 @@ function BookingPanel(
         const form = document.createElement('form');
         form.method = 'POST';
         
-        // 🚨 DYNAMIC LIVE/SANDBOX TOGGLE FOR PRODUCTION
         form.action = process.env.NEXT_PUBLIC_PAYHERE_ENV === 'live' 
           ? 'https://www.payhere.lk/pay/checkout' 
           : 'https://sandbox.payhere.lk/pay/checkout';
@@ -304,15 +294,15 @@ function BookingPanel(
           cancel_url: `${window.location.origin}/workshops/checkout?workshop=${workshop.id}`,
           notify_url: `${window.location.origin}/api/payhere-notify`,
           order_id: paymentConfig.orderId,
-          items: workshop.title,
+          items: `${workshop.title} (${guests} Guest${guests > 1 ? 's' : ''})`,
           currency: paymentConfig.currency || 'LKR',
-          amount: paymentConfig.amount || String(workshop.price),
+          amount: paymentConfig.amount || String(totalAmount),
           first_name,
           last_name,
           email,
           phone,
-          address: '',
-          city: '',
+          address: 'Kandyan Cultural Centre',
+          city: 'Kandy',
           country: 'Sri Lanka',
           hash: paymentConfig.hash,
           custom_1: `booking:${json.booking.id}`,
@@ -358,7 +348,7 @@ function BookingPanel(
   return (
     <div>
       <h2 className="text-2xl font-bold mb-6">
-        Book Your {workshop.category === "show" ? "Show Ticket" : "Workshop"}
+        Book Your Workshop
       </h2>
 
       {selectedDate && selectedTime && (
@@ -567,7 +557,7 @@ function BookingPanel(
             {selectedTime ? timeTo12Hour(selectedTime) : '--:--'}
           </div>
           <div className="text-sm text-slate-600 mt-1">
-            {workshopCraftsman || 'Workshop'} · {guests} guest{guests === 1 ? '' : 's'} · {formatPrice(workshop.price)}
+            {workshopCraftsman || 'Workshop'} · {guests} guest{guests === 1 ? '' : 's'} · {formatPrice(workshop.price * guests)}
           </div>
         </div>
       )}
