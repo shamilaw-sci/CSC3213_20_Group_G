@@ -7,9 +7,8 @@ import CartSidebar from '../../components/pos/CartSidebar';
 import CameraScanner from '../../components/pos/CameraScanner'; 
 import CalculatorModal from '../../components/pos/CalculatorModal';
 import HistoryModal from '../../components/pos/HistoryModal';
+import OnlineOrdersModal from '../../components/pos/OnlineOrdersModal'; 
 import { supabase } from '../../lib/supabase'; 
-import OnlineOrdersModal from '@/components/pos/OnlineOrdersModal';
-
 
 export default function POSPage() {
   const { cartTotal, setCashierId, cachedProducts } = usePOS(); 
@@ -22,6 +21,7 @@ export default function POSPage() {
   const [hasAccess, setHasAccess] = useState(false);
   const [cashierName, setCashierName] = useState<string>('Cashier');
   const [userRole, setUserRole] = useState<string>(''); 
+  const [userId, setUserId] = useState<string>(''); // NEW: Storing ID for sessions
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
   
   // --- UI & POS STATE ---
@@ -38,22 +38,23 @@ export default function POSPage() {
   const [inStockOnly, setInStockOnly] = useState<boolean>(false);
   const [outOfStockOnly, setOutOfStockOnly] = useState<boolean>(false);
   
-  // --- PRICE FILTER STATE ---
   const [minPrice, setMinPrice] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('');
 
-  // --- SESSION-ENDING STATE ---
   const [unsyncedCount, setUnsyncedCount] = useState(0);
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
   
-  // --- BLIND CLOSEOUT STATE ---
-  const [startingCash, setStartingCash] = useState<string>(''); // NEW: Initial Float
+  // --- SESSION & BLIND CLOSEOUT STATE ---
+  const [sessionId, setSessionId] = useState<string | null>(null); // NEW: Track DB row
+  const [startingCash, setStartingCash] = useState<string>(''); 
   const [declaredCash, setDeclaredCash] = useState<string>('');
+  const [expectedCashState, setExpectedCashState] = useState<number>(0); // NEW
+  const [varianceState, setVarianceState] = useState<number>(0); // NEW
   const [varianceMessage, setVarianceMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
   const [isVerifyingCash, setIsVerifyingCash] = useState(false);
   const [isCashVerified, setIsCashVerified] = useState(false);
 
-  // --- NEW: REALTIME ONLINE ORDERS STATE ---
+  // --- REALTIME ONLINE ORDERS STATE ---
   const [pendingOnlineCount, setPendingOnlineCount] = useState(0);
   const [showNewOrderBubble, setShowNewOrderBubble] = useState(false);
   const [hasInitiallyChecked, setHasInitiallyChecked] = useState(false);
@@ -77,7 +78,7 @@ export default function POSPage() {
     setMaxPrice('');
   };
 
-  // --- 1. SUPABASE AUTH & RBAC CHECK ---
+  // --- 1. SUPABASE AUTH, RBAC, & SESSION RECOVERY ---
   useEffect(() => {
     const checkAccess = async () => {
       try {
@@ -89,6 +90,7 @@ export default function POSPage() {
         }
 
         const currentUserId = session.user.id;
+        setUserId(currentUserId);
 
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
@@ -105,8 +107,22 @@ export default function POSPage() {
           setHasAccess(true);
           setCashierName(profile.full_name || 'Cashier'); 
           setUserRole(profile.role);
-          
           if (setCashierId) setCashierId(currentUserId); 
+          
+          // NEW: Check if an active session already exists (Handles Page Reloads)
+          const { data: activeSession } = await supabase
+            .from('pos_sessions')
+            .select('id, starting_float')
+            .eq('cashier_id', currentUserId)
+            .eq('status', 'active')
+            .maybeSingle();
+            
+          if (activeSession) {
+            setSessionId(activeSession.id);
+            setStartingCash(activeSession.starting_float.toString());
+            setDisclaimerAccepted(true); // Skip float entry screen
+          }
+
         } else {
           window.location.replace('/');
         }
@@ -121,10 +137,8 @@ export default function POSPage() {
     checkAccess();
   }, [setCashierId]);
 
-
-  // --- NEW: REALTIME ONLINE ORDERS LISTENER ---
+  // --- REALTIME ONLINE ORDERS LISTENER ---
   useEffect(() => {
-    // Only fetch and listen AFTER they accept the shift disclaimer
     if (!disclaimerAccepted) return;
 
     const fetchInitialCount = async () => {
@@ -136,7 +150,6 @@ export default function POSPage() {
 
       if (!error && count !== null) {
         setPendingOnlineCount(count);
-        // Auto-open modal if there are orders and we haven't checked yet
         if (count > 0 && !hasInitiallyChecked) {
           setIsOnlineOrdersOpen(true);
         }
@@ -146,7 +159,6 @@ export default function POSPage() {
 
     fetchInitialCount();
 
-    // Subscribe to database changes for real-time alerts
     const channel = supabase
       .channel('public:orders')
       .on(
@@ -156,7 +168,7 @@ export default function POSPage() {
           if (payload.new.sales_channel === 'online' && payload.new.status === 'order placed') {
             setPendingOnlineCount((prev) => prev + 1);
             setShowNewOrderBubble(true);
-            setTimeout(() => setShowNewOrderBubble(false), 8000); // Hide bubble after 8s
+            setTimeout(() => setShowNewOrderBubble(false), 8000); 
           }
         }
       )
@@ -164,7 +176,6 @@ export default function POSPage() {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'orders' },
         (payload) => {
-          // Decrement the badge count when the modal marks an order as 'reviewed'
           if (payload.old.status === 'order placed' && payload.new.status === 'reviewed') {
             setPendingOnlineCount((prev) => Math.max(0, prev - 1));
           }
@@ -177,8 +188,33 @@ export default function POSPage() {
     };
   }, [disclaimerAccepted, hasInitiallyChecked]);
 
-
   // --- 2. HANDLERS ---
+
+  // NEW: Create Session in DB
+  const handleStartSession = async () => {
+    if (!startingCash) return;
+    try {
+      const floatValue = parseFloat(startingCash);
+      const { data, error } = await supabase
+        .from('pos_sessions')
+        .insert({
+          cashier_id: userId,
+          starting_float: floatValue,
+          status: 'active'
+        })
+        .select('id')
+        .single();
+
+      if (error) throw error;
+      
+      setSessionId(data.id);
+      setDisclaimerAccepted(true);
+    } catch (err) {
+      console.error("Failed to start session:", err);
+      alert("Error starting shift. Please check network.");
+    }
+  };
+
   const handleVerifyCash = async () => {
     if (!declaredCash) return;
     setIsVerifyingCash(true);
@@ -197,7 +233,6 @@ export default function POSPage() {
 
       if (error) throw error;
 
-      // NEW: Calculate total Expected Cash (Starting Float + Cash Sales)
       const initialFloat = parseFloat(startingCash) || 0;
       const cashSales = data
         .filter(o => o.payment_method === 'cash')
@@ -206,6 +241,10 @@ export default function POSPage() {
       const expectedCash = initialFloat + cashSales;
       const declared = parseFloat(declaredCash);
       const variance = declared - expectedCash;
+
+      // Save for DB update on logout
+      setExpectedCashState(expectedCash);
+      setVarianceState(variance);
 
       if (variance === 0) {
         setVarianceMessage({ 
@@ -242,6 +281,24 @@ export default function POSPage() {
         setLogoutMessage(`Syncing ${queue.length} pending orders to the database. Please wait a moment and try again.`);
       }
       return; 
+    }
+
+    // NEW: Update DB to close the session before signing out
+    if (sessionId && isCashVerified) {
+      try {
+        await supabase
+          .from('pos_sessions')
+          .update({
+            end_time: new Date().toISOString(),
+            declared_closing_cash: parseFloat(declaredCash),
+            expected_closing_cash: expectedCashState,
+            variance: varianceState,
+            status: 'closed'
+          })
+          .eq('id', sessionId);
+      } catch (err) {
+        console.error("Error closing session in DB", err);
+      }
     }
 
     await supabase.auth.signOut();
@@ -284,7 +341,6 @@ export default function POSPage() {
               </div>
             </div>
 
-            {/* NEW: Starting Cash / Float Input */}
             <div className="mb-6 p-4 bg-stone-50 border border-stone-200 rounded-xl">
               <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Initial Drawer Float</h4>
               <p className="text-xs text-stone-600 mb-3">Please count and enter the starting cash amount currently in your drawer.</p>
@@ -307,13 +363,16 @@ export default function POSPage() {
             </p>
             <div className="flex gap-4">
               <button 
-                onClick={handleLogout} 
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  window.location.reload();
+                }} 
                 className="flex-[1] py-3 font-bold text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors"
               >
                 Cancel
               </button>
               <button 
-                onClick={() => setDisclaimerAccepted(true)} 
+                onClick={handleStartSession} 
                 disabled={startingCash === ''}
                 className={`flex-[2] py-3 font-black rounded-xl transition-colors shadow-md ${
                   startingCash === '' 
@@ -404,7 +463,6 @@ export default function POSPage() {
       {/* --- MAIN BODY AREA --- */}
       <div className="flex flex-col flex-1 overflow-hidden z-10">
         
-        {/* --- SECONDARY ACTION BAR --- */}
         <div className="flex justify-between items-center bg-white px-6 py-3 border-b border-stone-200 shrink-0 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
           
           <div className="flex-1 flex justify-start items-center gap-3">
@@ -436,7 +494,6 @@ export default function POSPage() {
           </div>
 
           <div className="flex-1 flex justify-end items-center gap-3">
-            {/* --- UPDATED: WEB ORDERS BUTTON WITH BADGE & BUBBLE --- */}
              <div className="relative flex items-center">
                {showNewOrderBubble && (
                  <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-max animate-bounce bg-red-600 text-white text-xs font-black px-3 py-1.5 rounded-lg shadow-xl z-50">
@@ -444,15 +501,11 @@ export default function POSPage() {
                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-4 border-t-red-600"></div>
                  </div>
                )}
-               <button 
-                  onClick={() => { setIsOnlineOrdersOpen(true); setShowNewOrderBubble(false); }} 
-                  className="flex items-center gap-2 px-4 py-2 bg-sky-50 border-sky-200 hover:bg-sky-100 text-sky-800 text-sm font-bold rounded-xl border transition-colors shadow-sm relative"
-               >
+               <button onClick={() => { setIsOnlineOrdersOpen(true); setShowNewOrderBubble(false); }} className="flex items-center gap-2 px-4 py-2 bg-sky-50 border-sky-200 hover:bg-sky-100 text-sky-800 text-sm font-bold rounded-xl border transition-colors shadow-sm relative">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                   </svg> 
                   Web Orders
-                  
                   {pendingOnlineCount > 0 && (
                     <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-black text-white shadow-md ring-2 ring-white">
                       {pendingOnlineCount}
@@ -460,7 +513,6 @@ export default function POSPage() {
                   )}
                </button>
              </div>
-
 
              {userRole === 'admin' && (
                <button onClick={() => setIsHistoryOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 text-sm font-semibold rounded-xl border border-stone-200 transition-colors shadow-sm">
@@ -477,7 +529,6 @@ export default function POSPage() {
         {isFilterMenuOpen && (
           <>
             <div className="fixed inset-0 z-40" onClick={() => setIsFilterMenuOpen(false)} />
-            
             <div className="absolute top-[140px] left-6 z-50 w-80 bg-white rounded-xl shadow-2xl border border-stone-200 p-5 animate-in slide-in-from-top-2">
               <div className="flex justify-between items-center mb-3 border-b border-stone-100 pb-2">
                 <h3 className="font-bold text-stone-800">Filter Inventory</h3>
@@ -501,23 +552,13 @@ export default function POSPage() {
 
               <div className="mb-4 pt-3 border-t border-stone-100">
                 <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider block mb-2">Price Range (Rs.)</label>
-                
                 <div className="mb-3 px-1">
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max={highestPrice} 
-                    step="500"
-                    value={maxPrice === '' ? highestPrice : Number(maxPrice)}
-                    onChange={(e) => setMaxPrice(e.target.value)}
-                    className="w-full accent-amber-700 cursor-pointer h-1.5 bg-stone-200 rounded-lg"
-                  />
+                  <input type="range" min="0" max={highestPrice} step="500" value={maxPrice === '' ? highestPrice : Number(maxPrice)} onChange={(e) => setMaxPrice(e.target.value)} className="w-full accent-amber-700 cursor-pointer h-1.5 bg-stone-200 rounded-lg" />
                   <div className="flex justify-between text-[10px] text-stone-400 font-mono mt-1 font-semibold">
                     <span>Rs. 0</span>
                     <span>Rs. {highestPrice.toLocaleString()}</span>
                   </div>
                 </div>
-
                 <div className="flex items-center gap-2">
                   <div className="flex-1">
                     <span className="text-[10px] text-stone-400 font-semibold uppercase block mb-1">Min Price</span>
@@ -662,9 +703,15 @@ export default function POSPage() {
         </div>
       )}
 
+      {/* MODALS */}
       {isCalculatorOpen && <CalculatorModal onClose={() => setIsCalculatorOpen(false)} />}
       {isHistoryOpen && <HistoryModal onClose={() => setIsHistoryOpen(false)} />}
-      {isOnlineOrdersOpen && <OnlineOrdersModal onClose={() => setIsOnlineOrdersOpen(false)} />}
+      {isOnlineOrdersOpen && (
+        <OnlineOrdersModal 
+          onClose={() => setIsOnlineOrdersOpen(false)} 
+          onOrderProcessed={() => setPendingOnlineCount((prev) => Math.max(0, prev - 1))}
+        />
+      )}
     </div>
   );
 }

@@ -3,11 +3,15 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 
+
+
 interface OnlineOrdersModalProps {
   onClose: () => void;
+  onOrderProcessed: () => void; // NEW: Callback prop
 }
 
-export default function OnlineOrdersModal({ onClose }: OnlineOrdersModalProps) {
+
+export default function OnlineOrdersModal({ onClose, onOrderProcessed }: OnlineOrdersModalProps) {
   const [onlineOrders, setOnlineOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
@@ -16,7 +20,8 @@ export default function OnlineOrdersModal({ onClose }: OnlineOrdersModalProps) {
   useEffect(() => {
     const fetchPendingOnlineOrders = async () => {
       try {
-        const { data, error } = await supabase
+        // STEP 1: Fetch the orders (without the profiles join)
+        const { data: ordersData, error: ordersError } = await supabase
           .from('orders')
           .select(`
             *,
@@ -35,8 +40,45 @@ export default function OnlineOrdersModal({ onClose }: OnlineOrdersModalProps) {
           .eq('status', 'order placed')
           .order('created_at', { ascending: true }); 
 
-        if (error) throw error;
-        setOnlineOrders(data || []);
+        if (ordersError) throw ordersError;
+
+        if (!ordersData || ordersData.length === 0) {
+          setOnlineOrders([]);
+          setLoading(false);
+          return;
+        }
+
+        // STEP 2: Extract all unique user_ids from those orders
+        const userIds = [...new Set(ordersData
+          .map(order => order.user_id)
+          .filter(id => id !== null)
+        )];
+
+        // STEP 3: Fetch the matching profiles
+        let profilesMap: Record<string, string> = {};
+        if (userIds.length > 0) {
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .in('id', userIds);
+
+          if (!profilesError && profilesData) {
+            // Create a quick lookup dictionary: { "uuid-123": "John Doe" }
+            profilesMap = profilesData.reduce((acc, profile) => {
+              acc[profile.id] = profile.full_name;
+              return acc;
+            }, {} as Record<string, string>);
+          }
+        }
+
+        // STEP 4: Attach the names manually to the orders
+        const ordersWithNames = ordersData.map(order => ({
+          ...order,
+          // We attach the name here so your receipt code can easily read it!
+          customer_name: order.user_id ? profilesMap[order.user_id] : null
+        }));
+
+        setOnlineOrders(ordersWithNames);
       } catch (err) {
         console.error("Fetch Error:", err);
       } finally {
@@ -64,6 +106,9 @@ export default function OnlineOrdersModal({ onClose }: OnlineOrdersModalProps) {
 
       if (error) throw error;
 
+      // NEW: Tell the parent page to instantly decrement the badge!
+      onOrderProcessed();
+
       setOnlineOrders(prev => prev.filter(o => o.id !== orderId));
       setPrintingOrder(null);
       
@@ -83,9 +128,11 @@ export default function OnlineOrdersModal({ onClose }: OnlineOrdersModalProps) {
     const finalTotal = printingOrder.total_amount || 0;
     const shippingAmount = Number(printingOrder.shipping_cost) || 0;
     
-    // Calculate subtotal from items
     const subtotal = printingOrder.order_items?.reduce((sum: number, item: any) => sum + (Number(item.selling_price_at_sale) * Number(item.quantity)), 0) || 0;
     const discountAmount = subtotal * ((Number(printingOrder.discount_percentage) || 0) / 100);
+
+    // DYNAMIC BUYER NAME
+    const buyerName = printingOrder.customer_name || printingOrder.profiles?.full_name || 'Online Buyer';
 
     return (
       <div className="fixed inset-0 z-[80] overflow-y-auto bg-stone-900/80 backdrop-blur-sm">
@@ -118,8 +165,12 @@ export default function OnlineOrdersModal({ onClose }: OnlineOrdersModalProps) {
                   <span className="font-bold">#{printingOrder.invoice_number || printingOrder.id.substring(0,8)}</span>
                 </div>
                 
+                {/* UPDATED: Customer Name and Shipping Details */}
                 <div className="mt-3 bg-stone-50 p-2 border border-stone-200 rounded">
                   <span className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Ship To:</span>
+                  <span className="block font-black text-stone-900 text-[13px] mb-0.5 tracking-tight uppercase">
+                    {buyerName}
+                  </span>
                   {printingOrder.shipping_address ? (
                     <p className="whitespace-pre-wrap font-semibold text-stone-800 leading-tight">
                       {printingOrder.shipping_address}
@@ -181,7 +232,7 @@ export default function OnlineOrdersModal({ onClose }: OnlineOrdersModalProps) {
                 
                 <div className="flex justify-between font-black text-sm pt-2 mt-2 border-t-2 border-dashed border-stone-300">
                   <span>TOTAL PAID</span>
-                  <span>Rs. {finalTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  <span>Rs. {(finalTotal + shippingAmount).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                 </div>
               </div>
               
@@ -312,7 +363,6 @@ export default function OnlineOrdersModal({ onClose }: OnlineOrdersModalProps) {
                               <div key={item.id} className="flex justify-between items-center text-sm border-b border-stone-100 last:border-0 py-3">
                                 <div className="flex items-center gap-4">
                                   
-                                  {/* PRODUCT IMAGE OR FALLBACK */}
                                   {itemImageUrl ? (
                                     <img 
                                       src={itemImageUrl} 
