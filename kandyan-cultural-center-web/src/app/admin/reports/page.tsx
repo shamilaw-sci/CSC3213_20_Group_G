@@ -9,7 +9,10 @@ import autoTable from 'jspdf-autotable';
 export default function FinancialReportsPage() {
   const [rawData, setRawData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
   const [selectedMonth, setSelectedMonth] = useState<string>('all'); 
+  // 🚨 ADDED: Sales Channel State
+  const [selectedChannel, setSelectedChannel] = useState<string>('all'); 
 
   const availableMonths = useMemo(() => {
     const months = [];
@@ -42,7 +45,7 @@ export default function FinancialReportsPage() {
           )
         )
       `)
-      .eq('status', 'completed')
+      .in('status', ['processing', 'order placed', 'reviewed', 'handed to courier', 'delivered', 'completed'])
       .order('created_at', { ascending: false });
 
     if (orders) setRawData(orders);
@@ -60,8 +63,12 @@ export default function FinancialReportsPage() {
     let totalItemsSold = 0;
 
     rawData.forEach(order => {
+      // 🚨 FIXED: Filter by Month
       const orderMonth = order.created_at.slice(0, 7);
       if (selectedMonth !== 'all' && orderMonth !== selectedMonth) return;
+
+      // 🚨 FIXED: Filter by Sales Channel (Online vs In-Store)
+      if (selectedChannel !== 'all' && order.sales_channel !== selectedChannel) return;
 
       order.order_items?.forEach((item: any) => {
         const itemName = `${item.artifact_variants?.artifacts?.name} - ${item.artifact_variants?.color_name}`;
@@ -96,7 +103,7 @@ export default function FinancialReportsPage() {
       rows: Array.from(reportMap.values()).sort((a, b) => b.profit - a.profit), 
       summary: { totalRevenue, totalProfit, totalItemsSold }
     };
-  }, [rawData, selectedMonth]);
+  }, [rawData, selectedMonth, selectedChannel]); // 🚨 Added selectedChannel to dependencies
 
   // EXPORT TO EXCEL
   const exportToExcel = () => {
@@ -120,7 +127,9 @@ export default function FinancialReportsPage() {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Financial Report");
     
-    const fileName = `KCC_Financial_Report_${selectedMonth === 'all' ? 'All_Time' : selectedMonth}.xlsx`;
+    // Clean filename
+    const channelName = selectedChannel === 'all' ? 'All_Channels' : selectedChannel;
+    const fileName = `KCC_Financials_${selectedMonth === 'all' ? 'All_Time' : selectedMonth}_${channelName}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   };
 
@@ -128,6 +137,7 @@ export default function FinancialReportsPage() {
   const exportToPDF = () => {
     const doc = new jsPDF();
     const periodLabel = selectedMonth === 'all' ? 'All Time' : availableMonths.find(m => m.value === selectedMonth)?.label;
+    const channelLabel = selectedChannel === 'all' ? 'All Channels' : selectedChannel === 'online' ? 'Online E-commerce' : 'In-Store POS';
 
     doc.setFontSize(20);
     doc.setTextColor(245, 158, 11); 
@@ -136,7 +146,7 @@ export default function FinancialReportsPage() {
     doc.setFontSize(12);
     doc.setTextColor(51, 65, 85); 
     doc.text(`Financial Performance Report`, 14, 30);
-    doc.text(`Period: ${periodLabel}`, 14, 36);
+    doc.text(`Period: ${periodLabel}  |  Channel: ${channelLabel}`, 14, 36); // 🚨 ADDED channel to PDF Header
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 42);
 
     doc.setDrawColor(226, 232, 240);
@@ -172,7 +182,8 @@ export default function FinancialReportsPage() {
       },
     });
 
-    const fileName = `KCC_Financial_Report_${selectedMonth === 'all' ? 'All_Time' : selectedMonth}.pdf`;
+    const channelName = selectedChannel === 'all' ? 'All_Channels' : selectedChannel;
+    const fileName = `KCC_Financials_${selectedMonth === 'all' ? 'All_Time' : selectedMonth}_${channelName}.pdf`;
     doc.save(fileName);
   };
 
@@ -180,27 +191,47 @@ export default function FinancialReportsPage() {
     <div className="p-4 sm:p-8 lg:p-12 max-w-7xl mx-auto w-full relative z-10">
       
       {/* Header & Controls */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 sm:mb-10 gap-6">
-        <div className="bg-white/60 backdrop-blur-xl border border-white/80 p-6 md:p-8 rounded-[2rem] shadow-sm w-full md:w-auto">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 sm:mb-10 gap-6">
+        <div className="bg-white/60 backdrop-blur-xl border border-white/80 p-6 md:p-8 rounded-[2rem] shadow-sm w-full lg:w-auto">
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Financial Reports</h1>
           <p className="text-sm sm:text-base text-slate-600 mt-1 font-medium">Analyze sales performance and export data.</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full md:w-auto">
-          <div className="relative">
-            <select 
-              value={selectedMonth} 
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-full sm:w-auto bg-white/60 backdrop-blur-md border border-white/80 text-slate-700 px-5 py-3.5 rounded-[1.25rem] font-bold outline-none focus:ring-2 focus:ring-amber-500 shadow-sm appearance-none pr-10 min-w-[200px] cursor-pointer"
-            >
-              <option value="all" className="bg-white">All Time</option>
-              {availableMonths.map(m => (
-                <option key={m.value} value={m.value} className="bg-white">{m.label}</option>
-              ))}
-            </select>
-            <svg className="w-5 h-5 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path></svg>
+        <div className="flex flex-col xl:flex-row gap-3 sm:gap-4 w-full lg:w-auto">
+          
+          {/* Filters Group */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Sales Channel Filter */}
+            <div className="relative">
+              <select 
+                value={selectedChannel} 
+                onChange={(e) => setSelectedChannel(e.target.value)}
+                className="w-full sm:w-auto bg-white/60 backdrop-blur-md border border-white/80 text-slate-700 px-5 py-3.5 rounded-[1.25rem] font-bold outline-none focus:ring-2 focus:ring-blue-500 shadow-sm appearance-none pr-10 min-w-[200px] cursor-pointer"
+              >
+                <option value="all" className="bg-white">All Channels</option>
+                <option value="online" className="bg-white">Online E-commerce</option>
+                <option value="in-store" className="bg-white">In-Store (POS)</option>
+              </select>
+              <svg className="w-5 h-5 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+
+            {/* Month Filter */}
+            <div className="relative">
+              <select 
+                value={selectedMonth} 
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="w-full sm:w-auto bg-white/60 backdrop-blur-md border border-white/80 text-slate-700 px-5 py-3.5 rounded-[1.25rem] font-bold outline-none focus:ring-2 focus:ring-amber-500 shadow-sm appearance-none pr-10 min-w-[200px] cursor-pointer"
+              >
+                <option value="all" className="bg-white">All Time</option>
+                {availableMonths.map(m => (
+                  <option key={m.value} value={m.value} className="bg-white">{m.label}</option>
+                ))}
+              </select>
+              <svg className="w-5 h-5 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
           </div>
           
+          {/* Action Buttons Group */}
           <div className="flex gap-3 w-full sm:w-auto">
             <button onClick={exportToExcel} disabled={processedReport.rows.length === 0} className="flex-1 sm:flex-none justify-center bg-emerald-500 hover:bg-emerald-400 text-white shadow-[0_4px_14px_rgba(16,185,129,0.3)] px-5 py-3.5 rounded-[1.25rem] font-bold transition-all flex items-center gap-2 disabled:opacity-50 text-sm sm:text-base transform hover:-translate-y-0.5">
               <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -240,7 +271,7 @@ export default function FinancialReportsPage() {
           <div className="md:hidden space-y-4 animate-in fade-in duration-700">
             {processedReport.rows.length === 0 ? (
               <div className="bg-white/60 backdrop-blur-md p-10 text-center font-bold text-slate-500 rounded-[2rem] border border-white/80 shadow-sm">
-                No completed sales found for this period.
+                No completed sales found for this period/channel.
               </div>
             ) : (
               processedReport.rows.map((row, index) => (
@@ -283,7 +314,7 @@ export default function FinancialReportsPage() {
                 </thead>
                 <tbody className="divide-y divide-white/40">
                   {processedReport.rows.length === 0 ? (
-                    <tr><td colSpan={5} className="px-6 py-20 text-center font-bold text-slate-500">No completed sales found for this period.</td></tr>
+                    <tr><td colSpan={5} className="px-6 py-20 text-center font-bold text-slate-500">No completed sales found for this period/channel.</td></tr>
                   ) : (
                     processedReport.rows.map((row, index) => (
                       <tr key={index} className="hover:bg-white/50 transition-colors">
