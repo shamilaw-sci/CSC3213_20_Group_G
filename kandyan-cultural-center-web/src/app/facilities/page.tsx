@@ -98,12 +98,12 @@ export default function FacilitiesPage() {
       return;
     }
     
-    // Final security check
     if (dateError) return; 
 
     setIsSubmitting(true);
     setMessage({ type: '', text: '' });
 
+    // 1. Save to Supabase
     const { error } = await supabase.from('hall_bookings').insert({
       user_id: user.id,
       contact_name: formData.contact_name,
@@ -115,20 +115,35 @@ export default function FacilitiesPage() {
       status: 'pending'
     });
 
-    setIsSubmitting(false);
-
     if (error) {
+      setIsSubmitting(false);
       if (error.code === '23505') {
         setMessage({ type: 'error', text: 'Someone just booked this exact date! Please refresh and choose another.' });
       } else {
         setMessage({ type: 'error', text: error.message });
       }
     } else {
-      setMessage({ type: 'success', text: 'Your request has been successfully submitted! Check your dashboard for updates.' });
+      // 🚨 2. Trigger the "Request Received" Email via our new API
+      if (user.email) {
+        await fetch('/api/hall-bookings/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: user.email,
+            name: formData.contact_name,
+            date: formData.booking_date,
+            status: 'received' // Triggers the "Received" email template
+          })
+        }).catch(err => console.error("Email API failed:", err));
+      }
+
+      setIsSubmitting(false);
+      setMessage({ type: 'success', text: 'Your request has been successfully submitted! Check your email for confirmation.' });
+      
+      const bookedDateStr = formData.booking_date; // Capture before clearing form
       setFormData(prev => ({ ...prev, booking_date: '', event_name: '', event_details: '', max_invitees: '' }));
       
-      // Instantly block the date locally so they can't double-click submit
-      setUnavailableDates([...unavailableDates, { date: normalizeDate(formData.booking_date), reason: 'Pending approval' }]);
+      setUnavailableDates([...unavailableDates, { date: normalizeDate(bookedDateStr), reason: 'Pending approval' }]);
     }
   };
 
