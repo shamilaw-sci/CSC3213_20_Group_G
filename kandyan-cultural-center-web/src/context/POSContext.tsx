@@ -1,3 +1,5 @@
+'use client';
+
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { POSItem, CartItem, POSContextType } from '../types/pos.types';
@@ -9,24 +11,22 @@ export const POSProvider = ({ children }: { children: React.ReactNode }) => {
   const [cashierId, setCashierId] = useState<string | null>(null);
 
   const generateOrderNumber = () => {
-  const now = new Date();
-  const yy = String(now.getFullYear()).slice(-2);
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const dd = String(now.getDate()).padStart(2, '0');
-  
-  // Generates a random 4-digit number
-  const array = new Uint8Array(2);
-    window.crypto.getRandomValues(array);
-    const randomPart = Array.from(array, byte => byte.toString(16).padStart(2, '0'))
-      .join('')
-      .toUpperCase();
+    const now = new Date();
+    const yy = String(now.getFullYear()).slice(-2);
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    
+    // Generates a random 4-character hex string without relying on the window object
+    const randomPart = Math.random().toString(16).slice(2, 6).toUpperCase().padStart(4, '0');
 
-  return `ST-${yy}${mm}${dd}-${randomPart}`;
+    return `ST-${yy}${mm}${dd}-${randomPart}`;
+  };
 
-  
-};
+  const [orderNumber, setOrderNumber] = useState<string>('');
 
-const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
+  useEffect(() => {
+    setOrderNumber(generateOrderNumber());
+  }, []);
 
   const addToCart = (item: POSItem) => {
     setCart((prevCart) => {
@@ -45,13 +45,12 @@ const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
 
   // 1. NETWORK LISTENER & AUTO-SYNC
   useEffect(() => {
-    // Check initial status (only runs in browser, checking for window prevents Next.js SSR errors)
     if (typeof window !== 'undefined') {
       setIsOnline(navigator.onLine);
 
       const handleOnline = () => {
         setIsOnline(true);
-        syncOfflineOrders(); // Trigger sync immediately when connection returns
+        syncOfflineOrders(); 
       };
       
       const handleOffline = () => setIsOnline(false);
@@ -80,7 +79,7 @@ const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
           price: item.price || 0,
           stock: item.stock || 0,
           barcode: item.barcode || null,
-          type: 'merchandise' as const, // Assuming all are merchandise for error solving; adjust as needed
+          type: 'merchandise' as const, 
           color: item.color_name || null, 
           hexCode: item.hex_code || null,
           imageUrl: item.image_url || null,
@@ -88,8 +87,10 @@ const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
         }));
         
         setCachedProducts(formattedProducts);
-        // Save backup to local storage
-        localStorage.setItem('kaa_product_cache', JSON.stringify(formattedProducts));
+        
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('kaa_product_cache', JSON.stringify(formattedProducts));
+        }
       } catch (err) {
         console.error("Failed to fetch from Supabase, loading cache...", err);
         loadFromCache();
@@ -100,9 +101,11 @@ const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
   };
 
   const loadFromCache = () => {
-    const cached = localStorage.getItem('kaa_product_cache');
-    if (cached) {
-      setCachedProducts(JSON.parse(cached));
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('kaa_product_cache');
+      if (cached) {
+        setCachedProducts(JSON.parse(cached));
+      }
     }
   };
 
@@ -110,11 +113,9 @@ const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
   const processOrder = async (orderData: any, orderItemsData: any[], currentCart: any[]) => {
     if (isOnline) {
       try {
-        // First, insert the parent order header
         const { error: orderError } = await supabase.from('orders').insert(orderData);
         if (orderError) throw orderError;
 
-        // Second, insert the child items array
         const { error: itemsError } = await supabase.from('order_items').insert(orderItemsData);
         if (itemsError) throw itemsError;
 
@@ -125,16 +126,16 @@ const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
         queueOrderOffline(orderData, orderItemsData, currentCart);
       }
     } else {
-      // Offline mode: queue it all
       queueOrderOffline(orderData, orderItemsData, currentCart);
     }
   };
 
   // 4. THE OFFLINE QUEUE
   const queueOrderOffline = (orderData: any, orderItemsData: any[], currentCart: any[]) => {
+    if (typeof window === 'undefined') return;
+
     const existingQueue = JSON.parse(localStorage.getItem('kaa_offline_queue') || '[]');
     
-    // Package everything together in one neat offline envelope
     const newOrder = {
       orderData,
       orderItemsData,
@@ -145,7 +146,6 @@ const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
     existingQueue.push(newOrder);
     localStorage.setItem('kaa_offline_queue', JSON.stringify(existingQueue));
     
-    // Optimistically deduct stock from the LOCAL cache so the UI updates immediately
     const updatedCache = cachedProducts.map(product => {
       const soldItem = currentCart.find(c => c.id === product.id);
       if (soldItem) {
@@ -160,46 +160,41 @@ const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
 
   // 5. THE SYNC ENGINE
   const syncOfflineOrders = async () => {
+    if (typeof window === 'undefined') return;
+
     const queue = JSON.parse(localStorage.getItem('kaa_offline_queue') || '[]');
     if (queue.length === 0) return;
 
     console.log(`Syncing ${queue.length} offline orders to Supabase...`);
-    const remainingQueue = []; // Holds orders that fail to sync
+    const remainingQueue = []; 
 
-    // Loop through the queue and push each one
     for (let i = 0; i < queue.length; i++) {
       const order = queue[i];
       try {
-        // Push Header
         const { error: orderError } = await supabase.from('orders').insert(order.orderData);
-        if (orderError && orderError.code !== '23505') throw orderError; // If the error is anything OTHER than "Duplicate Key", throw it.
+        if (orderError && orderError.code !== '23505') throw orderError; 
 
-        // Push Items
         const { error: itemsError } = await supabase.from('order_items').insert(order.orderItemsData);
-        if (itemsError && itemsError.code !== '23505') throw itemsError; // If the error is anything OTHER than "Duplicate Key", throw it.
+        if (itemsError && itemsError.code !== '23505') throw itemsError; 
 
         console.log(`Successfully synced offline order ${order.orderData.invoice_number}`);
-        // If successful, it does NOT get added to the remainingQueue
       } catch (err) {
         console.error("Failed to sync order, retaining in queue.", err);
         remainingQueue.push(order); 
       }
     }
 
-    // Overwrite the local storage with whatever is left (empty if 100% successful)
     localStorage.setItem('kaa_offline_queue', JSON.stringify(remainingQueue));
   };
 
   const updateQuantity = (id: string, newQuantity: number) => {
-    if (newQuantity < 1) return; // Prevent going below 1 via this function
+    if (newQuantity < 1) return; 
     
     setCart(prevCart => 
       prevCart.map(item => {
         if (item.id === id) {
-          // Prevent the cart quantity from exceeding the actual physical stock
           const maxStock = item.stock || 0;
           const safeQuantity = newQuantity > maxStock ? maxStock : newQuantity;
-          
           return { ...item, quantity: safeQuantity };
         }
         return item;
@@ -208,50 +203,43 @@ const [orderNumber, setOrderNumber] = useState<string>(generateOrderNumber());
   };
 
   const removeFromCart = (id: string) => {
-  setCart(prevCart => prevCart.filter(item => item.id !== id));
-};
+    setCart(prevCart => prevCart.filter(item => item.id !== id));
+  };
 
   const clearCart = () => {
-  setCart([]);
-  setOrderNumber(generateOrderNumber()); // Generate a new order number for the next transaction
-};
+    setCart([]);
+    setOrderNumber(generateOrderNumber()); 
+  };
 
+  const applyDiscount = (id: string, percentage: number) => {
+    setCart(prevCart => prevCart.map(item => {
+      if (item.id === id) {
+        return { ...item, discountPercentage: percentage, customPrice: undefined };
+      }
+      return item;
+    }));
+  };
 
-  // Apply a percentage discount
-const applyDiscount = (id: string, percentage: number) => {
-  setCart(prevCart => prevCart.map(item => {
-    if (item.id === id) {
-      // We clear customPrice if they apply a discount, so they don't conflict
-      return { ...item, discountPercentage: percentage, customPrice: undefined };
-    }
-    return item;
-  }));
-};
-
-// Apply a manual flat price
-const applyCustomPrice = (id: string, price: number) => {
-  setCart(prevCart => prevCart.map(item => {
-    if (item.id === id) {
-      // We clear discount if they apply a custom price
-      return { ...item, customPrice: price, discountPercentage: undefined };
-    }
-    return item;
-  }));
-};
+  const applyCustomPrice = (id: string, price: number) => {
+    setCart(prevCart => prevCart.map(item => {
+      if (item.id === id) {
+        return { ...item, customPrice: price, discountPercentage: undefined };
+      }
+      return item;
+    }));
+  };
 
   const cartTotal = cart.reduce((total, item) => {
-  let effectivePrice = item.price;
-  
-  if (item.customPrice !== undefined) {
-    effectivePrice = item.customPrice;
-  } else if (item.discountPercentage) {
-    effectivePrice = item.price - (item.price * (item.discountPercentage / 100));
-  }
-  
-  return total + (effectivePrice * item.quantity);
-}, 0);
-
-  
+    let effectivePrice = item.price;
+    
+    if (item.customPrice !== undefined) {
+      effectivePrice = item.customPrice;
+    } else if (item.discountPercentage) {
+      effectivePrice = item.price - (item.price * (item.discountPercentage / 100));
+    }
+    
+    return total + (effectivePrice * item.quantity);
+  }, 0);
 
   return (
     <POSContext.Provider value={{ 
@@ -263,12 +251,14 @@ const applyCustomPrice = (id: string, price: number) => {
       updateQuantity, 
       applyDiscount, 
       applyCustomPrice, 
-      orderNumber, isOnline, 
+      orderNumber, 
+      isOnline, 
       processOrder, 
       cachedProducts, 
       loadProducts, 
       cashierId,
-      setCashierId}}>
+      setCashierId
+    }}>
       {children}
     </POSContext.Provider>
   );
