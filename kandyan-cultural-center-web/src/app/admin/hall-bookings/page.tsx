@@ -11,9 +11,10 @@ export default function HallBookingsAdminPage() {
 
   const fetchBookings = async () => {
     setIsLoading(true);
+    // 🚨 UPDATED: Added a join to fetch the customer's email from the profiles table
     const { data } = await supabase
       .from('hall_bookings')
-      .select('*')
+      .select('*, profiles:user_id(email)')
       .order('booking_date', { ascending: false });
       
     if (data) setBookings(data);
@@ -24,12 +25,13 @@ export default function HallBookingsAdminPage() {
     fetchBookings();
   }, []);
 
-  const handleStatusChange = async (id: string, newStatus: string) => {
+  const handleStatusChange = async (id: string, newStatus: 'approved' | 'rejected') => {
     setUpdatingId(id);
     
-    setBookings(prev => prev.map(b => b.id === id ? { ...b, status: newStatus } : b));
-    if (selectedBooking?.id === id) setSelectedBooking({ ...selectedBooking, status: newStatus });
+    // 1. Get the current booking details so we can email them
+    const currentBooking = bookings.find(b => b.id === id);
 
+    // 2. Update the Database
     const { error } = await supabase
       .from('hall_bookings')
       .update({ status: newStatus })
@@ -38,6 +40,30 @@ export default function HallBookingsAdminPage() {
     if (error) {
       alert(`Status update failed: ${error.message}`);
       fetchBookings(); 
+    } else {
+      // Update local state instantly so the UI feels fast
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, status: newStatus } : b));
+      if (selectedBooking?.id === id) setSelectedBooking({ ...selectedBooking, status: newStatus });
+
+      // 🚨 3. Send the Automated HTML Email!
+      const customerEmail = currentBooking?.profiles?.email;
+      if (customerEmail) {
+        try {
+          await fetch('/api/hall-bookings/notify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: customerEmail,
+              name: currentBooking.contact_name,
+              date: currentBooking.booking_date,
+              status: newStatus
+            })
+          });
+        } catch (err) {
+          console.error("Email API failed:", err);
+          alert("Database updated, but failed to send the email notification.");
+        }
+      }
     }
     
     setUpdatingId(null);
@@ -136,6 +162,11 @@ export default function HallBookingsAdminPage() {
                   <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">Phone Number</p>
                   <p className="font-bold text-slate-900">{selectedBooking.contact_phone}</p>
                 </div>
+                {/* Email Display Add-on */}
+                <div className="col-span-2 bg-white/60 backdrop-blur-md p-5 rounded-[1.5rem] border border-white/80 shadow-sm">
+                  <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">Account Email</p>
+                  <p className="font-bold text-slate-900">{selectedBooking.profiles?.email || 'N/A'}</p>
+                </div>
               </div>
 
               <div className="bg-white/60 backdrop-blur-md p-6 rounded-[2rem] border border-white/80 shadow-sm">
@@ -150,7 +181,7 @@ export default function HallBookingsAdminPage() {
                 
                 {updatingId === selectedBooking.id ? (
                   <div className="w-full py-4 rounded-[1.25rem] border border-white/80 bg-white/50 flex items-center justify-center gap-3 text-sm font-bold text-slate-600 shadow-sm">
-                    <div className="w-5 h-5 border-2 border-slate-300 border-t-amber-600 rounded-full animate-spin"></div> Updating Database...
+                    <div className="w-5 h-5 border-2 border-slate-300 border-t-amber-600 rounded-full animate-spin"></div> Updating Database & Emailing...
                   </div>
                 ) : (
                   <div className="flex gap-4">
@@ -168,7 +199,7 @@ export default function HallBookingsAdminPage() {
                     </button>
                   </div>
                 )}
-                <p className="text-[10px] text-center text-slate-500 mt-4 font-bold uppercase tracking-widest">Status updates immediately reflect on the user's dashboard.</p>
+                <p className="text-[10px] text-center text-slate-500 mt-4 font-bold uppercase tracking-widest">Status updates immediately reflect on the user's dashboard and trigger an email.</p>
               </div>
 
             </div>

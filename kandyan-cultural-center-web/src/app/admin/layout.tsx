@@ -125,7 +125,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             pathname={pathname} 
             onClick={() => setIsMobileMenuOpen(false)} 
           />
-          
+        
+
           {/* RBAC: Only true admins can see Financial Reports */}
           {userRole === 'admin' && (
             <SidebarLink 
@@ -194,6 +195,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             href="/admin/artisans/earnings" 
             icon="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
             label="Artisan Payouts" 
+            pathname={pathname} 
+            onClick={() => setIsMobileMenuOpen(false)} 
+          />
+          <div className="pt-6 pb-2">
+            <p className="px-4 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+              POS System Management
+            </p>
+          </div>
+          <SidebarLink 
+            href="/admin/pos-sessions" 
+            icon="M9 14l6-6m-4 6v.01M15 10v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+            label="POS Sessions" 
+            pathname={pathname} 
+            onClick={() => setIsMobileMenuOpen(false)} 
+          />
+
+          <SidebarLink 
+            href="/admin/barcodes" 
+            icon="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" 
+            label="Print Barcodes" 
             pathname={pathname} 
             onClick={() => setIsMobileMenuOpen(false)} 
           />
