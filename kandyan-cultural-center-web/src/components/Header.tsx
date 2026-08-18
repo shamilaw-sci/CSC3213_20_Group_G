@@ -312,7 +312,7 @@ export default function Header() {
         <div className="container mx-auto px-6 h-20 flex items-center justify-between flex-shrink-0 border-b border-slate-100">
           <Link href="/" onClick={closeMenu} className="flex items-center space-x-3">
             <div className="relative w-10 h-10">
-              <Image src="/android-chrome-512x512.png" alt="KCC Logo" fill className="object-contain" />
+              <Image src="/logo.png" alt="KCC Logo" fill className="object-contain" />
             </div>
           </Link>
           <button 
