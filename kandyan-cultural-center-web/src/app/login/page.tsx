@@ -261,7 +261,7 @@ export default function LoginPage() {
                 </div>
               </div>
               <span className={`text-xs font-medium leading-relaxed select-none ${showCheckboxError ? 'text-rose-600' : 'text-slate-600'}`}>
-                I agree to the <Link href="/terms-and-conditions" className="font-extrabold text-slate-800 hover:text-amber-600 transition-colors" target="_blank">Terms</Link>, <Link href="/privacy-policy" className="font-extrabold text-slate-800 hover:text-amber-600 transition-colors" target="_blank">Privacy</Link>, and <Link href="/refund-policy" className="font-extrabold text-slate-800 hover:text-amber-600 transition-colors" target="_blank">Return Policy</Link>.
+                I agree to the <Link href="/terms" className="font-extrabold text-slate-800 hover:text-amber-600 transition-colors" target="_blank">Terms</Link>, <Link href="/privacy" className="font-extrabold text-slate-800 hover:text-amber-600 transition-colors" target="_blank">Privacy</Link>, and <Link href="/refund-policy" className="font-extrabold text-slate-800 hover:text-amber-600 transition-colors" target="_blank">Return Policy</Link>.
               </span>
             </label>
 
