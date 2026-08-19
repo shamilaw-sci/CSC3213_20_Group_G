@@ -21,7 +21,7 @@ export default function POSPage() {
   const [hasAccess, setHasAccess] = useState(false);
   const [cashierName, setCashierName] = useState<string>('Cashier');
   const [userRole, setUserRole] = useState<string>(''); 
-  const [userId, setUserId] = useState<string>(''); // NEW: Storing ID for sessions
+  const [userId, setUserId] = useState<string>(''); 
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
 
   // --- REAL-TIME NETWORK STATE ---
@@ -33,6 +33,10 @@ export default function POSPage() {
   const [isCameraActive, setIsCameraActive] = useState(false); 
   const [searchQuery, setSearchQuery] = useState('');
   const [isOnline, setIsOnline] = useState(true); 
+
+  // --- MOBILE UI STATE ---
+  const [isMobileSearchActive, setIsMobileSearchActive] = useState(false);
+  const [lastCartTotal, setLastCartTotal] = useState(cartTotal); // Tracks add-to-cart events
 
   // --- SORTING & FILTERING STATE ---
   const [sortBy, setSortBy] = useState<string>('name-asc');
@@ -48,11 +52,11 @@ export default function POSPage() {
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
   
   // --- SESSION & BLIND CLOSEOUT STATE ---
-  const [sessionId, setSessionId] = useState<string | null>(null); // NEW: Track DB row
+  const [sessionId, setSessionId] = useState<string | null>(null); 
   const [startingCash, setStartingCash] = useState<string>(''); 
   const [declaredCash, setDeclaredCash] = useState<string>('');
-  const [expectedCashState, setExpectedCashState] = useState<number>(0); // NEW
-  const [varianceState, setVarianceState] = useState<number>(0); // NEW
+  const [expectedCashState, setExpectedCashState] = useState<number>(0); 
+  const [varianceState, setVarianceState] = useState<number>(0); 
   const [varianceMessage, setVarianceMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
   const [sessionRemark, setSessionRemark] = useState<string>('');
   const [isVerifyingCash, setIsVerifyingCash] = useState(false);
@@ -82,7 +86,6 @@ export default function POSPage() {
     setMaxPrice('');
   };
 
-  // ---  SUPABASE AUTH, RBAC, & SESSION RECOVERY ---
   // --- 1. SUPABASE AUTH, RBAC, & SESSION RECOVERY ---
   useEffect(() => {
     const checkAccess = async () => {
@@ -114,7 +117,6 @@ export default function POSPage() {
           setUserRole(profile.role);
           if (setCashierId) setCashierId(currentUserId); 
           
-          // Fetch active session AND its start_time
           const { data: activeSession } = await supabase
             .from('pos_sessions')
             .select('id, starting_float, start_time')
@@ -126,9 +128,7 @@ export default function POSPage() {
             const sessionDate = new Date(activeSession.start_time).toDateString();
             const todayDate = new Date().toDateString();
 
-            // Check if the session was started on a previous day
             if (sessionDate !== todayDate) {
-              // Abandoned Session Detected: Force close it
               await supabase
                 .from('pos_sessions')
                 .update({
@@ -138,9 +138,7 @@ export default function POSPage() {
                 })
                 .eq('id', activeSession.id);
                 
-              // Do NOT resume. Let them stay on the float entry screen for today.
             } else {
-              // Valid session for today: Resume it
               setSessionId(activeSession.id);
               setStartingCash(activeSession.starting_float.toString());
               setDisclaimerAccepted(true); 
@@ -161,11 +159,9 @@ export default function POSPage() {
     checkAccess();
   }, [setCashierId]);
 
-
   // --- REAL-TIME NETWORK MONITOR ---
   useEffect(() => {
     const checkConnection = async () => {
-      // 1. Check if the browser thinks we have OS-level internet
       if (!navigator.onLine) {
         setNetworkStatus('Disconnected');
         return;
@@ -173,15 +169,12 @@ export default function POSPage() {
       
       const startTime = Date.now();
       try {
-        // 2. Ping Supabase to see if we can actually reach the database
-        // We fetch a single row just to test the connection
         const { error } = await supabase.from('profiles').select('id').limit(1);
         const pingTime = Date.now() - startTime;
         
         if (error) {
           setNetworkStatus('Disconnected');
         } else if (pingTime > 3000) { 
-          // If it takes more than 3 seconds to respond, the connection is struggling
           setNetworkStatus('Limited Connection');
         } else {
           setNetworkStatus('Connected');
@@ -191,14 +184,10 @@ export default function POSPage() {
       }
     };
 
-    // Set up native browser listeners for instant updates
     window.addEventListener('online', checkConnection);
     window.addEventListener('offline', () => setNetworkStatus('Disconnected'));
 
-    // Set up a heartbeat to check connection quality every 30 seconds
     const pingInterval = setInterval(checkConnection, 30000);
-    
-    // Run an initial check on load
     checkConnection();
 
     return () => {
@@ -207,7 +196,6 @@ export default function POSPage() {
       clearInterval(pingInterval);
     };
   }, []);
-
 
   // --- REALTIME ONLINE ORDERS LISTENER ---
   useEffect(() => {
@@ -260,9 +248,15 @@ export default function POSPage() {
     };
   }, [disclaimerAccepted, hasInitiallyChecked]);
 
-  // --- 2. HANDLERS ---
+  // --- AUTO-CLOSE MOBILE GRID ON ADD TO CART ---
+  useEffect(() => {
+    if (isMobileSearchActive && cartTotal > lastCartTotal) {
+      setIsMobileSearchActive(false); // Snap grid closed so they can see the cart
+    }
+    setLastCartTotal(cartTotal);
+  }, [cartTotal, isMobileSearchActive, lastCartTotal]);
 
-  // NEW: Create Session in DB
+  // --- 2. HANDLERS ---
   const handleStartSession = async () => {
     if (!startingCash) return;
     try {
@@ -314,7 +308,6 @@ export default function POSPage() {
       const declared = parseFloat(declaredCash);
       const variance = declared - expectedCash;
 
-      // Save for DB update on logout
       setExpectedCashState(expectedCash);
       setVarianceState(variance);
 
@@ -355,7 +348,6 @@ export default function POSPage() {
       return; 
     }
 
-    // NEW: Update DB to close the session before signing out
     if (sessionId && isCashVerified) {
       try {
         await supabase
@@ -379,8 +371,6 @@ export default function POSPage() {
     setIsLogoutConfirmOpen(false);
     window.location.reload(); 
   };
-
-  const toggleNetwork = () => setIsOnline(!isOnline);
 
   const handleBarcodeScanned = (barcode: string) => {
     setSearchQuery(barcode); 
@@ -466,42 +456,38 @@ export default function POSPage() {
     <div className="flex flex-col h-screen bg-stone-100 font-sans relative">
       
       {/* --- TOP ACTION BAR --- */}
-      <header className="relative flex justify-between items-center bg-white px-6 py-4 shadow-sm border-b border-stone-200 z-30 shrink-0">
-        <div className="flex items-center w-1/3 gap-4">
-          <img src="/logo.png" alt="Kandyan Cultural Centre Logo" className="w-14 h-10.5  object-cover " />
-          <div className="flex items-center w-1/3 gap-4">
+      <header className="relative flex justify-between items-center bg-white px-4 md:px-6 py-4 shadow-sm border-b border-stone-200 z-30 shrink-0">
+        <div className="flex items-center w-1/3 gap-3 md:gap-4">
+          <img src="/logo.png" alt="Kandyan Cultural Centre Logo" className="w-10 md:w-14 h-auto md:h-10.5 object-cover shrink-0" />
           
-          
-          {/* DYNAMIC NETWORK BADGE */}
-          <div className={`flex items-center px-3 py-1.5 rounded-full border shadow-sm select-none ${
+          <div className={`flex items-center justify-center p-2 md:px-3 md:py-1.5 rounded-full border shadow-sm select-none shrink-0 ${
             networkStatus === 'Connected' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 
             networkStatus === 'Limited Connection' ? 'bg-amber-50 border-amber-200 text-amber-700' : 
             'bg-red-50 border-red-200 text-red-700'
           }`} title={`Current Status: ${networkStatus}`}>
-            <span className={`w-2.5 h-2.5 rounded-full mr-2 shadow-sm ${
+            <span className={`w-2.5 h-2.5 rounded-full mr-0 md:mr-2 shadow-sm ${
               networkStatus === 'Connected' ? 'bg-emerald-500 animate-pulse' : 
               networkStatus === 'Limited Connection' ? 'bg-amber-500' : 
               'bg-red-500'
             }`}></span>
-            <span className="text-xs font-bold uppercase tracking-wider">{networkStatus}</span>
+            <span className="hidden md:inline text-xs font-bold uppercase tracking-wider">{networkStatus}</span>
           </div>
         </div>
-        </div>
 
-        <div className="w-1/3 text-center flex justify-center">
-          <h1 className="text-xl md:text-2xl font-black text-stone-800 tracking-wide whitespace-nowrap">
-            Kandyan Cultural Centre <span className="text-stone-400 font-medium px-2">|</span> POS Terminal
+        <div className="w-1/2 text-center flex justify-center overflow-hidden">
+          <h1 className="text-lg md:text-xl lg:text-2xl font-black text-stone-800 tracking-wide whitespace-nowrap truncate px-2">
+            Kandyan Cultural Centre <span className="hidden md:inline text-stone-400 font-medium px-2">|</span> <span className="hidden md:inline">POS Terminal</span>
           </h1>
         </div>
 
         <div className="flex items-center justify-end w-1/3 relative">
           <div>
-            <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex items-center px-4 py-2 bg-stone-50 hover:bg-stone-100 text-stone-800 font-semibold rounded-lg border border-stone-200 transition-colors shadow-sm">
-              <div className="w-8 h-8 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mr-3 font-bold text-sm uppercase">
+            <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex items-center p-1.5 md:px-4 md:py-2 bg-stone-50 hover:bg-stone-100 text-stone-800 font-semibold rounded-full md:rounded-lg border border-stone-200 transition-colors shadow-sm shrink-0">
+              <div className="w-8 h-8 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mr-0 md:mr-3 font-bold text-sm uppercase shrink-0">
                 {cashierName.charAt(0)}
               </div>
-              <span className="mr-2">{cashierName}</span>
-              <svg className="w-3.5 h-3.5 text-stone-400 ml-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <span className="hidden lg:inline mr-2">{cashierName}</span>
+              <svg className="hidden md:inline w-3.5 h-3.5 text-stone-400 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
@@ -509,17 +495,11 @@ export default function POSPage() {
             {isDropdownOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-stone-200 rounded-xl shadow-xl z-50 overflow-hidden">
+                <div className="absolute right-1 mt-2 w-55 bg-white border border-stone-200 rounded-xl shadow-xl z-50 overflow-hidden">
                   <div className="px-4 py-3 border-b border-stone-100 bg-stone-50">
                     <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Active Session</p>
                   </div>
                   <ul className="py-2">
-                    <li>
-                      <button className="w-full text-left px-4 py-2 text-stone-700 hover:bg-stone-100 transition-colors flex items-center" onClick={() => setIsDropdownOpen(false)}>
-                        <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                        Settings
-                      </button>
-                    </li>
                     <li>
                       <button 
                         onClick={() => {
@@ -529,6 +509,7 @@ export default function POSPage() {
                           setDeclaredCash('');
                           setVarianceMessage(null);
                           setIsCashVerified(false);
+                          setSessionRemark(''); 
                           setIsLogoutConfirmOpen(true);
                           setIsDropdownOpen(false);
                         }}
@@ -547,39 +528,115 @@ export default function POSPage() {
       </header>
 
       {/* --- MAIN BODY AREA --- */}
-      <div className="flex flex-col flex-1 overflow-hidden z-10">
+      <div className="flex flex-col flex-1 overflow-hidden z-10 relative">
         
-        <div className="flex justify-between items-center bg-white px-6 py-3 border-b border-stone-200 shrink-0 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
-          
-          <div className="flex-1 flex justify-start items-center gap-3">
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="bg-stone-50 border border-stone-200 text-stone-700 text-sm font-semibold rounded-xl pl-4 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-amber-600 cursor-pointer shadow-sm">
+        {/* --- SECONDARY ACTION BAR --- */}
+        <div className="flex justify-between items-center bg-white px-3 md:px-6 py-3 border-b border-stone-200 shrink-0 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] z-50 gap-2 md:gap-4 relative">
+          <div className="flex shrink-0 items-center gap-2 md:gap-3 relative z-[60]">
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="bg-stone-50 border border-stone-200 text-stone-700 text-sm rounded-lg px-2 md:px-3 py-2 focus:outline-none focus:border-amber-500 font-medium cursor-pointer shadow-sm w-[100px] md:w-auto">
               <option value="name-asc">Sort: A to Z</option>
               <option value="name-desc">Sort: Z to A</option>
               <option value="price-low">Price: Low to High</option>
               <option value="price-high">Price: High to Low</option>
             </select>
 
-            <button onClick={() => setIsFilterMenuOpen(!isFilterMenuOpen)} className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-colors shadow-sm ${isFilterMenuOpen || isFilterActive ? 'bg-amber-100 border-amber-300 text-amber-800' : 'bg-stone-50 border-stone-200 text-stone-700 hover:bg-stone-100'}`}>
-              <span>Filters</span>
+            <button onClick={() => { setIsFilterMenuOpen(!isFilterMenuOpen); setIsMobileSearchActive(true); }} className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2 rounded-lg border text-sm font-semibold transition-colors shadow-sm ${isFilterMenuOpen || isFilterActive ? 'bg-amber-100 border-amber-300 text-amber-800' : 'bg-stone-50 border-stone-200 text-stone-700 hover:bg-stone-100'}`}>
+              <span className="hidden md:inline">Filters</span>
+              <svg className="md:hidden w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
               {isFilterActive && (
                 <div onClick={(e) => { e.stopPropagation(); clearAllFilters(); }} className="ml-1 flex items-center justify-center w-5 h-5 rounded-full bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold transition-colors" title="Clear all filters">
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
                 </div>
               )}
             </button>
+
+            {/* --- MOVED FILTER POPOVER MENU --- */}
+            {isFilterMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setIsFilterMenuOpen(false)} />
+                <div className="absolute top-full left-0 mt-3 z-50 w-72 md:w-80 bg-white rounded-xl shadow-2xl border border-stone-200 p-5 animate-in slide-in-from-top-2">
+                  <div className="flex justify-between items-center mb-3 border-b border-stone-100 pb-2">
+                    <h3 className="font-bold text-stone-800">Filter Inventory</h3>
+                    {isFilterActive && (
+                      <button onClick={clearAllFilters} className="text-xs font-semibold text-amber-700 hover:text-amber-800 underline">Reset All</button>
+                    )}
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider block mb-2">Category</label>
+                    <select value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)} className="w-full bg-stone-50 border border-stone-200 text-stone-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 font-medium">
+                      <option value="All">All Categories</option>
+                      <option value="Lacquerware">Lacquerware</option>
+                      <option value="Masks">Masks</option>
+                      <option value="Weaving">Weaving</option>
+                      <option value="Wood Carvings">Wood Carvings</option>
+                      <option value="Brassware">Brassware</option>
+                      <option value="Paintings">Paintings</option>
+                    </select>
+                  </div>
+
+                  <div className="mb-4 pt-3 border-t border-stone-100">
+                    <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider block mb-2">Price Range (Rs.)</label>
+                    <div className="mb-3 px-1">
+                      <input type="range" min="0" max={highestPrice} step="500" value={maxPrice === '' ? highestPrice : Number(maxPrice)} onChange={(e) => setMaxPrice(e.target.value)} className="w-full accent-amber-700 cursor-pointer h-1.5 bg-stone-200 rounded-lg" />
+                      <div className="flex justify-between text-[10px] text-stone-400 font-mono mt-1 font-semibold">
+                        <span>Rs. 0</span>
+                        <span>Rs. {highestPrice.toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <span className="text-[10px] text-stone-400 font-semibold uppercase block mb-1">Min Price</span>
+                        <input type="number" min="0" placeholder="0" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} className="w-full bg-stone-50 border border-stone-200 text-stone-800 text-xs font-bold rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-600" />
+                      </div>
+                      <span className="text-stone-300 font-bold self-end mb-1">-</span>
+                      <div className="flex-1">
+                        <span className="text-[10px] text-stone-400 font-semibold uppercase block mb-1">Max Price</span>
+                        <input type="number" min="0" placeholder="Any" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className="w-full bg-stone-50 border border-stone-200 text-stone-800 text-xs font-bold rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-600" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-2 pt-3 border-t border-stone-100">
+                    <span className="text-sm font-semibold text-stone-700">In Stock Only</span>
+                    <button onClick={() => { setInStockOnly(!inStockOnly); if (!inStockOnly) setOutOfStockOnly(false); }} className={`w-11 h-6 rounded-full transition-colors relative ${inStockOnly ? 'bg-emerald-500' : 'bg-stone-300'}`}>
+                      <span className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${inStockOnly ? 'translate-x-5' : 'translate-x-0'}`}></span>
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="text-sm font-semibold text-stone-700">Out of Stock Only</span>
+                    <button onClick={() => { setOutOfStockOnly(!outOfStockOnly); if (!outOfStockOnly) setInStockOnly(false); }} className={`w-11 h-6 rounded-full transition-colors relative ${outOfStockOnly ? 'bg-red-500' : 'bg-stone-300'}`}>
+                      <span className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${outOfStockOnly ? 'translate-x-5' : 'translate-x-0'}`}></span>
+                    </button>
+                  </div>
+                  
+                  <button onClick={() => setIsFilterMenuOpen(false)} className="w-full mt-5 bg-amber-700 hover:bg-amber-800 text-white font-bold py-2 rounded-lg text-sm transition-colors shadow-sm">
+                    Apply Filters
+                  </button>
+                </div>
+              </>
+            )}
           </div>
 
-          <div className="w-[500px] relative shrink-0">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <svg className="w-5 h-5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          <div className="flex-1 min-w-[120px] max-w-[500px] relative shrink mx-2 md:mx-4 z-50">
+            <div className="absolute inset-y-0 left-0 pl-3 md:pl-4 flex items-center pointer-events-none">
+              <svg className="w-4 h-4 md:w-5 md:h-5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             </div>
-            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Scan barcode with gun or search item name..." className="w-full pl-12 pr-14 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-600 focus:bg-white transition-all text-stone-800 font-medium shadow-inner" autoFocus />
-            <button onClick={() => setIsCameraActive(!isCameraActive)} className={`absolute inset-y-0 right-2 px-2 flex items-center justify-center transition-colors ${isCameraActive ? 'text-amber-700' : 'text-stone-400 hover:text-amber-600'}`}>
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            <input 
+              type="text" 
+              value={searchQuery} 
+              onChange={(e) => setSearchQuery(e.target.value)} 
+              onFocus={() => setIsMobileSearchActive(true)}
+              placeholder="Scan barcode or search..." 
+              className={`w-full pl-9 md:pl-12 pr-10 md:pr-14 py-2 md:py-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-600 focus:bg-white transition-all text-sm md:text-base text-stone-800 font-medium ${isMobileSearchActive ? 'shadow-lg ring-2 ring-amber-500' : 'shadow-inner'}`} 
+            />
+            <button onClick={() => { setIsCameraActive(!isCameraActive); setIsMobileSearchActive(true); }} className={`absolute inset-y-0 right-1 md:right-2 px-2 flex items-center justify-center transition-colors ${isCameraActive ? 'text-amber-700' : 'text-stone-400 hover:text-amber-600'}`}>
+              <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             </button>
           </div>
 
-          <div className="flex-1 flex justify-end items-center gap-3">
+          <div className="flex shrink-0 justify-end items-center gap-2 md:gap-3">
              <div className="relative flex items-center">
                {showNewOrderBubble && (
                  <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-max animate-bounce bg-red-600 text-white text-xs font-black px-3 py-1.5 rounded-lg shadow-xl z-50">
@@ -587,11 +644,11 @@ export default function POSPage() {
                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-4 border-t-red-600"></div>
                  </div>
                )}
-               <button onClick={() => { setIsOnlineOrdersOpen(true); setShowNewOrderBubble(false); }} className="flex items-center gap-2 px-4 py-2 bg-sky-50 border-sky-200 hover:bg-sky-100 text-sky-800 text-sm font-bold rounded-xl border transition-colors shadow-sm relative">
+               <button onClick={() => { setIsOnlineOrdersOpen(true); setShowNewOrderBubble(false); }} className="flex items-center justify-center gap-2 p-2 xl:px-4 xl:py-2 bg-sky-50 border-sky-200 hover:bg-sky-100 text-sky-800 text-sm font-bold rounded-xl border transition-colors shadow-sm relative">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                   </svg> 
-                  Web Orders
+                  <span className="hidden lg:inline">Web Orders</span>
                   {pendingOnlineCount > 0 && (
                     <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-black text-white shadow-md ring-2 ring-white">
                       {pendingOnlineCount}
@@ -601,86 +658,42 @@ export default function POSPage() {
              </div>
 
              {userRole === 'admin' && (
-               <button onClick={() => setIsHistoryOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 text-sm font-semibold rounded-xl border border-stone-200 transition-colors shadow-sm">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg> History
+               <button onClick={() => setIsHistoryOpen(true)} className="flex items-center justify-center gap-2 p-2 xl:px-4 xl:py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 text-sm font-semibold rounded-xl border border-stone-200 transition-colors shadow-sm">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg> 
+                  <span className="hidden lg:inline">History</span>
                </button>
              )}
-             <button onClick={() => setIsCalculatorOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 text-sm font-semibold rounded-xl border border-stone-200 transition-colors shadow-sm">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg> Calculator
+             <button onClick={() => setIsCalculatorOpen(true)} className="flex items-center justify-center gap-2 p-2 xl:px-4 xl:py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 text-sm font-semibold rounded-xl border border-stone-200 transition-colors shadow-sm">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg> 
+                <span className="hidden lg:inline">Calculator</span>
              </button>
           </div>
         </div>
 
-        {/* --- FILTER POPOVER MENU --- */}
-        {isFilterMenuOpen && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setIsFilterMenuOpen(false)} />
-            <div className="absolute top-[140px] left-6 z-50 w-80 bg-white rounded-xl shadow-2xl border border-stone-200 p-5 animate-in slide-in-from-top-2">
-              <div className="flex justify-between items-center mb-3 border-b border-stone-100 pb-2">
-                <h3 className="font-bold text-stone-800">Filter Inventory</h3>
-                {isFilterActive && (
-                  <button onClick={clearAllFilters} className="text-xs font-semibold text-amber-700 hover:text-amber-800 underline">Reset All</button>
-                )}
-              </div>
-              
-              <div className="mb-4">
-                <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider block mb-2">Category</label>
-                <select value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)} className="w-full bg-stone-50 border border-stone-200 text-stone-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 font-medium">
-                  <option value="All">All Categories</option>
-                  <option value="Lacquerware">Lacquerware</option>
-                  <option value="Masks">Masks</option>
-                  <option value="Weaving">Weaving</option>
-                  <option value="Wood Carvings">Wood Carvings</option>
-                  <option value="Brassware">Brassware</option>
-                  <option value="Paintings">Paintings</option>
-                </select>
-              </div>
+        
 
-              <div className="mb-4 pt-3 border-t border-stone-100">
-                <label className="text-xs font-semibold text-stone-500 uppercase tracking-wider block mb-2">Price Range (Rs.)</label>
-                <div className="mb-3 px-1">
-                  <input type="range" min="0" max={highestPrice} step="500" value={maxPrice === '' ? highestPrice : Number(maxPrice)} onChange={(e) => setMaxPrice(e.target.value)} className="w-full accent-amber-700 cursor-pointer h-1.5 bg-stone-200 rounded-lg" />
-                  <div className="flex justify-between text-[10px] text-stone-400 font-mono mt-1 font-semibold">
-                    <span>Rs. 0</span>
-                    <span>Rs. {highestPrice.toLocaleString()}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1">
-                    <span className="text-[10px] text-stone-400 font-semibold uppercase block mb-1">Min Price</span>
-                    <input type="number" min="0" placeholder="0" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} className="w-full bg-stone-50 border border-stone-200 text-stone-800 text-xs font-bold rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-600" />
-                  </div>
-                  <span className="text-stone-300 font-bold self-end mb-1">-</span>
-                  <div className="flex-1">
-                    <span className="text-[10px] text-stone-400 font-semibold uppercase block mb-1">Max Price</span>
-                    <input type="number" min="0" placeholder="Any" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className="w-full bg-stone-50 border border-stone-200 text-stone-800 text-xs font-bold rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-600" />
-                  </div>
-                </div>
-              </div>
+        {/* --- MAIN CONTENT FLEX BOX --- */}
+        <div className="flex flex-1 overflow-hidden relative">
+          
+          {/* NEW: FLOATING CLOSE BUTTON (Mobile Only) */}
+          {isMobileSearchActive && (
+            <button 
+              onClick={() => setIsMobileSearchActive(false)}
+              className="md:hidden absolute top-4 right-4 z-[50] flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-full shadow-[0_8px_30px_rgb(220,38,38,0.4)] font-black text-sm uppercase tracking-wider border-2 border-white/20 transition-all active:scale-95"
+            >
+              <span>Close</span>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
 
-              <div className="flex items-center justify-between mt-2 pt-3 border-t border-stone-100">
-                <span className="text-sm font-semibold text-stone-700">In Stock Only</span>
-                <button onClick={() => { setInStockOnly(!inStockOnly); if (!inStockOnly) setOutOfStockOnly(false); }} className={`w-11 h-6 rounded-full transition-colors relative ${inStockOnly ? 'bg-emerald-500' : 'bg-stone-300'}`}>
-                  <span className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${inStockOnly ? 'translate-x-5' : 'translate-x-0'}`}></span>
-                </button>
-              </div>
+          {/* PRODUCT GRID AREA (Hidden on mobile unless Search/Filter/Camera is active) */}
+          <div className={`
+            ${isMobileSearchActive ? 'absolute inset-0 z-40 flex flex-col bg-stone-100 p-2 overflow-y-auto animate-in slide-in-from-bottom-4' : 'hidden'}
+            md:block md:static md:flex-1 md:bg-white md:p-6 md:rounded-2xl md:shadow-sm md:border md:border-stone-200 md:overflow-y-auto md:animate-none
+          `}>
 
-              <div className="flex items-center justify-between mt-3">
-                <span className="text-sm font-semibold text-stone-700">Out of Stock Only</span>
-                <button onClick={() => { setOutOfStockOnly(!outOfStockOnly); if (!outOfStockOnly) setInStockOnly(false); }} className={`w-11 h-6 rounded-full transition-colors relative ${outOfStockOnly ? 'bg-red-500' : 'bg-stone-300'}`}>
-                  <span className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${outOfStockOnly ? 'translate-x-5' : 'translate-x-0'}`}></span>
-                </button>
-              </div>
-              
-              <button onClick={() => setIsFilterMenuOpen(false)} className="w-full mt-5 bg-amber-700 hover:bg-amber-800 text-white font-bold py-2 rounded-lg text-sm transition-colors shadow-sm">
-                Apply Filters
-              </button>
-            </div>
-          </>
-        )}
-
-        <div className="flex flex-1 overflow-hidden">
-          <div className="flex-1 bg-white p-6 rounded-2xl shadow-sm border border-stone-200 overflow-y-auto">
             {isCameraActive ? (
               <div className="py-8 flex flex-col items-center justify-center animate-in fade-in duration-200">
                 <CameraScanner onScanSuccess={handleBarcodeScanned} />
@@ -698,7 +711,8 @@ export default function POSPage() {
               />
             )}
           </div>
-          <div className="flex-[1] min-w-[350px] bg-white border-l border-stone-200 p-6 flex flex-col shadow-[-4px_0_24px_-8px_rgba(0,0,0,0.05)]">
+
+          <div className="flex-1 w-full md:w-auto md:flex-[1] md:min-w-[350px] bg-white md:border-l border-stone-200 p-4 md:p-6 flex flex-col shadow-[-4px_0_24px_-8px_rgba(0,0,0,0.05)] z-10 overflow-y-auto">
               <CartSidebar />
           </div>
         </div>
@@ -708,7 +722,7 @@ export default function POSPage() {
       {isLogoutConfirmOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-6">
+            <div className="p-6 overflow-y-auto max-h-[85vh]">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-2xl font-black text-stone-800">End of Shift</h3>
                 <div className="w-12 h-12 bg-stone-100 text-stone-600 rounded-full flex items-center justify-center shadow-sm">
@@ -756,7 +770,7 @@ export default function POSPage() {
                 )}
               </div>
 
-              <div className="mb-2 p-4 bg-stone-50 border border-stone-200 rounded-xl">
+              <div className="mb-6 p-4 bg-stone-50 border border-stone-200 rounded-xl">
                 <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Step 2: Data Synchronization</h4>
                 {unsyncedCount === 0 ? (
                   <div className="flex items-center text-emerald-600 font-semibold text-sm">
@@ -774,7 +788,6 @@ export default function POSPage() {
                 )}
               </div>
 
-                {/* NEW: Shift Remarks Text Box */}
               <div className="mb-2 p-4 bg-stone-50 border border-stone-200 rounded-xl">
                 <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Step 3: Shift Remarks (Optional)</h4>
                 <textarea
@@ -786,10 +799,9 @@ export default function POSPage() {
                 ></textarea>
               </div>
 
-
               {logoutMessage && <div className="mt-4 text-xs font-bold text-red-600 bg-red-50 p-3 rounded-lg text-center border border-red-100">{logoutMessage}</div>}
             </div>
-            <div className="flex border-t border-stone-200 bg-stone-50">
+            <div className="flex border-t border-stone-200 bg-stone-50 shrink-0">
               <button onClick={() => setIsLogoutConfirmOpen(false)} className="flex-1 py-4 font-bold text-stone-600 hover:bg-stone-100 transition-colors border-r border-stone-200">Return to POS</button>
               <button 
                 onClick={handleLogout} 

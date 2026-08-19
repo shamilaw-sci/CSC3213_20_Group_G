@@ -26,6 +26,7 @@ export default function CalculatorModal({ onClose }: CalculatorModalProps) {
     if (typeof window !== 'undefined') return localStorage.getItem('kaa_calc_waiting') === 'true';
     return false;
   });
+  
   const inputDigit = (digit: string) => {
     if (waitingForNewValue) {
       setDisplay(digit);
@@ -142,19 +143,25 @@ export default function CalculatorModal({ onClose }: CalculatorModalProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [display, previousValue, operator, waitingForNewValue]);
 
+  // STYLING: Updated for Monochrome Theme
   const buttonClass = "h-14 text-xl font-bold rounded-xl transition-all active:scale-95 shadow-sm";
-  const numClass = `${buttonClass} bg-stone-50 hover:bg-stone-100 text-stone-800 border border-stone-200`;
-  const opClass = `${buttonClass} bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-200`;
+  const numClass = `${buttonClass} bg-white hover:bg-stone-100 text-stone-800 border border-stone-200`;
+  const opClass = `${buttonClass} bg-stone-100 hover:bg-stone-200 text-stone-600 border border-stone-200`;
   const actionClass = `${buttonClass} bg-stone-200 hover:bg-stone-300 text-stone-700 border border-stone-300`;
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xs overflow-hidden animate-in zoom-in-95 duration-200 border border-stone-200">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xs overflow-hidden animate-in zoom-in-95 duration-200 border border-stone-200 flex flex-col">
         
         {/* Header & Display */}
-        <div className="bg-stone-800 p-6 pb-4">
+        <div className="bg-stone-800 p-6 pb-4 shrink-0">
           <div className="flex justify-between items-center mb-4">
-            <span className="text-stone-400 font-bold text-sm tracking-wider uppercase">Calculator</span>
+            <div className="flex items-center gap-2 text-stone-300">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              <span className="font-bold text-sm tracking-wider uppercase">Calculator</span>
+            </div>
             <button 
               onClick={onClose}
               className="text-stone-400 hover:text-white transition-colors text-xl leading-none"
@@ -163,14 +170,14 @@ export default function CalculatorModal({ onClose }: CalculatorModalProps) {
             </button>
           </div>
           <div className="bg-stone-900 rounded-xl p-4 text-right overflow-x-auto shadow-inner border border-stone-700">
-            <span className="text-4xl font-mono font-black text-amber-500 tracking-tight">
+            <span className="text-4xl font-mono font-black text-white tracking-tight">
               {display}
             </span>
           </div>
         </div>
 
         {/* Keypad */}
-        <div className="p-5 grid grid-cols-4 gap-3 bg-white">
+        <div className="p-5 grid grid-cols-4 gap-3 bg-stone-50 flex-1">
           <button onClick={clearAll} className={actionClass}>AC</button>
           <button onClick={clearEntry} className={actionClass}>CE</button>
           <button onClick={() => performOperation('/')} className={opClass}>÷</button>
@@ -189,7 +196,14 @@ export default function CalculatorModal({ onClose }: CalculatorModalProps) {
           <button onClick={() => inputDigit('1')} className={numClass}>1</button>
           <button onClick={() => inputDigit('2')} className={numClass}>2</button>
           <button onClick={() => inputDigit('3')} className={numClass}>3</button>
-          <button onClick={handleEqual} className={`${buttonClass} bg-amber-600 hover:bg-amber-700 text-white row-span-2 shadow-md border border-amber-700`}>=</button>
+          
+          {/* Highlighted Equals Button */}
+          <button 
+            onClick={handleEqual} 
+            className={`${buttonClass} bg-stone-800 hover:bg-stone-900 text-white row-span-2 shadow-md border border-stone-800`}
+          >
+            =
+          </button>
 
           <button onClick={() => inputDigit('0')} className={`${numClass} col-span-2`}>0</button>
           <button onClick={inputDot} className={numClass}>.</button>
