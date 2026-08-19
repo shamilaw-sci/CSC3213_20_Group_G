@@ -37,7 +37,7 @@ export default function OnlineOrdersModal({ onClose, onOrderProcessed }: OnlineO
             )
           `)
           .eq('sales_channel', 'online')
-          .eq('status', 'order placed')
+          .eq('status', 'completed')
           .order('created_at', { ascending: true }); 
 
         if (ordersError) throw ordersError;
