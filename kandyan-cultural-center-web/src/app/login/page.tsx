@@ -446,4 +446,4 @@ export default function LoginPage() {
       <style dangerouslySetInnerHTML={{__html: `@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }`}} />
     </main>
   );
-}
+} 

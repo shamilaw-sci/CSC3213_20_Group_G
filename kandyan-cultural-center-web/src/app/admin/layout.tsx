@@ -33,7 +33,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         .single();
 
       // 3. Check if they have admin OR cashier privileges
-      if (!profile || (profile.role !== 'admin')) {
+      if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
         router.push('/');
         return;
       }
@@ -215,6 +215,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             href="/admin/barcodes" 
             icon="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" 
             label="Print Barcodes" 
+            pathname={pathname} 
+            onClick={() => setIsMobileMenuOpen(false)} 
+          />
+
+          <div className="pt-6 pb-2">
+            <p className="px-4 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Settings</p>
+          </div>
+          
+          <SidebarLink 
+            href="/admin/roles" 
+            icon="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" 
+            label="Staff Roles" 
             pathname={pathname} 
             onClick={() => setIsMobileMenuOpen(false)} 
           />
