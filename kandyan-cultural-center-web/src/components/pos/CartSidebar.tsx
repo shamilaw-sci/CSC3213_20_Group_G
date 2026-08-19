@@ -30,27 +30,26 @@ export default function CartSidebar() {
 
   return (
     <>
-      <div className="flex-[1] min-w-[350px] bg-white border-l border-stone-200 p-6 flex flex-col shadow-[-4px_0_24px_-8px_rgba(0,0,0,0.05)] h-full z-10">
+      <div className="flex-[1] w-full min-w-0 md:min-w-[350px] bg-white md:border-l border-stone-200 p-4 md:p-6 flex flex-col shadow-[-4px_0_24px_-8px_rgba(0,0,0,0.05)] h-full z-10">
         
-        {/* THE HEADER */}
-        <div className="flex justify-between items-end mb-6 pb-4 border-b border-stone-100 shrink-0">
+        {/* --- RESPONSIVE HEADER --- */}
+        <div className="flex flex-wrap justify-between items-center gap-y-3 gap-x-2 mb-4 md:mb-6 pb-4 border-b border-stone-100 shrink-0">
           
-          <div className="flex items-baseline gap-3">
-            <h2 className="text-xl font-bold text-stone-800">Current Order</h2>
-            
-            <span className="text-sm font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 shadow-sm">
+          <div className="flex items-center flex-wrap gap-2 md:gap-3">
+            <h2 className="text-lg md:text-xl font-bold text-stone-800 whitespace-nowrap">Current Order</h2>
+            <span className="text-xs md:text-sm font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 shadow-sm whitespace-nowrap">
               #{orderNumber}
             </span>
           </div>
           
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-stone-400 bg-stone-100 px-3 py-1 rounded-full">
+            <span className="text-xs md:text-sm font-semibold text-stone-400 bg-stone-100 px-2 md:px-3 py-1 rounded-full whitespace-nowrap">
               {cart.length} Items
             </span>
             {cart.length > 0 && (
               <button 
                 onClick={() => setIsClearConfirmOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-full transition-colors border border-red-100"
+                className="flex items-center gap-1.5 px-2 md:px-3 py-1 text-xs md:text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-full transition-colors border border-red-100 whitespace-nowrap"
                 title="Cancel Entire Order"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -192,13 +191,13 @@ export default function CartSidebar() {
                         </button>
                       </div>
 
-                      <div className="flex flex-col items-end">
+                      <div className="flex flex-col items-end pl-2">
                         {item.customPrice !== undefined ? (
-                           <span className="text-xs text-stone-400 line-through mb-0.5">@ Rs. {item.price.toLocaleString()}</span>
+                           <span className="text-[10px] md:text-xs text-stone-400 line-through mb-0.5">@ Rs. {item.price.toLocaleString()}</span>
                         ) : (
-                          <span className="text-xs text-stone-400 font-semibold mb-0.5">@ Rs. {item.price.toLocaleString()}</span>
+                          <span className="text-[10px] md:text-xs text-stone-400 font-semibold mb-0.5">@ Rs. {item.price.toLocaleString()}</span>
                         )}
-                        <span className="font-black text-amber-700 text-lg">
+                        <span className="font-black text-amber-700 text-base md:text-lg">
                           Rs. {(effectivePrice * item.quantity).toLocaleString()}
                         </span>
                       </div>
@@ -210,10 +209,10 @@ export default function CartSidebar() {
           )}
         </div>
         
-        <div className="mt-4 pt-6 border-t border-stone-200 shrink-0 bg-white">
-          <div className="flex justify-between items-end mb-6">
-            <span className="text-lg font-bold text-stone-500 uppercase tracking-wider">Subtotal</span>
-            <span className="text-4xl font-black text-stone-900">
+        <div className="mt-4 pt-4 md:pt-6 border-t border-stone-200 shrink-0 bg-white">
+          <div className="flex justify-between items-end mb-4 md:mb-6">
+            <span className="text-sm md:text-lg font-bold text-stone-500 uppercase tracking-wider">Subtotal</span>
+            <span className="text-2xl md:text-4xl font-black text-stone-900 truncate pl-2">
               Rs. {cartTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
@@ -221,10 +220,10 @@ export default function CartSidebar() {
           <button 
             disabled={cart.length === 0} 
             onClick={() => setIsCheckoutOpen(true)} 
-            className="w-full py-5 bg-amber-700 hover:bg-amber-800 disabled:bg-stone-300 disabled:text-stone-500 disabled:cursor-not-allowed text-white text-2xl font-black rounded-xl transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-3"
+            className="w-full py-4 md:py-5 bg-amber-700 hover:bg-amber-800 disabled:bg-stone-300 disabled:text-stone-500 disabled:cursor-not-allowed text-white text-xl md:text-2xl font-black rounded-xl transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 md:gap-3"
           >
             CHECKOUT 
-            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <svg className="w-6 h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
           </button>

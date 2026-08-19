@@ -79,7 +79,6 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
   if (showReceipt) {
     return (
       <div className="fixed inset-0 z-[80] overflow-y-auto bg-stone-900/80 backdrop-blur-sm">
-        {/* CHANGED: items-center to items-start, added pt-24 to push it down from the top edge */}
         <div className="flex min-h-full items-start justify-center p-4 pt-24 pb-12">
           <div className="flex flex-col items-center animate-in zoom-in-95 duration-300">
             
@@ -230,43 +229,45 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
         
-        <div className="flex justify-between items-center px-6 py-4 border-b border-stone-200 bg-stone-50">
-          <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-black text-stone-800">Checkout</h2>
-            <span className="text-sm font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 shadow-sm">
+        {/* --- RESPONSIVE HEADER --- */}
+        <div className="flex justify-between items-center px-4 md:px-6 py-4 border-b border-stone-200 bg-stone-50 shrink-0">
+          <div className="flex items-center flex-wrap gap-2 md:gap-3 pr-2">
+            <h2 className="text-xl md:text-2xl font-black text-stone-800 whitespace-nowrap">Checkout</h2>
+            <span className="text-xs md:text-sm font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 shadow-sm whitespace-nowrap">
               #{orderNumber}
             </span>
           </div>
-          <button onClick={onClose} className="w-10 h-10 flex items-center justify-center bg-stone-200 hover:bg-stone-300 text-stone-600 rounded-full font-bold transition-colors">
+          <button onClick={onClose} className="w-10 h-10 shrink-0 flex items-center justify-center bg-stone-200 hover:bg-stone-300 text-stone-600 rounded-full font-bold transition-colors">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        <div className="flex flex-1 overflow-hidden">
+        {/* --- RESPONSIVE BODY (STACKS ON MOBILE) --- */}
+        <div className="flex flex-col md:flex-row flex-1 overflow-y-auto overflow-x-hidden md:overflow-hidden">
           
-          <div className="w-1/2 p-6 border-r border-stone-200 overflow-y-auto bg-white">
+          <div className="w-full md:w-1/2 p-4 md:p-6 border-b md:border-b-0 md:border-r border-stone-200 overflow-y-visible md:overflow-y-auto bg-white shrink-0 md:shrink">
             <h3 className="font-bold text-stone-500 uppercase tracking-wider text-sm mb-4">Order Details</h3>
             <div className="space-y-3">
               {cart.map(item => {
                 const itemPrice = item.customPrice !== undefined ? item.customPrice : item.price;
                 return (
                   <div key={item.id} className="flex justify-between text-sm py-2 border-b border-stone-100">
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 pr-2">
                       <span className="font-bold text-stone-600">{item.quantity}x</span>
-                      <span className="text-stone-800 line-clamp-1">{item.name}</span>
+                      <span className="text-stone-800 line-clamp-2">{item.name}</span>
                     </div>
-                    <span className="font-medium text-stone-600">Rs. {(itemPrice * item.quantity).toLocaleString()}</span>
+                    <span className="font-medium text-stone-600 whitespace-nowrap">Rs. {(itemPrice * item.quantity).toLocaleString()}</span>
                   </div>
                 );
               })}
             </div>
           </div>
 
-          <div className="w-1/2 p-6 bg-stone-50 flex flex-col">
+          <div className="w-full md:w-1/2 p-4 md:p-6 bg-stone-50 flex flex-col shrink-0 md:shrink">
             
-            <div className="mb-8">
+            <div className="mb-6 md:mb-8">
               <label className="block text-sm font-bold text-stone-700 mb-2">Total Bill Discount (%)</label>
               <div className="flex items-center gap-2">
                 <input 
@@ -282,40 +283,40 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
               </div>
             </div>
 
-            <div className="mb-8">
+            <div className="mb-6 md:mb-8">
               <label className="block text-sm font-bold text-stone-700 mb-2">Payment Method</label>
               <div className="grid grid-cols-3 gap-2">
                 {paymentMethodsConfig.map((method) => (
                   <button
                     key={method.id}
                     onClick={() => setPaymentMethod(method.id as PaymentMethod)}
-                    className={`py-3 px-2 rounded-xl text-sm font-bold border-2 transition-all flex items-center justify-center ${
+                    className={`py-3 px-1 rounded-xl text-xs md:text-sm font-bold border-2 transition-all flex items-center justify-center ${
                       paymentMethod === method.id 
                         ? 'border-amber-600 bg-amber-50 text-amber-800' 
                         : 'border-stone-200 bg-white text-stone-500 hover:border-amber-300'
                     }`}
                   >
                     {method.icon}
-                    {method.label}
+                    <span className="truncate">{method.label}</span>
                   </button>
                 ))}
               </div>
             </div>
 
             <div className="mt-auto bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-2 mb-6">
-              <div className="flex justify-between text-stone-500 font-medium">
+              <div className="flex justify-between text-stone-500 font-medium text-sm md:text-base">
                 <span>Subtotal:</span>
                 <span>Rs. {cartTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
               {discountValue > 0 && (
-                <div className="flex justify-between text-emerald-600 font-bold">
+                <div className="flex justify-between text-emerald-600 font-bold text-sm md:text-base">
                   <span>Discount ({discountValue}%):</span>
                   <span>- Rs. {discountAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 </div>
               )}
               <div className="pt-2 mt-2 border-t border-stone-200 flex justify-between items-end">
-                <span className="text-lg font-bold text-stone-800">Final Total:</span>
-                <span className="text-3xl font-black text-amber-700">
+                <span className="text-base md:text-lg font-bold text-stone-800">Final Total:</span>
+                <span className="text-2xl md:text-3xl font-black text-amber-700">
                   Rs. {finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
               </div>
@@ -326,7 +327,7 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
             <button 
               onClick={handleConfirmOrder}
               disabled={isSubmitting}
-              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-stone-400 text-white text-xl font-black rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-stone-400 text-white text-lg md:text-xl font-black rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
             >
               {isSubmitting ? 'PROCESSING...' : 'CONFIRM & COMPLETE'}
             </button>
