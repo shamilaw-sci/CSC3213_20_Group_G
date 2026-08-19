@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
-import { sendWorkshopEmail, sendOrderEmail } from '@/lib/email'; // 🚨 IMPORT OUR NEW UTILITY
+import { sendWorkshopEmail, sendOrderEmail } from '@/lib/email';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -35,12 +35,15 @@ export async function POST(request: Request) {
       .digest('hex').toUpperCase();
 
     if (md5sig !== expectedLocalSignature) {
+      console.error(`🚨 Signature Mismatch! PayHere sent: ${md5sig}, We expected: ${expectedLocalSignature}`);
       return NextResponse.json({ error: 'Signature mismatch.' }, { status: 400 });
     }
 
     if (statusCode === '2') { 
       
+      // ==========================================
       // FLOW A: WORKSHOP BOOKING
+      // ==========================================
       if (isWorkshopBooking && bookingId) {
         await supabase.from('workshop_bookings').update({ status: 'confirmed' }).eq('id', bookingId);
         await supabase.from('transactions').insert({ booking_id: bookingId, gateway_reference: paymentId, status: 'success', amount_paid: parseFloat(payhereAmount) });
@@ -48,22 +51,62 @@ export async function POST(request: Request) {
         const { data: booking } = await supabase.from('workshop_bookings').select('*').eq('id', bookingId).single();
 
         if (booking) {
-          // 🚨 SEND BEAUTIFUL HTML EMAIL
-          await sendWorkshopEmail(booking.customer_email, booking.customer_name, booking.workshop_title, booking.booked_date, booking.booked_time, booking.guests, booking.id).catch(console.error);
+          // 🚨 Passed payhereAmount to the Workshop Email
+          await sendWorkshopEmail(
+            booking.customer_email, 
+            booking.customer_name, 
+            booking.workshop_title, 
+            booking.booked_date, 
+            booking.booked_time, 
+            booking.guests, 
+            booking.id,
+            parseFloat(payhereAmount)
+          ).catch(console.error);
         }
 
+      // ==========================================
       // FLOW B: PHYSICAL SHOP ORDER
+      // ==========================================
       } else {
         const { data: rpcRes, error: rpcError } = await supabase.rpc('complete_shop_order_atomic', { p_order_id: orderId, p_payment_id: paymentId, p_amount: parseFloat(payhereAmount) });
 
         if (rpcError || !rpcRes?.success) return new Response('OK', { status: 200 }); 
 
         if (!rpcRes.already_processed) {
-          const { data: orderData } = await supabase.from('orders').select('*, profiles!orders_user_id_fkey(email, full_name)').eq('id', orderId).single();
+          // 🚨 FIXED: Used standard relationship mapping and grabbed nested items for the receipt
+          const { data: orderData, error: fetchError } = await supabase
+            .from('orders')
+            .select(`
+              *,
+              profiles:user_id(email, full_name),
+              order_items (
+                quantity,
+                selling_price_at_sale,
+                artifact_variants (
+                  color_name,
+                  image_url,
+                  artifacts ( name )
+                )
+              )
+            `)
+            .eq('id', orderId)
+            .single();
           
-          if (orderData && orderData.profiles?.email) {
-            // SEND BEAUTIFUL HTML EMAIL
-            await sendOrderEmail(orderData.profiles.email, orderId, orderData.shipping_address).catch(console.error);
+          if (fetchError) console.error("Error fetching order for email:", fetchError);
+
+          const customerEmail = orderData?.profiles?.email;
+
+          if (orderData && customerEmail) {
+            // 🚨 Passed the deeply nested items and total amount to generate the receipt
+            await sendOrderEmail(
+              customerEmail, 
+              orderId, 
+              orderData.shipping_address,
+              parseFloat(payhereAmount),
+              orderData.order_items || []
+            ).catch(console.error);
+          } else {
+            console.error("Could not send email. Order data or email missing.", { orderData, customerEmail });
           }
         }
       }
