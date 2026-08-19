@@ -131,13 +131,31 @@ export default function Profile() {
     load();
   }, []);
 
+  // 🚨 NEW: Maps the exact order status keys to their labels and colors
+  const getOrderBadgeInfo = (status: string) => {
+    const s = (status || '').toLowerCase();
+    switch (s) {
+      case 'pending': return { label: 'Pending Payment', color: 'bg-white/60 text-slate-700 border-white/80' };
+      case 'processing': return { label: 'Processing', color: 'bg-amber-100 text-amber-700 border-amber-200' };
+      case 'completed': return { label: 'Order Placed', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' };
+      case 'reviewed': return { label: 'Reviewed', color: 'bg-cyan-100 text-cyan-700 border-cyan-200' };
+      case 'handed to courier': return { label: 'Handed to Courier', color: 'bg-blue-100 text-blue-700 border-blue-200' };
+      case 'delivered': return { label: 'Delivered', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' };
+      case 'cancelled': return { label: 'Cancelled', color: 'bg-rose-100 text-rose-700 border-rose-200' };
+      case 'failed': return { label: 'Failed', color: 'bg-rose-100 text-rose-700 border-rose-200' };
+      default: return { label: status, color: 'bg-white text-slate-600 border-slate-200' };
+    }
+  };
+
+  // 🚨 NEW: Calculates the step number (1 to 5) for the modal progress bar
   const getOrderStep = (status: string) => {
-    const s = status.toLowerCase();
-    if (s === 'pending') return 1; 
-    if (s === 'completed' || s === 'paid') return 2; 
-    if (s === 'shipped') return 3; 
-    if (s === 'delivered') return 4; 
-    return 0; 
+    const s = (status || '').toLowerCase();
+    if (s === 'completed') return 1; 
+    if (s === 'processing') return 2; 
+    if (s === 'reviewed') return 3; 
+    if (s === 'handed to courier') return 4; 
+    if (s === 'delivered') return 5; 
+    return 0; // Covers 'pending', 'failed', 'cancelled'
   };
 
   const getHallBookingDisplayStatus = (booking: HallBooking) => {
@@ -233,8 +251,7 @@ export default function Profile() {
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 {(showAllOrders ? orders : orders.slice(0, 5)).map((order) => {
-                  const step = getOrderStep(order.status);
-                  const isFailed = order.status.toLowerCase() === 'cancelled' || order.status.toLowerCase() === 'failed';
+                  const badge = getOrderBadgeInfo(order.status);
                   
                   return (
                     <div 
@@ -247,13 +264,8 @@ export default function Profile() {
                           <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">Order #{order.id.slice(0, 8)}</p>
                           <p className="text-xl font-black text-slate-900">LKR {order.total_amount?.toLocaleString()}</p>
                         </div>
-                        <span className={`text-[10px] font-black px-3 py-1.5 rounded-lg border uppercase tracking-widest ${
-                          isFailed ? 'bg-rose-50 text-rose-700 border-rose-200' :
-                          step === 4 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                          step >= 2 ? 'bg-amber-100 text-amber-700 border-amber-300' :
-                          'bg-white text-slate-600 border-slate-200'
-                        }`}>
-                          {order.status === 'completed' ? 'Paid / Processing' : order.status}
+                        <span className={`text-[10px] font-black px-3 py-1.5 rounded-lg border uppercase tracking-widest ${badge.color}`}>
+                          {badge.label}
                         </span>
                       </div>
                       
@@ -462,10 +474,12 @@ export default function Profile() {
                 ) : (
                   <div className="relative flex justify-between items-center px-2">
                     <div className="absolute top-1/2 left-0 w-full h-1.5 bg-white -translate-y-1/2 rounded-full z-0 shadow-inner"></div>
-                    <div className="absolute top-1/2 left-0 h-1.5 bg-amber-500 -translate-y-1/2 rounded-full z-0 transition-all duration-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" 
-                         style={{ width: `${(getOrderStep(selectedOrder.status) - 1) * 33.33}%` }}></div>
                     
-                    {['Pending', 'Processing', 'Shipped', 'Delivered'].map((stepName, i) => {
+                    {/* 🚨 Progress Bar logic updated for 5 steps (divides by 25% increments) */}
+                    <div className="absolute top-1/2 left-0 h-1.5 bg-amber-500 -translate-y-1/2 rounded-full z-0 transition-all duration-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" 
+                         style={{ width: `${Math.max(0, getOrderStep(selectedOrder.status) - 1) * 25}%` }}></div>
+                    
+                    {['Placed', 'Processing', 'Reviewed', 'Courier', 'Delivered'].map((stepName, i) => {
                       const stepNum = i + 1;
                       const active = getOrderStep(selectedOrder.status) >= stepNum;
                       return (
@@ -473,7 +487,7 @@ export default function Profile() {
                           <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm border-2 transition-colors ${active ? 'bg-amber-500 border-amber-500 text-white shadow-md' : 'bg-slate-100 border-white text-slate-400 shadow-inner'}`}>
                             {active ? <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg> : stepNum}
                           </div>
-                          <span className={`text-[9px] sm:text-[11px] font-black uppercase tracking-widest ${active ? 'text-slate-900' : 'text-slate-400'}`}>{stepName}</span>
+                          <span className={`text-[8px] sm:text-[10px] font-black uppercase tracking-widest ${active ? 'text-slate-900' : 'text-slate-400'} text-center w-14`}>{stepName}</span>
                         </div>
                       );
                     })}

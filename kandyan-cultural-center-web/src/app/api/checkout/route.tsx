@@ -54,7 +54,11 @@ export async function POST(request: Request) {
     authoritativeTotalAmount = calculatedSubtotal + secureShippingCost + gatewayFee;
 
     // 🚨 GENERATE SECURE INVOICE NUMBER (Format: INV-123456-ABCD)
-    const timestampPart = Date.now().toString().slice(-6); // Last 6 digits of timestamp
+    const now = new Date();
+    const yy = String(now.getFullYear()).slice(-2);
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const timestampPart = `${yy}${mm}${dd}`;
     const randomPart = crypto.randomBytes(2).toString('hex').toUpperCase(); // 4 random hex chars
     const invoiceNumber = `ON-${timestampPart}-${randomPart}`;
 
