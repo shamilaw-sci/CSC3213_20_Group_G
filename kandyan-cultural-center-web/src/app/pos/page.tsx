@@ -24,6 +24,7 @@ export default function POSPage() {
   const [userId, setUserId] = useState<string>(''); // NEW: Storing ID for sessions
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
 
+  // --- REAL-TIME NETWORK STATE ---
   const [networkStatus, setNetworkStatus] = useState<'Connected' | 'Limited Connection' | 'Disconnected'>('Connected');
   
   // --- UI & POS STATE ---
@@ -53,6 +54,7 @@ export default function POSPage() {
   const [expectedCashState, setExpectedCashState] = useState<number>(0); // NEW
   const [varianceState, setVarianceState] = useState<number>(0); // NEW
   const [varianceMessage, setVarianceMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
+  const [sessionRemark, setSessionRemark] = useState<string>('');
   const [isVerifyingCash, setIsVerifyingCash] = useState(false);
   const [isCashVerified, setIsCashVerified] = useState(false);
 
@@ -80,6 +82,7 @@ export default function POSPage() {
     setMaxPrice('');
   };
 
+  // ---  SUPABASE AUTH, RBAC, & SESSION RECOVERY ---
   // --- 1. SUPABASE AUTH, RBAC, & SESSION RECOVERY ---
   useEffect(() => {
     const checkAccess = async () => {
@@ -111,18 +114,37 @@ export default function POSPage() {
           setUserRole(profile.role);
           if (setCashierId) setCashierId(currentUserId); 
           
-          // NEW: Check if an active session already exists (Handles Page Reloads)
+          // Fetch active session AND its start_time
           const { data: activeSession } = await supabase
             .from('pos_sessions')
-            .select('id, starting_float')
+            .select('id, starting_float, start_time')
             .eq('cashier_id', currentUserId)
             .eq('status', 'active')
             .maybeSingle();
             
           if (activeSession) {
-            setSessionId(activeSession.id);
-            setStartingCash(activeSession.starting_float.toString());
-            setDisclaimerAccepted(true); // Skip float entry screen
+            const sessionDate = new Date(activeSession.start_time).toDateString();
+            const todayDate = new Date().toDateString();
+
+            // Check if the session was started on a previous day
+            if (sessionDate !== todayDate) {
+              // Abandoned Session Detected: Force close it
+              await supabase
+                .from('pos_sessions')
+                .update({
+                  end_time: new Date().toISOString(),
+                  status: 'closed',
+                  session_remark: 'SYSTEM AUTO-CLOSE: Shift abandoned from previous day.'
+                })
+                .eq('id', activeSession.id);
+                
+              // Do NOT resume. Let them stay on the float entry screen for today.
+            } else {
+              // Valid session for today: Resume it
+              setSessionId(activeSession.id);
+              setStartingCash(activeSession.starting_float.toString());
+              setDisclaimerAccepted(true); 
+            }
           }
 
         } else {
@@ -343,7 +365,8 @@ export default function POSPage() {
             declared_closing_cash: parseFloat(declaredCash),
             expected_closing_cash: expectedCashState,
             variance: varianceState,
-            status: 'closed'
+            status: 'closed',
+            session_remark: sessionRemark.trim() || null
           })
           .eq('id', sessionId);
       } catch (err) {
@@ -750,6 +773,20 @@ export default function POSPage() {
                   </div>
                 )}
               </div>
+
+                {/* NEW: Shift Remarks Text Box */}
+              <div className="mb-2 p-4 bg-stone-50 border border-stone-200 rounded-xl">
+                <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Step 3: Shift Remarks (Optional)</h4>
+                <textarea
+                  value={sessionRemark}
+                  onChange={(e) => setSessionRemark(e.target.value)}
+                  placeholder="Add any notes regarding variances, refunds, or shift events..."
+                  className="w-full p-3 bg-white border border-stone-200 rounded-lg text-sm text-stone-800 focus:outline-none focus:border-amber-500 shadow-sm resize-none"
+                  rows={2}
+                ></textarea>
+              </div>
+
+
               {logoutMessage && <div className="mt-4 text-xs font-bold text-red-600 bg-red-50 p-3 rounded-lg text-center border border-red-100">{logoutMessage}</div>}
             </div>
             <div className="flex border-t border-stone-200 bg-stone-50">
