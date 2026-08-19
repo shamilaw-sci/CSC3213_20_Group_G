@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
-import { useCart } from '@/context/CartContext'; // <-- ADDED: Import Cart Context
+import { useCart } from '@/context/CartContext';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -14,17 +14,20 @@ export default function SuccessPage() {
   const [bookingInfo, setBookingInfo] = useState<any | null>(null);
   const [orderInfo, setOrderInfo] = useState<any | null>(null);
   
-  // <-- ADDED: Extract clearCart from your context
   const { clearCart } = useCart(); 
+  
+  // 🚨 ADDED: A ref to prevent the infinite rendering loop
+  const hasCleared = useRef(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const bookingId = params.get('booking');
     const orderId = params.get('order');
 
-    // <-- ADDED: Clear the cart if they arrived here from a shop order
-    if (orderId && clearCart) {
+    // 🚨 FIXED: Only clear the cart EXACTLY once, breaking the freeze loop
+    if (orderId && clearCart && !hasCleared.current) {
       clearCart();
+      hasCleared.current = true;
     }
 
     (async () => {
@@ -40,7 +43,7 @@ export default function SuccessPage() {
         console.warn('Failed to fetch transaction details', e);
       }
     })();
-  }, [clearCart]); // Added clearCart to the dependency array
+  }, []); // 🚨 FIXED: Empty dependency array ensures this only mounts once
 
   return (
     <main className="relative min-h-screen flex flex-col items-center justify-center px-4 py-24 bg-[#F8F9FA]">
@@ -93,13 +96,13 @@ export default function SuccessPage() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center w-full">
           <Link 
             href="/profile" 
-            className="w-full sm:w-auto px-8 py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl transition-all shadow-[0_8px_20px_rgba(217,119,6,0.25)] hover:shadow-[0_12px_25px_rgba(217,119,6,0.35)] transform hover:-translate-y-1"
+            className="w-full sm:w-auto px-8 py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl transition-all shadow-[0_8px_20px_rgba(217,119,6,0.25)] hover:shadow-[0_12px_25px_rgba(217,119,6,0.35)] transform hover:-translate-y-1 relative z-50"
           >
             View Dashboard
           </Link>
           <Link 
             href="/shop" 
-            className="w-full sm:w-auto px-8 py-4 bg-white/60 backdrop-blur-md border border-white/80 hover:bg-white hover:border-amber-300 text-slate-700 hover:text-amber-600 font-bold rounded-2xl transition-all shadow-sm transform hover:-translate-y-1"
+            className="w-full sm:w-auto px-8 py-4 bg-white/60 backdrop-blur-md border border-white/80 hover:bg-white hover:border-amber-300 text-slate-700 hover:text-amber-600 font-bold rounded-2xl transition-all shadow-sm transform hover:-translate-y-1 relative z-50"
           >
             Return to Shop
           </Link>

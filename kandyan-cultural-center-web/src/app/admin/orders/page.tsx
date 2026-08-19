@@ -52,7 +52,7 @@ export default function OrdersPage() {
   const statusOptions = [
     { value: 'pending', label: 'Pending Payment', color: 'bg-white/60 text-slate-700 border-white/80' },
     { value: 'processing', label: 'Processing', color: 'bg-amber-100 text-amber-700 border-amber-200' },
-    { value: 'order placed', label: 'Order Placed', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+    { value: 'completed', label: 'Order Placed', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
     { value: 'reviewed', label: 'Reviewed', color: 'bg-cyan-100 text-cyan-700 border-cyan-200' },
     { value: 'handed to courier', label: 'Handed to Courier', color: 'bg-blue-100 text-blue-700 border-blue-200' },
     { value: 'delivered', label: 'Delivered', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },

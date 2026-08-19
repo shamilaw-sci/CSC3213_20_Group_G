@@ -62,7 +62,7 @@ export async function POST(request: Request) {
           const { data: orderData } = await supabase.from('orders').select('*, profiles!orders_user_id_fkey(email, full_name)').eq('id', orderId).single();
           
           if (orderData && orderData.profiles?.email) {
-            // 🚨 SEND BEAUTIFUL HTML EMAIL
+            // SEND BEAUTIFUL HTML EMAIL
             await sendOrderEmail(orderData.profiles.email, orderId, orderData.shipping_address).catch(console.error);
           }
         }
