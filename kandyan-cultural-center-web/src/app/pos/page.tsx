@@ -23,6 +23,8 @@ export default function POSPage() {
   const [userRole, setUserRole] = useState<string>(''); 
   const [userId, setUserId] = useState<string>(''); // NEW: Storing ID for sessions
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
+
+  const [networkStatus, setNetworkStatus] = useState<'Connected' | 'Limited Connection' | 'Disconnected'>('Connected');
   
   // --- UI & POS STATE ---
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -136,6 +138,54 @@ export default function POSPage() {
 
     checkAccess();
   }, [setCashierId]);
+
+
+  // --- REAL-TIME NETWORK MONITOR ---
+  useEffect(() => {
+    const checkConnection = async () => {
+      // 1. Check if the browser thinks we have OS-level internet
+      if (!navigator.onLine) {
+        setNetworkStatus('Disconnected');
+        return;
+      }
+      
+      const startTime = Date.now();
+      try {
+        // 2. Ping Supabase to see if we can actually reach the database
+        // We fetch a single row just to test the connection
+        const { error } = await supabase.from('profiles').select('id').limit(1);
+        const pingTime = Date.now() - startTime;
+        
+        if (error) {
+          setNetworkStatus('Disconnected');
+        } else if (pingTime > 3000) { 
+          // If it takes more than 3 seconds to respond, the connection is struggling
+          setNetworkStatus('Limited Connection');
+        } else {
+          setNetworkStatus('Connected');
+        }
+      } catch (err) {
+        setNetworkStatus('Disconnected');
+      }
+    };
+
+    // Set up native browser listeners for instant updates
+    window.addEventListener('online', checkConnection);
+    window.addEventListener('offline', () => setNetworkStatus('Disconnected'));
+
+    // Set up a heartbeat to check connection quality every 30 seconds
+    const pingInterval = setInterval(checkConnection, 30000);
+    
+    // Run an initial check on load
+    checkConnection();
+
+    return () => {
+      window.removeEventListener('online', checkConnection);
+      window.removeEventListener('offline', () => setNetworkStatus('Disconnected'));
+      clearInterval(pingInterval);
+    };
+  }, []);
+
 
   // --- REALTIME ONLINE ORDERS LISTENER ---
   useEffect(() => {
@@ -275,7 +325,7 @@ export default function POSPage() {
   const handleLogout = async () => {
     const queue = JSON.parse(localStorage.getItem('kaa_offline_queue') || '[]');
     if (queue.length > 0) {
-      if (!isOnline) {
+      if (networkStatus === 'Disconnected') {
         setLogoutMessage(`Cannot end session. The network is offline and ${queue.length} orders are waiting to be saved. Please reconnect.`);
       } else {
         setLogoutMessage(`Syncing ${queue.length} pending orders to the database. Please wait a moment and try again.`);
@@ -395,11 +445,24 @@ export default function POSPage() {
       {/* --- TOP ACTION BAR --- */}
       <header className="relative flex justify-between items-center bg-white px-6 py-4 shadow-sm border-b border-stone-200 z-30 shrink-0">
         <div className="flex items-center w-1/3 gap-4">
-          <img src="/logo.png" alt="Kandyan Cultural Centre Logo" className="w-12 h-12 rounded-full object-cover border border-stone-200 shadow-sm" />
-          <button onClick={toggleNetwork} className={`flex items-center px-3 py-1.5 rounded-full border transition-colors shadow-sm ${isOnline ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100' : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'}`} title="Toggle Network Status">
-            <span className={`w-2.5 h-2.5 rounded-full mr-2 shadow-sm ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></span>
-            <span className="text-xs font-bold uppercase tracking-wider">{isOnline ? 'Online' : 'Offline'}</span>
-          </button>
+          <img src="/logo.png" alt="Kandyan Cultural Centre Logo" className="w-14 h-10.5  object-cover " />
+          <div className="flex items-center w-1/3 gap-4">
+          
+          
+          {/* DYNAMIC NETWORK BADGE */}
+          <div className={`flex items-center px-3 py-1.5 rounded-full border shadow-sm select-none ${
+            networkStatus === 'Connected' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 
+            networkStatus === 'Limited Connection' ? 'bg-amber-50 border-amber-200 text-amber-700' : 
+            'bg-red-50 border-red-200 text-red-700'
+          }`} title={`Current Status: ${networkStatus}`}>
+            <span className={`w-2.5 h-2.5 rounded-full mr-2 shadow-sm ${
+              networkStatus === 'Connected' ? 'bg-emerald-500 animate-pulse' : 
+              networkStatus === 'Limited Connection' ? 'bg-amber-500' : 
+              'bg-red-500'
+            }`}></span>
+            <span className="text-xs font-bold uppercase tracking-wider">{networkStatus}</span>
+          </div>
+        </div>
         </div>
 
         <div className="w-1/3 text-center flex justify-center">
