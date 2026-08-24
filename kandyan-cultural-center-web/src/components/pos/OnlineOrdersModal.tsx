@@ -7,7 +7,7 @@ import { supabase } from '../../lib/supabase';
 
 interface OnlineOrdersModalProps {
   onClose: () => void;
-  onOrderProcessed: () => void; // NEW: Callback prop
+  onOrderProcessed: () => void; //Callback prop
 }
 
 
@@ -37,7 +37,7 @@ export default function OnlineOrdersModal({ onClose, onOrderProcessed }: OnlineO
             )
           `)
           .eq('sales_channel', 'online')
-          .eq('status', 'order placed')
+          .eq('status', 'completed')
           .order('created_at', { ascending: true }); 
 
         if (ordersError) throw ordersError;
@@ -63,7 +63,7 @@ export default function OnlineOrdersModal({ onClose, onOrderProcessed }: OnlineO
             .in('id', userIds);
 
           if (!profilesError && profilesData) {
-            // Create a quick lookup dictionary: { "uuid-123": "John Doe" }
+            // Quick lookup dictionary:
             profilesMap = profilesData.reduce((acc, profile) => {
               acc[profile.id] = profile.full_name;
               return acc;
@@ -74,7 +74,7 @@ export default function OnlineOrdersModal({ onClose, onOrderProcessed }: OnlineO
         // STEP 4: Attach the names manually to the orders
         const ordersWithNames = ordersData.map(order => ({
           ...order,
-          // We attach the name here so your receipt code can easily read it!
+          // Name is attached here so the receipt code can easily read it
           customer_name: order.user_id ? profilesMap[order.user_id] : null
         }));
 
@@ -106,7 +106,7 @@ export default function OnlineOrdersModal({ onClose, onOrderProcessed }: OnlineO
 
       if (error) throw error;
 
-      // NEW: Tell the parent page to instantly decrement the badge!
+      // Tell the parent page to instantly decrement the badge
       onOrderProcessed();
 
       setOnlineOrders(prev => prev.filter(o => o.id !== orderId));
