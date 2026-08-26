@@ -73,12 +73,15 @@ export async function POST(request: Request) {
         if (rpcError || !rpcRes?.success) return new Response('OK', { status: 200 }); 
 
         if (!rpcRes.already_processed) {
-          // 🚨 FIXED: Used standard relationship mapping and grabbed nested items for the receipt
+          // 🚨 FIXED: Now using the standard relation name since the SQL bridge is fixed
           const { data: orderData, error: fetchError } = await supabase
             .from('orders')
             .select(`
               *,
-              profiles:user_id(email, full_name),
+              profiles (
+                email, 
+                full_name
+              ),
               order_items (
                 quantity,
                 selling_price_at_sale,
@@ -94,10 +97,12 @@ export async function POST(request: Request) {
           
           if (fetchError) console.error("Error fetching order for email:", fetchError);
 
-          const customerEmail = orderData?.profiles?.email;
+          // Unpack the email depending on whether it comes back as an array or object
+          const customerEmail = Array.isArray(orderData?.profiles) 
+            ? orderData?.profiles[0]?.email 
+            : orderData?.profiles?.email;
 
           if (orderData && customerEmail) {
-            // 🚨 Passed the deeply nested items and total amount to generate the receipt
             await sendOrderEmail(
               customerEmail, 
               orderId, 
