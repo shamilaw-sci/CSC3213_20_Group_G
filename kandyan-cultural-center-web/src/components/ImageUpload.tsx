@@ -16,7 +16,7 @@ export default function ImageUpload({ currentImageUrl, onUploadSuccess, bucketNa
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Client-side Image Compression
+  // Client-side Image Compression (WebP Optimized)
   const compressImage = (file: File): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -26,7 +26,7 @@ export default function ImageUpload({ currentImageUrl, onUploadSuccess, bucketNa
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 1200; // Optimal web resolution
+          const MAX_WIDTH = 800; 
           
           let width = img.width;
           let height = img.height;
@@ -44,7 +44,7 @@ export default function ImageUpload({ currentImageUrl, onUploadSuccess, bucketNa
           canvas.toBlob((blob) => {
             if (blob) resolve(blob);
             else reject(new Error('Canvas conversion failed'));
-          }, 'image/jpeg', 0.8); // 80% quality JPEG
+          }, 'image/webp', 0.8); 
         };
       };
       reader.onerror = (err) => reject(err);
@@ -63,14 +63,15 @@ export default function ImageUpload({ currentImageUrl, onUploadSuccess, bucketNa
       const objectUrl = URL.createObjectURL(file);
       setPreview(objectUrl);
 
-      // 2. Compress the image
+      // 2. Compress the image to WebP
       const compressedBlob = await compressImage(file);
 
-      // 3. Upload to Supabase Storage
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
+      // 3. Upload to Supabase Storage (Using .webp extension)
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.webp`;
       const { data, error: uploadError } = await supabase.storage
         .from(bucketName)
-        .upload(fileName, compressedBlob, { contentType: 'image/jpeg' });
+        // 🚨 FIXED: Ensure Supabase serves it with the correct WebP content type
+        .upload(fileName, compressedBlob, { contentType: 'image/webp' });
 
       if (uploadError) throw uploadError;
 
@@ -119,9 +120,9 @@ export default function ImageUpload({ currentImageUrl, onUploadSuccess, bucketNa
             disabled={isUploading}
             className="px-4 py-2 bg-white border border-slate-200 hover:border-amber-500 hover:text-amber-600 text-slate-600 font-bold text-xs rounded-xl shadow-sm transition-all disabled:opacity-50"
           >
-            {isUploading ? 'Uploading & Resizing...' : 'Choose Image'}
+            {isUploading ? 'Compressing & Uploading...' : 'Choose Image'}
           </button>
-          <p className="text-[10px] text-slate-400 mt-2 font-medium">Auto-resizes to max 1200px (JPEG).</p>
+          <p className="text-[10px] text-slate-400 mt-2 font-medium">Auto-resizes to max 800px (WebP). Optimized for fast loading.</p>
           {error && <p className="text-xs text-rose-500 mt-1 font-bold">{error}</p>}
         </div>
       </div>

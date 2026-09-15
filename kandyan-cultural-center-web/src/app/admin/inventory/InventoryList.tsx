@@ -3,13 +3,38 @@
 import Image from 'next/image';
 import Barcode from 'react-barcode';
 
-export default function InventoryList({ variants, setVariants, onSaveRow, onEdit, onDelete, savingId }: any) {
+export default function InventoryList({ variants, setVariants, onSaveRow, onEdit, onDelete, savingId, currentPage, totalPages, onPageChange }: any) {
   
   if (variants.length === 0) {
     return <div className="text-center py-16 text-slate-500 font-bold bg-white/60 backdrop-blur-xl rounded-[2.5rem] border border-white/80 shadow-sm">No inventory found matching criteria.</div>;
   }
 
   const glassInputClass = "w-full bg-white/50 backdrop-blur-sm border border-white/80 rounded-xl px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all shadow-sm";
+
+  // 🚨 NEW: Pagination Controls UI
+  const PaginationControls = () => (
+    <div className="flex justify-between items-center p-6 border-t border-white/60 bg-white/40">
+      <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+        Page {currentPage} of {totalPages}
+      </span>
+      <div className="flex gap-2">
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 font-bold text-xs rounded-xl shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider"
+        >
+          Prev
+        </button>
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 font-bold text-xs rounded-xl shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -75,6 +100,10 @@ export default function InventoryList({ variants, setVariants, onSaveRow, onEdit
             </button>
           </div>
         ))}
+        {/* Render Pagination for Mobile */}
+        <div className="bg-white/60 backdrop-blur-xl border border-white/80 rounded-[2rem] overflow-hidden shadow-sm">
+          <PaginationControls />
+        </div>
       </div>
 
       {/* DESKTOP VIEW */}
@@ -147,6 +176,8 @@ export default function InventoryList({ variants, setVariants, onSaveRow, onEdit
             </tbody>
           </table>
         </div>
+        {/* Render Pagination for Desktop */}
+        <PaginationControls />
       </div>
     </>
   );

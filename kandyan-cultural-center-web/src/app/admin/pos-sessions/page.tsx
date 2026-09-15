@@ -87,6 +87,10 @@ type POSSession = {
 export default function AdminPOSSessionsPage() {
   const [sessions, setSessions] = useState<POSSession[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // 🚨 NEW: PAGINATION STATE
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
 
   useEffect(() => {
     async function fetchSessions() {
@@ -123,6 +127,13 @@ export default function AdminPOSSessionsPage() {
 
     return { active, totalShortage, totalOverage };
   }, [sessions]);
+
+  // 🚨 NEW: Calculate Pagination
+  const totalPages = Math.max(1, Math.ceil(sessions.length / ITEMS_PER_PAGE));
+  const paginatedSessions = sessions.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   if (loading) {
     return (
@@ -195,7 +206,7 @@ export default function AdminPOSSessionsPage() {
         </div>
 
         {/* Data Table */}
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 overflow-hidden flex flex-col">
           {sessions.length === 0 ? (
             <div className="p-16 text-center text-slate-500 font-medium border border-dashed border-slate-200 m-8 rounded-2xl">
               No POS sessions have been initiated yet.
@@ -215,7 +226,8 @@ export default function AdminPOSSessionsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
-                  {sessions.map((row) => {
+                  {/* 🚨 Maps over paginatedSessions instead of sessions */}
+                  {paginatedSessions.map((row) => {
                     const isClosed = row.status !== 'active';
                     const variance = row.variance || 0;
                     
@@ -265,6 +277,31 @@ export default function AdminPOSSessionsPage() {
                   })}
                 </tbody>
               </table>
+              
+              {/* 🚨 NEW: POS Table Pagination Controls */}
+              {sessions.length > 0 && (
+                <div className="flex justify-between items-center p-6 border-t border-slate-100 bg-slate-50">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 font-bold text-xs rounded-xl shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider"
+                    >
+                      Prev
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="px-4 py-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 font-bold text-xs rounded-xl shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
