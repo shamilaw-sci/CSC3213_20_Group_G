@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { usePOS } from '../../context/POSContext';
 import { supabase } from '../../lib/supabase'; 
 
@@ -20,6 +21,13 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
   
   const [showReceipt, setShowReceipt] = useState(false);
   const [orderTimestamp, setOrderTimestamp] = useState<Date | null>(null);
+
+  // State to ensure the Portal only renders on the client side
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const discountValue = parseFloat(discountPercent) || 0;
   const discountAmount = cartTotal * (discountValue / 100);
@@ -75,10 +83,13 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
     onClose();
   };
 
-  // VIEW 1: THE THERMAL RECEIPT PREVIEW 
+  // Wait until mounted on client to render the Portal
+  if (!mounted) return null;
+
+  // VIEW 1: THE THERMAL RECEIPT PREVIEW (Wrapped in createPortal)
   if (showReceipt) {
-    return (
-      <div className="fixed inset-0 z-[80] overflow-y-auto bg-stone-900/80 backdrop-blur-sm">
+    return createPortal(
+      <div className="fixed inset-0 z-[100] overflow-y-auto bg-stone-900/80 backdrop-blur-sm">
         <div className="flex min-h-full items-start justify-center p-4 pt-24 pb-12">
           <div className="flex flex-col items-center animate-in zoom-in-95 duration-300">
             
@@ -190,7 +201,8 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
             </div>
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
@@ -225,8 +237,9 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
     }
   ];
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4">
+  // (Wrapped in createPortal)
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
         
         {/* --- RESPONSIVE HEADER --- */}
@@ -334,6 +347,7 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

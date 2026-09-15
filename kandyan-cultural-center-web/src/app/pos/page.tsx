@@ -111,7 +111,7 @@ export default function POSPage() {
           return;
         }
 
-        if (profile.role === 'admin' || profile.role === 'cashier') {
+        if (profile.role === 'super_admin' || profile.role === 'admin' || profile.role === 'cashier') {
           setHasAccess(true);
           setCashierName(profile.full_name || 'Cashier'); 
           setUserRole(profile.role);
