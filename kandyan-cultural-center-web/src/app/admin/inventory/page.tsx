@@ -11,11 +11,16 @@ export default function InventoryPage() {
   const [artisans, setArtisans] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // NEW STACKED FILTERS
+  // NEW STACKED FILTERS & SORTING
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
   const [filterStock, setFilterStock] = useState('All');
   const [filterPrice, setFilterPrice] = useState('All');
+  const [sortBy, setSortBy] = useState('Newest');
+
+  // PAGINATION STATE
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
 
   const [savingId, setSavingId] = useState<string | null>(null);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -43,10 +48,16 @@ export default function InventoryPage() {
 
   useEffect(() => { fetchData(); }, []);
 
-  // Filter Engine
+  // Reset to Page 1 if any filter OR sort changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterCategory, filterStock, filterPrice, sortBy]);
+
+  // Filter & Sort Engine
   const processedVariants = useMemo(() => {
     let result = [...variants];
 
+    // 1. Apply Search
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(v => 
@@ -56,24 +67,54 @@ export default function InventoryPage() {
       );
     }
     
+    // 2. Apply Filters
     if (filterCategory !== 'All') {
       result = result.filter(v => v.artifacts?.category === filterCategory);
     }
-    
     if (filterStock === 'Low') {
       result = result.filter(v => v.stock > 0 && v.stock <= 5);
     } else if (filterStock === 'Out') {
       result = result.filter(v => v.stock === 0);
     }
-
     if (filterPrice !== 'All') {
       if (filterPrice === '<5000') result = result.filter(v => v.price < 5000);
       if (filterPrice === '5000-15000') result = result.filter(v => v.price >= 5000 && v.price <= 15000);
       if (filterPrice === '>15000') result = result.filter(v => v.price > 15000);
     }
 
+    // 🚨 3. Apply Sorting
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'Newest':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'Oldest':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'Name: A-Z':
+          return (a.artifacts?.name || '').localeCompare(b.artifacts?.name || '');
+        case 'Name: Z-A':
+          return (b.artifacts?.name || '').localeCompare(a.artifacts?.name || '');
+        case 'Price: Low to High':
+          return (a.discounted_price || a.price) - (b.discounted_price || b.price);
+        case 'Price: High to Low':
+          return (b.discounted_price || b.price) - (a.discounted_price || a.price);
+        case 'Stock: Low to High':
+          return a.stock - b.stock;
+        case 'Stock: High to Low':
+          return b.stock - a.stock;
+        default:
+          return 0;
+      }
+    });
+
     return result;
-  }, [variants, searchQuery, filterCategory, filterStock, filterPrice]);
+  }, [variants, searchQuery, filterCategory, filterStock, filterPrice, sortBy]);
+
+  // Calculate Pagination (After Filtering & Sorting)
+  const totalPages = Math.max(1, Math.ceil(processedVariants.length / ITEMS_PER_PAGE));
+  const paginatedVariants = processedVariants.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const showMessage = (type: string, text: string) => {
     setMessage({ type, text });
@@ -107,6 +148,9 @@ export default function InventoryPage() {
     setModalMode('edit');
   };
 
+  // Reusable dropdown class
+  const dropdownClass = "bg-white/60 border border-white/80 rounded-2xl px-4 sm:px-5 py-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400 w-full md:w-auto shadow-sm appearance-none pr-10 cursor-pointer relative bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M5%208l5%205%205-5%22%20stroke%3D%22%2394a3b8%22%20stroke-width%3D%222.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:20px_20px] bg-[position:right_12px_center] bg-no-repeat transition-all hover:bg-white/80";
+
   return (
     <div className="p-4 sm:p-8 lg:p-12 max-w-[1600px] mx-auto w-full relative z-10">
       
@@ -126,35 +170,52 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      {/* FILTER BAR UPGRADED TO GLASSMORPHISM */}
+      {/* FILTER & SORT BAR */}
       <div className="bg-white/40 backdrop-blur-xl p-5 rounded-[2rem] border border-white/80 shadow-sm mb-8 flex flex-col md:flex-row gap-4 flex-wrap">
-        <div className="relative flex-grow min-w-[250px]">
+        
+        {/* Search */}
+        <div className="relative flex-grow min-w-[200px] md:min-w-[250px]">
           <input 
             type="text" 
             placeholder="Search Name or Barcode..." 
             value={searchQuery} 
             onChange={(e) => setSearchQuery(e.target.value)} 
-            className="w-full bg-white/60 border border-white/80 rounded-2xl pl-12 pr-4 py-3 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-sm placeholder:text-slate-400" 
+            className="w-full bg-white/60 border border-white/80 rounded-2xl pl-12 pr-4 py-3 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-sm placeholder:text-slate-400 transition-all hover:bg-white/80" 
           />
           <svg className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
         </div>
         
-        <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="bg-white/60 border border-white/80 rounded-2xl px-5 py-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400 w-full md:w-auto shadow-sm appearance-none pr-10 cursor-pointer relative bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M5%208l5%205%205-5%22%20stroke%3D%22%2394a3b8%22%20stroke-width%3D%222.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:20px_20px] bg-[position:right_12px_center] bg-no-repeat">
+        {/* Filters */}
+        <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className={dropdownClass}>
           <option value="All" className="bg-white">All Categories</option>
           {distinctCategories.map((c) => <option key={c} value={c} className="bg-white">{c}</option>)}
         </select>
 
-        <select value={filterStock} onChange={(e) => setFilterStock(e.target.value)} className="bg-white/60 border border-white/80 rounded-2xl px-5 py-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400 w-full md:w-auto shadow-sm appearance-none pr-10 cursor-pointer relative bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M5%208l5%205%205-5%22%20stroke%3D%22%2394a3b8%22%20stroke-width%3D%222.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:20px_20px] bg-[position:right_12px_center] bg-no-repeat">
+        <select value={filterStock} onChange={(e) => setFilterStock(e.target.value)} className={dropdownClass}>
           <option value="All" className="bg-white">All Stock Levels</option>
           <option value="Low" className="bg-white">Low Stock (≤ 5)</option>
           <option value="Out" className="bg-white">Out of Stock</option>
         </select>
 
-        <select value={filterPrice} onChange={(e) => setFilterPrice(e.target.value)} className="bg-white/60 border border-white/80 rounded-2xl px-5 py-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400 w-full md:w-auto shadow-sm appearance-none pr-10 cursor-pointer relative bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M5%208l5%205%205-5%22%20stroke%3D%22%2394a3b8%22%20stroke-width%3D%222.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:20px_20px] bg-[position:right_12px_center] bg-no-repeat">
+        <select value={filterPrice} onChange={(e) => setFilterPrice(e.target.value)} className={dropdownClass}>
           <option value="All" className="bg-white">All Prices</option>
           <option value="<5000" className="bg-white">Under LKR 5,000</option>
           <option value="5000-15000" className="bg-white">LKR 5k - 15k</option>
           <option value=">15000" className="bg-white">Over LKR 15,000</option>
+        </select>
+
+        {/* 🚨 NEW: Sort Dropdown */}
+        <div className="w-px bg-white/60 mx-1 hidden md:block"></div> {/* Separator */}
+        
+        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className={`${dropdownClass} !border-amber-200 !text-amber-700 !bg-amber-50/50`}>
+          <option value="Newest" className="bg-white">Sort: Newest First</option>
+          <option value="Oldest" className="bg-white">Sort: Oldest First</option>
+          <option value="Name: A-Z" className="bg-white">Name: A to Z</option>
+          <option value="Name: Z-A" className="bg-white">Name: Z to A</option>
+          <option value="Price: Low to High" className="bg-white">Price: Low to High</option>
+          <option value="Price: High to Low" className="bg-white">Price: High to Low</option>
+          <option value="Stock: Low to High" className="bg-white">Stock: Lowest First</option>
+          <option value="Stock: High to Low" className="bg-white">Stock: Highest First</option>
         </select>
       </div>
 
@@ -168,12 +229,15 @@ export default function InventoryPage() {
         <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-slate-200 border-t-amber-500 rounded-full animate-spin"></div></div>
       ) : (
         <InventoryList 
-          variants={processedVariants} 
+          variants={paginatedVariants} 
           setVariants={setVariants} 
           onSaveRow={handleSaveRow} 
           onEdit={openEditModal} 
           onDelete={handleDelete}
           savingId={savingId}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
         />
       )}
 
