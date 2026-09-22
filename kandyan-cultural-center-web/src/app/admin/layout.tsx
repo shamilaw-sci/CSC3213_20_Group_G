@@ -33,7 +33,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         .single();
 
       // 3. Check if they have admin OR cashier privileges
-      if (!profile || !['super_admin', 'admin'].includes(profile.role)) {
+      if (!profile || !['super_admin', 'admin', 'cashier'].includes(profile.role)) {
         router.push('/');
         return;
       }
@@ -87,7 +87,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center gap-3">
              <div className="w-8 h-8 rounded-[0.6rem] bg-amber-100 flex items-center justify-center text-amber-600 font-black text-sm shadow-sm border border-amber-200/50">K</div>
              <span className="text-slate-900 font-extrabold tracking-widest uppercase text-sm">
-               {userRole === 'admin' ? 'Admin' : 'POS Cashier'}
+               {userRole === 'super_admin' ? 'Super Admin' : userRole === 'admin' ? 'Admin' : 'POS Cashier'}
              </span>
           </div>
           {/* Close button for mobile */}
@@ -128,7 +128,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         
 
           {/* RBAC: Only true admins can see Financial Reports */}
-          {userRole === 'admin' && (
+          {(userRole === 'admin' || userRole === 'super_admin') && (
             <SidebarLink 
               href="/admin/reports" 
               icon="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" 

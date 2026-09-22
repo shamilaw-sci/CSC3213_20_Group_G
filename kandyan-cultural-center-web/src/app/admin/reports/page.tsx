@@ -11,7 +11,6 @@ export default function FinancialReportsPage() {
   const [isLoading, setIsLoading] = useState(true);
   
   const [selectedMonth, setSelectedMonth] = useState<string>('all'); 
-  // 🚨 ADDED: Sales Channel State
   const [selectedChannel, setSelectedChannel] = useState<string>('all'); 
 
   const availableMonths = useMemo(() => {
