@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { usePOS } from '../../context/POSContext';
 import CheckoutModal from './CheckoutModal'; 
 
@@ -85,41 +86,53 @@ export default function CartSidebar() {
 
                   <div className="flex justify-between items-start mb-2">
                     
-                    {/* --- Inline Layout for Name, Barcode, and Color --- */}
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pr-4 flex-1">
+                    {/* --- Image & Details Layout --- */}
+                    <div className="flex items-start gap-3 pr-2 flex-1 min-w-0">
                       
-                      {/* 1. Name (Left) */}
-                      <span className="font-bold text-stone-800 text-sm leading-tight">
-                        {item.name}
-                      </span>
-                      
-                      {/* 2. Barcode (Middle) */}
-                      <span className="text-xs text-stone-500 font-mono tracking-wider">
-                        {item.barcode ? item.barcode : 'No Barcode'}
-                      </span>
-                      
-                      {/* 3. Color Dot & Pill (Right) */}
-                      {item.color && (
-                        <div className="flex items-center gap-1">
-                          {item.hexCode && (
-                            <span 
-                              className="w-2.5 h-2.5 rounded-full border border-stone-300 shadow-sm block"
-                              style={{ backgroundColor: item.hexCode }}
-                            />
-                          )}
-                          <span className="text-[10px] font-bold bg-stone-200 text-stone-600 px-1.5 py-0.5 rounded-sm uppercase tracking-wider">
-                            {item.color}
-                          </span>
-                        </div>
-                      )}
+                      {/* 1. Image Thumbnail */}
+                      <div className="w-12 h-12 rounded-lg bg-white border border-stone-200 overflow-hidden shrink-0 relative flex items-center justify-center shadow-sm text-lg">
+                        {item.imageUrl ? (
+                          <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
+                        ) : (
+                          <span className="opacity-40">📦</span>
+                        )}
+                      </div>
 
-                      {item.customPrice !== undefined && (
-                        <span className="text-[10px] font-black bg-purple-100 text-purple-700 px-2 py-0.5 rounded-sm uppercase tracking-wider">
-                          CUSTOM PRICE
+                      {/* 2. Stacked Text Details */}
+                      <div className="flex flex-col gap-1.5 flex-1 min-w-0 pt-0.5">
+                        <span className="font-bold text-stone-800 text-sm leading-tight truncate">
+                          {item.name}
                         </span>
-                      )}
+                        
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="text-[10px] text-stone-500 font-mono tracking-wider border border-stone-200 px-1.5 py-0.5 rounded bg-white">
+                            {item.barcode ? item.barcode : 'No Barcode'}
+                          </span>
+                          
+                          {item.color && (
+                            <div className="flex items-center gap-1">
+                              {item.hexCode && (
+                                <span 
+                                  className="w-2.5 h-2.5 rounded-full border border-stone-300 shadow-inner block shrink-0"
+                                  style={{ backgroundColor: item.hexCode }}
+                                />
+                              )}
+                              <span className="text-[10px] font-bold bg-stone-200 text-stone-600 px-1.5 py-0.5 rounded-sm uppercase tracking-wider">
+                                {item.color}
+                              </span>
+                            </div>
+                          )}
+
+                          {item.customPrice !== undefined && (
+                            <span className="text-[10px] font-black bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-sm uppercase tracking-wider">
+                              CUSTOM PRICE
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    
+
+                    {/* 🚨 RESTORED: Edit Custom Price & Remove Buttons */}
                     {!isEditing && (
                       <div className="flex gap-1 flex-shrink-0">
                         <button 

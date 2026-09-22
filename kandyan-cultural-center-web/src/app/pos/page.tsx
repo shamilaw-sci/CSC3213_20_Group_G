@@ -11,7 +11,7 @@ import OnlineOrdersModal from '../../components/pos/OnlineOrdersModal';
 import { supabase } from '../../lib/supabase'; 
 
 export default function POSPage() {
-  const { cartTotal, setCashierId, cachedProducts } = usePOS(); 
+  const { cartTotal, setCashierId, cachedProducts, addToCart, cart } = usePOS(); 
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isOnlineOrdersOpen, setIsOnlineOrdersOpen] = useState(false);
@@ -255,6 +255,66 @@ export default function POSPage() {
     }
     setLastCartTotal(cartTotal);
   }, [cartTotal, isMobileSearchActive, lastCartTotal]);
+
+// --- REAL-TIME HARDWARE BARCODE SCANNER LISTENER ---
+  useEffect(() => {
+    let barcodeBuffer = '';
+    let barcodeTimeout: NodeJS.Timeout;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // If 'Enter' is pressed and we have a captured barcode string
+      if (e.key === 'Enter' && barcodeBuffer.length > 3) {
+        e.preventDefault();
+        const scannedCode = barcodeBuffer.trim();
+        barcodeBuffer = ''; // Reset buffer
+
+        // Find the product in your cached inventory
+        const matchedProduct = cachedProducts?.find(
+          (p: any) => p.barcode === scannedCode || p.id.substring(0,8) === scannedCode
+        );
+
+        if (matchedProduct && addToCart) {
+          
+          // 🚨 ADDED: Stock Verification for Barcode Scanner
+          const existingCartItem = cart.find((item: any) => item.id === matchedProduct.id);
+          const currentQty = existingCartItem ? existingCartItem.quantity : 0;
+          const maxStock = matchedProduct.stock || 0;
+
+          // Block the scan if it exceeds inventory
+          if (currentQty >= maxStock) {
+            alert(`⚠️ Cannot add item. Only ${maxStock} in stock!`);
+            setSearchQuery('');
+            return;
+          }
+
+          addToCart(matchedProduct); 
+          setSearchQuery(''); 
+        } else {
+          console.warn(`Scanned barcode ${scannedCode} not found in inventory.`);
+        }
+      } else if (e.key.length === 1) { 
+        // Capture single characters
+        barcodeBuffer += e.key;
+        clearTimeout(barcodeTimeout);
+        
+        // Hardware scanners type incredibly fast (<20ms per char).
+        // If 50ms pass without a keypress, it's a human typing, so clear the buffer.
+        barcodeTimeout = setTimeout(() => {
+          const target = document.activeElement as HTMLElement;
+          // Don't clear the buffer if they are intentionally typing in the search input
+          if (target.tagName !== 'INPUT') {
+             barcodeBuffer = ''; 
+          }
+        }, 50);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      clearTimeout(barcodeTimeout);
+    };
+  }, [cachedProducts, addToCart, cart]);
 
   // --- 2. HANDLERS ---
   const handleStartSession = async () => {
