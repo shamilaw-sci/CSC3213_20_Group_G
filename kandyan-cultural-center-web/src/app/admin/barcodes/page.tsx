@@ -354,23 +354,22 @@ export default function BarcodesPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. PRINT UI (Visible ONLY when printing, calibrated for 80mm thermal)     */}
+      {/* 2. PRINT UI (Visible ONLY when printing, calibrated for 50x25mm thermal)  */}
       {/* ========================================================================= */}
       <div className="hidden print:block print-container">
         {printQueue.map((item, index) => {
           const activePrice = item.discounted_price || item.price;
           return (
             <div key={`${item.id}-${index}`} className="thermal-label">
-              <div className="store-name">Kandyan Cultural Centre</div>
+              <div className="store-name">KANDYAN CULTURAL CENTRE</div>
               <div className="item-name">{item.artifacts.name}</div>
-              <div className="item-variant">{item.color_name}</div>
               
               <div className="barcode-wrapper">
                 <Barcode 
                   value={item.barcode} 
-                  width={1.6} 
-                  height={40} 
-                  fontSize={14} 
+                  width={1.3}        /* Thicker bars */
+                  height={28}        /* Taller barcode */
+                  fontSize={12}      /* Larger text under barcode */
                   margin={0} 
                   displayValue={true} 
                   background="transparent"
@@ -385,35 +384,115 @@ export default function BarcodesPage() {
 
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
-          @page { margin: 0; size: 80mm auto; }
-          body * { visibility: hidden; }
-          .print-container, .print-container * { visibility: visible; }
+          /* 1. PAPER SIZE */
+          @page { 
+            margin: 0; 
+            size: 50mm 25mm; 
+          }
+
+          /* 2. HIDE ALL ADMIN UI */
+          .print\\:hidden, header, nav, aside, footer { 
+            display: none !important; 
+          }
+
+          /* 3. NUCLEAR DOM RESET */
+          html, body, div, main, section, article {
+            display: block !important;
+            position: static !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            transform: none !important;
+            background: white !important;
+          }
+
+          /* 4. SETUP PRINT CONTAINER */
           .print-container {
-            position: absolute;
-            left: 0; top: 0;
-            width: 80mm;
-            padding: 0; margin: 0;
-            background: white;
+            display: block !important;
+            width: 50mm !important;
+            margin: 0 auto !important;
           }
+          
+          /* 5. INDIVIDUAL LABEL STRICT BOUNDARIES */
           .thermal-label {
-            width: 76mm;
-            margin: 0 auto;
-            padding: 4mm 2mm;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            color: #000;
-            page-break-after: always;
-            border-bottom: 1px dashed #ccc;
+            width: 50mm !important;
+            height: 25mm !important; 
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            
+            /* 🚨 HARDWARE OFFSET CORRECTION: Push content 2.5mm left */
+            padding-top: 1mm !important;
+            padding-bottom: 1mm !important;
+            padding-left: 0 !important;
+            padding-right: 5mm !important; 
+            
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center !important;
+            
+            color: #000 !important;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+            
+            page-break-inside: avoid !important;
+            page-break-after: always !important; 
+            break-after: page !important;
+            
+            overflow: hidden !important; 
           }
-          .store-name { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
-          .item-name { font-size: 13px; font-weight: bold; line-height: 1.2; max-width: 95%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-          .item-variant { font-size: 10px; color: #444; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-          .barcode-wrapper { margin: 4px 0; }
-          .price-tag { font-size: 16px; font-weight: 900; margin-top: 4px; }
+
+          .thermal-label:last-child {
+            page-break-after: auto !important;
+            break-after: auto !important;
+          }
+          
+          /* 🚨 UPSCALED TYPOGRAPHY */
+          .store-name { 
+            font-size: 8px !important; 
+            font-weight: 900 !important; 
+            text-transform: uppercase !important; 
+            margin-bottom: 1px !important; 
+            line-height: 1 !important; 
+          }
+          
+          .item-name { 
+            font-size: 10px !important; 
+            font-weight: bold !important; 
+            line-height: 1.1 !important; 
+            width: 100% !important; 
+            white-space: nowrap !important; 
+            overflow: hidden !important; 
+            text-overflow: ellipsis !important; 
+            margin-bottom: 2px !important; 
+          }
+          
+          .barcode-wrapper { 
+            margin: 1px 0 !important; 
+            display: flex !important; 
+            justify-content: center !important; 
+            align-items: center !important; 
+            height: 12mm !important; /* Increased to allow taller barcode */
+            width: 100% !important; 
+          }
+          
+          .barcode-wrapper svg { 
+            height: 100% !important; 
+            width: auto !important; 
+            max-width: 45mm !important; 
+          }
+          
+          .price-tag { 
+            font-size: 13px !important; 
+            font-weight: 900 !important; 
+            line-height: 1 !important; 
+            margin-top: 2px !important; 
+          }
         }
       `}} />
 
