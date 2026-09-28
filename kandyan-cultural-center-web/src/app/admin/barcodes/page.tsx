@@ -361,7 +361,7 @@ export default function BarcodesPage() {
           const activePrice = item.discounted_price || item.price;
           return (
             <div key={`${item.id}-${index}`} className="thermal-label">
-              <div className="store-name">KANDYAN CULTURAL CENTRE</div>
+              <div className="store-name">THE KANDYAN ART ASSOCIATION</div>
               <div className="item-name">{item.artifacts.name}</div>
               
               <div className="barcode-wrapper">
