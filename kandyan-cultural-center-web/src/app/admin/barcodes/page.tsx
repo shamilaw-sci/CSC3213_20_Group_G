@@ -428,7 +428,7 @@ export default function BarcodesPage() {
             /* 🚨 HARDWARE OFFSET CORRECTION: Push content 2.5mm left */
             padding-top: 1mm !important;
             padding-bottom: 1mm !important;
-            padding-left: 0 !important;
+            padding-left: 5mm !important;
             padding-right: 5mm !important; 
             
             display: flex !important;
