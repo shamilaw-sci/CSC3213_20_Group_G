@@ -56,47 +56,43 @@ export default async function ArtifactDetailPage({ params }: { params: Promise<{
         {/* Pass data to Interactive Component */}
         <ProductInteractive artifact={artifact} variants={variants || []} />
 
-        {/* DELIVERY & PAYMENT OPTIONS SECTION (Glassmorphism) */}
-        <div className="mt-24 mb-16 pt-16 border-t border-white/60 grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+        {/* STORE GUARANTEES & DELIVERY FEATURES (Glassmorphism) */}
+        <div className="mt-24 mb-16 pt-16 border-t border-white/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           
-          <div className="bg-white/60 backdrop-blur-xl rounded-[2.5rem] p-8 md:p-10 border border-white/80 shadow-[0_10px_40px_rgba(31,38,135,0.05)] hover:shadow-[0_20px_50px_rgba(31,38,135,0.08)] transition-all">
-            <h3 className="text-xl font-extrabold text-slate-900 mb-8 flex items-center gap-4">
-              <span className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600 border border-amber-200/50 shadow-sm shrink-0">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
-              </span>
-              Delivery Options
-            </h3>
-            <div className="space-y-6">
-              <div>
-                <h4 className="font-bold text-slate-900 text-lg">Pick Me Flash</h4>
-                <p className="text-sm text-slate-600 mt-1.5 leading-relaxed font-light">If you are in the Colombo district, you can receive your package within two hours by sending us a Pickme Flash.</p>
-              </div>
-              <div className="w-full h-px bg-white"></div>
-              <div>
-                <h4 className="font-bold text-slate-900 text-lg">Normal Delivery</h4>
-                <p className="text-sm text-slate-600 mt-1.5 leading-relaxed font-light">With this service, you can receive your package island-wide within two to four business days.</p>
-              </div>
-            </div>
+          {/* 1. Quick Delivery */}
+          <div className="bg-white/60 backdrop-blur-xl rounded-[2rem] p-6 sm:p-8 border border-white/80 shadow-[0_8px_30px_rgba(31,38,135,0.04)] hover:shadow-[0_12px_40px_rgba(31,38,135,0.08)] hover:-translate-y-1 transition-all flex flex-col items-center text-center group">
+            <span className="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600 border border-amber-200/50 shadow-sm mb-4 sm:mb-5 group-hover:scale-110 transition-transform">
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            </span>
+            <h4 className="font-extrabold text-slate-900 text-lg mb-2">Quick Delivery</h4>
+            <p className="text-sm text-slate-600 leading-relaxed font-medium">Get your items fast with our express island-wide dispatch.</p>
           </div>
 
-          <div className="bg-white/60 backdrop-blur-xl rounded-[2.5rem] p-8 md:p-10 border border-white/80 shadow-[0_10px_40px_rgba(31,38,135,0.05)] hover:shadow-[0_20px_50px_rgba(31,38,135,0.08)] transition-all">
-            <h3 className="text-xl font-extrabold text-slate-900 mb-8 flex items-center gap-4">
-              <span className="w-12 h-12 rounded-2xl bg-rose-100 flex items-center justify-center text-rose-600 border border-rose-200/50 shadow-sm shrink-0">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
-              </span>
-              Payment Options
-            </h3>
-            <div className="space-y-6">
-              <div>
-                <h4 className="font-bold text-slate-900 text-lg">Card Payment</h4>
-                <p className="text-sm text-slate-600 mt-1.5 leading-relaxed font-light">You can purchase your item securely through our portal using any VISA, Mastercard, or AMEX bank card.</p>
-              </div>
-              <div className="w-full h-px bg-white"></div>
-              <div>
-                <h4 className="font-bold text-slate-900 text-lg">Bank Transfer</h4>
-                <p className="text-sm text-slate-600 mt-1.5 leading-relaxed font-light">You can purchase any item by crediting money directly to our bank account via online banking or your nearest branch.</p>
-              </div>
-            </div>
+          {/* 2. Low Cost Shipping */}
+          <div className="bg-white/60 backdrop-blur-xl rounded-[2rem] p-6 sm:p-8 border border-white/80 shadow-[0_8px_30px_rgba(31,38,135,0.04)] hover:shadow-[0_12px_40px_rgba(31,38,135,0.08)] hover:-translate-y-1 transition-all flex flex-col items-center text-center group">
+            <span className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600 border border-emerald-200/50 shadow-sm mb-4 sm:mb-5 group-hover:scale-110 transition-transform">
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path></svg>
+            </span>
+            <h4 className="font-extrabold text-slate-900 text-lg mb-2">Low Cost Delivery</h4>
+            <p className="text-sm text-slate-600 leading-relaxed font-medium">Enjoy highly affordable, budget-friendly shipping rates to anywhere in Sri Lanka.</p>
+          </div>
+
+          {/* 3. Secure Payments */}
+          <div className="bg-white/60 backdrop-blur-xl rounded-[2rem] p-6 sm:p-8 border border-white/80 shadow-[0_8px_30px_rgba(31,38,135,0.04)] hover:shadow-[0_12px_40px_rgba(31,38,135,0.08)] hover:-translate-y-1 transition-all flex flex-col items-center text-center group">
+            <span className="w-14 h-14 rounded-2xl bg-rose-100 flex items-center justify-center text-rose-600 border border-rose-200/50 shadow-sm mb-4 sm:mb-5 group-hover:scale-110 transition-transform">
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            </span>
+            <h4 className="font-extrabold text-slate-900 text-lg mb-2">Secure Payments</h4>
+            <p className="text-sm text-slate-600 leading-relaxed font-medium">100% safe and encrypted checkout with card payments.</p>
+          </div>
+
+          {/* 4. Authentic Crafts */}
+          <div className="bg-white/60 backdrop-blur-xl rounded-[2rem] p-6 sm:p-8 border border-white/80 shadow-[0_8px_30px_rgba(31,38,135,0.04)] hover:shadow-[0_12px_40px_rgba(31,38,135,0.08)] hover:-translate-y-1 transition-all flex flex-col items-center text-center group">
+            <span className="w-14 h-14 rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-600 border border-indigo-200/50 shadow-sm mb-4 sm:mb-5 group-hover:scale-110 transition-transform">
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
+            </span>
+            <h4 className="font-extrabold text-slate-900 text-lg mb-2">Authentic Handcrafts</h4>
+            <p className="text-sm text-slate-600 leading-relaxed font-medium">Directly supporting local Sri Lankan artisans with every cultural artifact purchased.</p>
           </div>
 
         </div>

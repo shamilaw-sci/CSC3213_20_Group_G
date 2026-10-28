@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import Barcode from 'react-barcode';
 import Link from 'next/link';
 import { useCurrency } from '@/context/CurrencyContext';
+import Pagination from '@/components/Pagination';
 
 type VariantWithArtifact = {
   id: string;
@@ -326,26 +327,12 @@ export default function BarcodesPage() {
 
               {/* Pagination Controls */}
               {processedVariants.length > ITEMS_PER_PAGE && (
-                <div className="flex justify-between items-center p-6 border-t border-slate-100 bg-slate-50">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="px-4 py-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 font-bold text-xs rounded-xl shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider"
-                    >
-                      Prev
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="px-4 py-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 font-bold text-xs rounded-xl shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider"
-                    >
-                      Next
-                    </button>
-                  </div>
+                <div className="p-6 border-t border-slate-100 bg-slate-50">
+                  <Pagination 
+                    currentPage={currentPage} 
+                    totalPages={totalPages} 
+                    onPageChange={setCurrentPage} 
+                  />
                 </div>
               )}
             </div>

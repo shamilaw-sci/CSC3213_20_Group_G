@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useCart } from '@/context/CartContext'; 
 import { useCurrency } from '@/context/CurrencyContext';
 import { supabase } from '@/lib/supabase';
+import Pagination from '@/components/Pagination';
 
 export interface CatalogItem {
   variant_id: string;
@@ -17,6 +18,7 @@ export interface CatalogItem {
   discounted_price?: number;
   image_url: string;
   stock: number;
+  created_at?: string;
 }
 
 interface ArtifactCatalogProps {
@@ -43,7 +45,11 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
   }, [initialArtifacts]);
 
   const processedArtifacts = useMemo(() => {
-    let result = [...initialArtifacts];
+    // 🚨 Tag with an original index as a bulletproof fallback for sorting
+    let result = initialArtifacts.map((item, index) => ({
+      ...item,
+      _originalIndex: index
+    }));
 
     if (searchQuery.trim() !== '') {
       const lowerQuery = searchQuery.toLowerCase();
@@ -66,6 +72,17 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
       if (sortBy === 'price-low') return priceA - priceB;
       if (sortBy === 'price-high') return priceB - priceA;
       if (sortBy === 'name') return a.product_name.localeCompare(b.product_name);
+      
+      // 🚨 FIX: Explicit logic for Newest Arrivals
+      if (sortBy === 'newest') {
+        // If we have actual timestamps from Supabase, use them
+        if (a.created_at && b.created_at) {
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        }
+        // Fallback: The items added last (highest index) are pushed to the top
+        return b._originalIndex - a._originalIndex;
+      }
+      
       return 0; 
     });
 
@@ -135,6 +152,13 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
     router.push('/checkout');
   };
 
+  const getPagination = () => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    if (currentPage <= 3) return [1, 2, 3, 4, '...', totalPages];
+    if (currentPage >= totalPages - 2) return [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+  };
+
   return (
     <div ref={catalogTopRef} className="scroll-mt-32">
       
@@ -157,16 +181,30 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
 
           <div className="flex items-center gap-3 self-end md:self-auto">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider hidden sm:block">Sort By:</label>
-            <select 
-              value={sortBy}
-              onChange={(e) => handleFilterChange('sort', e.target.value)}
-              className="bg-white/60 backdrop-blur-md border border-white/80 text-slate-900 text-sm font-bold rounded-2xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer shadow-sm hover:bg-white transition-all w-full md:w-auto appearance-none pr-10 relative"
-            >
-              <option value="newest">Newest Arrivals</option>
-              <option value="price-low">Price: Low to High</option>
-              <option value="price-high">Price: High to Low</option>
-              <option value="name">Alphabetical (A-Z)</option>
-            </select>
+            
+            {/* 🚨 WRAPPED IN RELATIVE CONTAINER FOR THE ARROW */}
+            <div className="relative w-full md:w-auto">
+              <select 
+                value={sortBy}
+                onChange={(e) => handleFilterChange('sort', e.target.value)}
+                className="bg-white/60 backdrop-blur-md border border-white/80 text-slate-900 text-sm font-bold rounded-2xl pl-4 pr-10 py-3.5 focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer shadow-sm hover:bg-white transition-all w-full md:w-auto appearance-none"
+              >
+                <option value="newest">Newest Arrivals</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+                <option value="name">Alphabetical (A-Z)</option>
+              </select>
+              
+              {/* 🚨 CUSTOM DOWN ARROW */}
+              <svg 
+                className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none transition-transform" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
           </div>
         </div>
         
@@ -299,49 +337,14 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
             ))}
           </div>
 
-          {/* --- Pagination UI (Glassmorphism) --- */}
-          {totalPages > 1 && (
-            <div className="mt-16 flex items-center justify-center gap-2">
-              <button
-                onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className="px-4 py-2 rounded-xl bg-white/50 backdrop-blur-md border border-white/80 text-slate-700 font-bold hover:bg-white hover:text-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer shadow-sm text-sm"
-              >
-                &laquo; Prev
-              </button>
-
-              <div className="hidden sm:flex items-center gap-2">
-                {Array.from({ length: totalPages }).map((_, idx) => {
-                  const pageNum = idx + 1;
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all cursor-pointer shadow-sm text-sm ${
-                        currentPage === pageNum
-                          ? 'border-amber-400 text-white font-black bg-amber-500 shadow-[0_4px_10px_rgba(217,119,6,0.3)]'
-                          : 'bg-white/50 backdrop-blur-md border-white/80 text-slate-700 hover:bg-white hover:text-amber-600 font-bold'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <span className="sm:hidden text-slate-500 font-bold px-4 text-sm bg-white/50 backdrop-blur-md py-2 rounded-xl border border-white/80">
-                {currentPage} / {totalPages}
-              </span>
-
-              <button
-                onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-                className="px-4 py-2 rounded-xl bg-white/50 backdrop-blur-md border border-white/80 text-slate-700 font-bold hover:bg-white hover:text-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer shadow-sm text-sm"
-              >
-                Next &raquo;
-              </button>
-            </div>
-          )}
+          {/* --- Pagination UI --- */}
+          <div className="mt-16">
+            <Pagination 
+              currentPage={currentPage} 
+              totalPages={totalPages} 
+              onPageChange={handlePageChange} 
+            />
+          </div>
         </>
       )}
     </div>
