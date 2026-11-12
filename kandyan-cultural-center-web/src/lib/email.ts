@@ -1,3 +1,5 @@
+// src/lib/email.ts
+
 import nodemailer from 'nodemailer';
 
 // Configure Nodemailer for Resend SMTP
@@ -30,8 +32,15 @@ const wrapEmail = (title: string, content: string) => `
   </div>
 `;
 
-// 1. Workshop Booking Confirmation (Now includes Price)
+// 1. Workshop Booking Confirmation
 export const sendWorkshopEmail = async (email: string, name: string, title: string, date: string, time: string, guests: number, ref: string, amountPaid: number) => {
+  if (process.env.NEXT_PUBLIC_EVAL_MODE === 'true' || !process.env.SMTP_PASS) {
+    console.log("====================================");
+    console.log(`🚨 EVALUATION MODE: Mock Workshop Email generated for ${email}`);
+    console.log("====================================");
+    return { success: true };
+  }
+
   const content = `
     <p>Dear ${name},</p>
     <p>We are thrilled to confirm your reservation for <strong>${title}</strong>.</p>
@@ -49,8 +58,15 @@ export const sendWorkshopEmail = async (email: string, name: string, title: stri
   return transporter.sendMail({ from: SENDER_EMAIL, to: email, subject: `🎟️ Booking Confirmed: ${title}`, html: wrapEmail('Your Experience is Booked!', content) });
 };
 
-// 2. Physical Shop Order Confirmation (Now includes Rich Itemized Receipt)
+// 2. Physical Shop Order Confirmation
 export const sendOrderEmail = async (email: string, orderId: string, address: string, totalAmount: number, items: any[]) => {
+  if (process.env.NEXT_PUBLIC_EVAL_MODE === 'true' || !process.env.SMTP_PASS) {
+    console.log("====================================");
+    console.log(`🚨 EVALUATION MODE: Mock Order Email generated for ${email}`);
+    console.log("====================================");
+    return { success: true };
+  }
+
   const itemsHtml = items.map(item => `
     <tr style="border-bottom: 1px solid #e2e8f0;">
       <td style="padding: 12px 0; width: 60px;">
@@ -94,6 +110,13 @@ export const sendOrderEmail = async (email: string, orderId: string, address: st
 
 // 3. Hall Booking Status Updates
 export const sendHallEmail = async (email: string, name: string, date: string, status: 'received' | 'approved' | 'rejected') => {
+  if (process.env.NEXT_PUBLIC_EVAL_MODE === 'true' || !process.env.SMTP_PASS) {
+    console.log("====================================");
+    console.log(`🚨 EVALUATION MODE: Mock Hall Email generated for ${email} (Status: ${status})`);
+    console.log("====================================");
+    return { success: true };
+  }
+
   let title = '';
   let content = '';
 

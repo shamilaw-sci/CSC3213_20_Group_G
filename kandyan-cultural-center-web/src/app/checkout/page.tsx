@@ -145,18 +145,31 @@ export default function CheckoutPage() {
         const paymentConfig = await response.json();
 
         if (response.ok) {
+          const origin = typeof window !== 'undefined' ? window.location.origin : '';
+          
+          // 🚨 EVALUATION MODE INTERCEPTOR
+          if (process.env.NEXT_PUBLIC_EVAL_MODE === 'true') {
+            const queryParams = new URLSearchParams({
+              order_id: paymentConfig.orderId,
+              amount: paymentConfig.amount,
+              custom_1: deliveryData.notes || '',
+            });
+            router.push(`/dummy-payment?${queryParams.toString()}`);
+            return;
+          }
+
+          // --- ACTUAL PAYHERE LOGIC (Preserved for Production) ---
           const form = document.createElement('form');
           form.method = 'POST';
-          
           form.action = process.env.NEXT_PUBLIC_PAYHERE_ENV === 'live' 
             ? 'https://www.payhere.lk/pay/checkout' 
             : 'https://sandbox.payhere.lk/pay/checkout';
 
           const fields = {
             merchant_id: paymentConfig.merchantId,
-            return_url: `https://kandyanculturalcentre.lk/success?order=${paymentConfig.orderId}`,
-            cancel_url: `https://kandyanculturalcentre.lk/payment-cancelled`,
-            notify_url: `https://kandyanculturalcentre.lk/api/payhere-notify`,
+            return_url: `${origin}/success?order=${paymentConfig.orderId}`,
+            cancel_url: `${origin}/payment-cancelled`,
+            notify_url: `${origin}/api/payhere-notify`,
             order_id: paymentConfig.orderId,
             items: 'KCC Authentic Artifacts',
             currency: 'LKR',

@@ -1,188 +1,101 @@
-# Kandyan Culture Connect (Group G) — Setup & Git Workflow Guide
+
+# Kandyan Cultural Centre (KCC) - Web Platform & POS System
+
+**CSC3213 Project in Computer Science - Group G**
+
+This repository contains the final source code for the Kandyan Cultural Centre (KCC) E-Commerce Platform, Workshop Booking System, and Admin Point-of-Sale (POS).
+
+The application is built using **Next.js 14 (App Router)**, **TypeScript**, **Tailwind CSS**, and **Supabase**.
 
 ---
 
-## 1. Cloning the Repository
+## ⚠️ Evaluation Setup Instructions
 
-First, clone the repository to your local machine:
+To ensure a seamless evaluation process, this project has been pre-configured to run independently on a local machine using a **Dedicated Hosted Evaluation Database**. You do not need to install PostgreSQL or run any database setup scripts.
+
+### 1. Environment Variables & API Keys
+
+Due to security best practices, the live `.env.local` file containing the Evaluation Database API keys is not committed to this public GitHub repository.
+
+**Please download the `env-keys.zip` or `.env.local` file provided alongside our project submission in the university LMS portal.**
+
+Place the `.env.local` file directly in the root directory of this project.
+
+*(A `.env.example` file is included in the repository for reference.)*
+
+### 2. Prerequisites
+
+- **Node.js:** Version 18.17 or higher
+- **npm:** Version 9.0 or higher
+
+### 3. Installation & Running
+
+**Step 1: Clone the repository and navigate to the project folder.**
 
 ```bash
 git clone https://github.com/shamilaw-sci/CSC3213_20_Group_G.git
 cd kandyan-cultural-center-web
 ```
 
----
-
-## 2. Setting Up Your Local Branch
-
-Switch to the `dev` branch and pull the latest changes:
-
-```bash
-git checkout dev
-git pull origin dev
-```
-
-⚠️ **CRITICAL:**  
-All feature and bugfix branches must be created from the `dev` branch.  
-Never branch from or push directly to `main`.
-
----
-
-## 3. Install Project Dependencies & Setup
-
-### 3.1 Install Dependencies
-
-Because this is a unified Next.js (App Router) project, install all frontend and backend dependencies at the root:
+**Step 2: Install project dependencies.**
 
 ```bash
 npm install
 ```
 
----
-
-### 3.2 Environment Setup (Supabase)
-
-You need the Supabase database keys to run the project locally.
-
-Copy the example environment file and rename it:
-
-```bash
-cp .env.example .env.local
-```
-
-> Ask the Team Lead for:
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-
-Paste them into `.env.local`.
-
----
-
-### 3.3 Start the Development Server
+**Step 3: Start the development server.**
 
 ```bash
 npm run dev
 ```
 
-Open in your browser:  
-http://localhost:3000
+**Step 4: Open the application in your browser.**
+
+Visit [http://localhost:3000](http://localhost:3000).
 
 ---
 
-## 4. Creating Branches
+## 🔐 Testing Credentials
 
-### 4.1 Feature Branch
+To evaluate the POS system, Barcode Generator, Inventory Management, and Admin Dashboard, please log in using the following test credentials:
 
-Before writing new code, create a feature branch from `dev`.
+- **Email:** `admin@kcc-eval.test`
+- **Password:** `password123`
 
-**Format:**
-```bash
-feature/{member-name}/{feature-name}
-```
-
-**Example:**
-```bash
-git checkout -b feature/isuru/ecommerce-cart-logic
-```
+You can access the admin login via the `/admin` route or through the footer link.
 
 ---
 
-### 4.2 Bugfix Branch
+## 💳 Testing Payments & Emails (Evaluation Mode)
 
-For fixing bugs or broken features.
+This system integrates with **PayHere Sri Lanka** (Payments) and **Resend** (SMTP Emails). Because external API webhooks cannot communicate with a `localhost` environment, we have built a local **Evaluation Mode** to allow you to test the end-to-end logic without API crashes.
 
-**Format:**
-```bash
-bugfix/{member-name}/{bug-name}
+Inside the provided `.env.local` file, you will find the following flag:
+
+```env
+NEXT_PUBLIC_EVAL_MODE=true
 ```
 
-**Example:**
-```bash
-git checkout -b bugfix/pathum/qr-scanner-timeout
-```
+### What Happens in Evaluation Mode?
+
+1. **Mock Payment Terminal:**
+   - When you add items to the cart or book a workshop and proceed to checkout, the live PayHere redirect is safely intercepted.
+   - You will be routed to a local **Dummy Payment Page** (`/dummy-payment`).
+   - This page allows you to simulate clicking **"Approve"** or **"Decline"**, which manually triggers the local webhook to update the database state and clear the cart.
+   - *(Note: The actual production PayHere integration code is preserved and commented in `app/checkout/page.tsx` for your review.)*
+
+2. **Console Email Mocking:**
+   - Instead of requiring a live Resend API key, order confirmation and workshop ticket emails are intercepted.
+   - The system outputs a mock email receipt directly into your VS Code terminal window to demonstrate that the email function was triggered successfully.
 
 ---
 
-## 5. Supabase Database Setup
+## 📂 Key Directory Structure for Evaluation
 
-To update TypeScript types based on the latest schema:
-
-```bash
-npx supabase gen types typescript --project-id "your-project-id" > src/types/supabase.ts
-```
-
----
-
-## 6. Committing and Pushing Changes
-
-### 6.1 Commit Message Format
-
-All commits must follow the **Group G format**:
-
-| Type         | Format              | Example                                      |
-|--------------|--------------------|----------------------------------------------|
-| New Feature  | `New: description` | `New: implemented POS kiosk UI`              |
-| Bug Fix      | `Fix: description` | `Fix: corrected database lock error`         |
-
----
-
-### 6.2 Feature Commit Examples
-
-```bash
-git commit -m "New: added global e-commerce catalog grid"
-git commit -m "New: created PayHere payment gateway integration"
-git commit -m "New: implemented Admin RBAC routing"
-```
-
----
-
-### 6.3 Bug Fix Examples
-
-```bash
-git commit -m "Fix: resolved DHL shipping API timeout issue"
-git commit -m "Fix: fixed double-booking conflict logic"
-git commit -m "Fix: corrected mobile camera permission error"
-```
-
----
-
-### 6.4 Push Your Branch
-
-```bash
-git push origin branch-name
-```
-
-**Example:**
-```bash
-git push origin feature/isuru/ecommerce-cart-logic
-```
-
----
-
-## 7. Creating a Pull Request (PR)
-
-1. Go to the repository on GitHub  
-2. Click **"Compare & pull request"**  
-3. Ensure:
-   - Base branch = `dev` (**NOT main**)  
-4. Fill out the PR template  
-5. Link the relevant WBS task/issue  
-6. Request review from at least one team member  
-7. After approval → merge into `dev`
-
----
-
-## 8. Branch Structure Example
-
-```plaintext
-main (Production / Vercel Deployments ONLY)
-└── dev (Main integration branch)
-    ├── feature/isuru-s/ecommerce-cart-logic
-    ├── feature/isuru-d/feature/auth-n-userProfiles
-    ├── feature/pathum/pos-hardware-scanner
-    ├── feature/kushan/admin-dashboard-ui
-    ├── bugfix/isuru-s/cart-state-clearing
-    └── bugfix/pathum/thermal-printer-alignment
-```
-
----
+| Directory | Description |
+|---|---|
+| `/src/app` | Next.js App Router pages (Frontend & Admin UI) |
+| `/src/app/api` | Backend API routes (Webhooks & external integrations) |
+| `/src/components` | Reusable UI components (Cart, POS terminal, Navigation) |
+| `/src/lib` | Core utility functions, Supabase client initialization, and Email logic |
+| `/src/types` | TypeScript definitions directly generated from the Supabase schema |
