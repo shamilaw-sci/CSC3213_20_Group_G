@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase'; // Adjust import if your supabase client path is different
+import { supabase } from '@/lib/supabase';
 
 type Workshop = {
   id: string;
@@ -45,7 +45,7 @@ export default function BlockedSlotsManager() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // 1. Fetch blocked entries
+      // Fetch blocked entries
       const { data: blockedData, error: blockedError } = await supabase
         .from('blocked_dates')
         .select(`
@@ -62,7 +62,7 @@ export default function BlockedSlotsManager() {
       if (blockedError) throw blockedError;
       if (blockedData) setBlockedItems(blockedData as unknown as BlockedSlot[]);
 
-      // 2. Fetch workshops for selector dropdown
+      // Fetch workshops for selector dropdown
       const { data: wsData, error: wsError } = await supabase
         .from('workshops')
         .select('id, title')
@@ -140,7 +140,6 @@ export default function BlockedSlotsManager() {
   return (
     <div className="space-y-8 max-w-6xl mx-auto p-4 sm:p-6 font-sans">
       
-      {/* --- ADD NEW BLOCK FORM --- */}
       <div className="bg-white border border-slate-200 p-6 sm:p-8 rounded-2xl shadow-sm">
         <div className="mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Block Date & Time Slots</h2>
@@ -267,7 +266,7 @@ export default function BlockedSlotsManager() {
         </form>
       </div>
 
-      {/* --- ACTIVE BLOCKED LIST --- */}
+
       <div className="bg-white border border-slate-200 p-6 sm:p-8 rounded-2xl shadow-sm">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-bold text-slate-900">Active Blocked Schedule</h3>

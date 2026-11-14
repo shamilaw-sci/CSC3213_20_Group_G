@@ -36,10 +36,9 @@ export default function HallBookingsAdminPage() {
   const handleStatusChange = async (id: string, newStatus: 'approved' | 'rejected') => {
     setUpdatingId(id);
     
-    // 1. Get the current booking details so we can email them
     const currentBooking = bookings.find(b => b.id === id);
 
-    // 2. Update the Database
+    // Update the Database
     const { error } = await supabase
       .from('hall_bookings')
       .update({ status: newStatus })
@@ -49,11 +48,10 @@ export default function HallBookingsAdminPage() {
       alert(`Status update failed: ${error.message}`);
       fetchBookings(); 
     } else {
-      // Update local state instantly so the UI feels fast
       setBookings(prev => prev.map(b => b.id === id ? { ...b, status: newStatus } : b));
       if (selectedBooking?.id === id) setSelectedBooking({ ...selectedBooking, status: newStatus });
 
-      // 🚨 3. Send the Automated HTML Email!
+      // Automated HTML Email
       const customerEmail = currentBooking?.profiles?.email;
       if (customerEmail) {
         try {
@@ -134,12 +132,11 @@ export default function HallBookingsAdminPage() {
         </div>
       )}
 
-      {/* FULL DETAILS MODAL */}
+      {/* Booking Details Modal */}
       {selectedBooking && (
         <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white/80 backdrop-blur-3xl rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-white animate-in zoom-in-95 duration-200">
             
-            {/* Modal Header */}
             <div className="p-6 sm:p-8 border-b border-white/60 flex justify-between items-start bg-white/40">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1.5">Event Request</p>
@@ -150,7 +147,7 @@ export default function HallBookingsAdminPage() {
               </button>
             </div>
 
-            {/* Modal Body */}
+            {/* Body */}
             <div className="p-6 sm:p-8 overflow-y-auto space-y-6 flex-1 no-scrollbar">
               
               <div className="grid grid-cols-2 gap-4">

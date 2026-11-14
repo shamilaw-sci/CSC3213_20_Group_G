@@ -36,7 +36,6 @@ export default function FacilitiesPage() {
 
   useEffect(() => {
     const initPage = async () => {
-      // 1. Get Auth User
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       setUser(currentUser);
 
@@ -56,10 +55,10 @@ export default function FacilitiesPage() {
         }
       }
 
-      // 2. Fetch Existing Bookings ONLY (Pending & Approved).
+      // Fetch Existing Bookings
       const { data: bookings } = await supabase.from('hall_bookings').select('booking_date, status').neq('status', 'rejected');
 
-      // 3. Normalize Dates
+      // Normalize Dates
       const blocked: {date: string, reason: string}[] = [];
       
       if (bookings) {
@@ -76,18 +75,18 @@ export default function FacilitiesPage() {
     initPage();
   }, []);
 
-  // DATE VALIDATION LOGIC
+  // date validation
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedDate = e.target.value; 
     setFormData({ ...formData, booking_date: selectedDate });
     
-    // Check for conflict using normalized dates
+    // Check for conflicts
     const conflict = unavailableDates.find(d => d.date === selectedDate);
     
     if (conflict) {
       setDateError(`Unavailable: ${conflict.reason}`);
     } else {
-      setDateError(''); // Clear error if it's a valid date
+      setDateError('');
     }
   };
 
@@ -103,7 +102,7 @@ export default function FacilitiesPage() {
     setIsSubmitting(true);
     setMessage({ type: '', text: '' });
 
-    // 1. Save to Supabase
+    // Save to Supabase
     const { error } = await supabase.from('hall_bookings').insert({
       user_id: user.id,
       contact_name: formData.contact_name,
@@ -123,7 +122,7 @@ export default function FacilitiesPage() {
         setMessage({ type: 'error', text: error.message });
       }
     } else {
-      // 🚨 2. Trigger the "Request Received" Email via our new API
+      // Request Received Email
       if (user.email) {
         await fetch('/api/hall-bookings/notify', {
           method: 'POST',
@@ -140,7 +139,7 @@ export default function FacilitiesPage() {
       setIsSubmitting(false);
       setMessage({ type: 'success', text: 'Your request has been successfully submitted! Check your email for confirmation.' });
       
-      const bookedDateStr = formData.booking_date; // Capture before clearing form
+      const bookedDateStr = formData.booking_date;
       setFormData(prev => ({ ...prev, booking_date: '', event_name: '', event_details: '', max_invitees: '' }));
       
       setUnavailableDates([...unavailableDates, { date: normalizeDate(bookedDateStr), reason: 'Pending approval' }]);
@@ -159,16 +158,13 @@ export default function FacilitiesPage() {
   tomorrow.setDate(tomorrow.getDate() + 1);
   const minDateString = tomorrow.toISOString().split('T')[0];
 
-  // Helper boolean to lock the button
   const isFormLocked = isSubmitting || !formData.booking_date || dateError.length > 0;
 
-  // Reusable styling for glass inputs
   const glassInputClass = "w-full bg-white/50 backdrop-blur-md border border-white/80 rounded-2xl px-4 py-3.5 text-sm text-slate-900 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400 transition-all shadow-sm placeholder:text-slate-400";
 
   return (
     <main className="relative min-h-screen w-full bg-[#F8F9FA] pb-24">
       
-      {/* --- FIXED BACKGROUND FOR GLASS BLUR EFFECT --- */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-[#F8F9FA] to-rose-50 opacity-80"></div>
         <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-amber-200/30 rounded-full blur-[120px] animate-pulse"></div>
@@ -178,7 +174,6 @@ export default function FacilitiesPage() {
 
       <div className="relative z-10 w-full">
         
-        {/* Facilities Hero Header (Glassmorphism) */}
         <section className="pt-32 pb-16 px-4 md:px-6">
           <div className="container mx-auto max-w-7xl">
             <div className="bg-white/40 backdrop-blur-xl border border-white/60 p-10 md:p-16 rounded-[3rem] shadow-[0_20px_50px_rgba(31,38,135,0.05)] w-full text-center relative overflow-hidden">
@@ -202,7 +197,7 @@ export default function FacilitiesPage() {
         <div className="container mx-auto px-4 sm:px-6 max-w-7xl mt-4">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
                     
-            {/* LEFT COLUMN: Photos, Facilities & Rules */}
+            {/* left col, photos, Facilities & Rules */}
             <div className="lg:col-span-7 space-y-10">
               
               {/* Photo Grid */}
@@ -218,7 +213,7 @@ export default function FacilitiesPage() {
                 </div>
               </div>
 
-              {/* Facilities Specs (Glassmorphism) */}
+              {/* Facilities Specs */}
               <div className="bg-white/60 backdrop-blur-xl rounded-[2.5rem] p-8 md:p-10 border border-white/80 shadow-[0_10px_40px_rgba(31,38,135,0.05)]">
                 <h3 className="text-xl font-extrabold text-slate-900 mb-8 flex items-center gap-4">
                   <span className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600 border border-amber-200/50 shadow-sm shrink-0">
@@ -254,7 +249,7 @@ export default function FacilitiesPage() {
                 </div>
               </div>
 
-              {/* Rules (Glassmorphism) */}
+              {/* Rules */}
               <div className="bg-rose-50/60 backdrop-blur-xl rounded-[2.5rem] p-8 md:p-10 border border-rose-200/60 shadow-[0_10px_30px_rgba(225,29,72,0.05)]">
                 <h3 className="text-xl font-extrabold text-slate-900 mb-6 flex items-center gap-4">
                   <span className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-rose-600 shadow-sm border border-white">
@@ -269,7 +264,7 @@ export default function FacilitiesPage() {
               </div>
             </div>
 
-            {/* RIGHT COLUMN: Booking Form (Glassmorphism) */}
+            {/* right col: Booking Form */}
             <div className="lg:col-span-5 lg:sticky lg:top-32">
               <div className="bg-white/60 backdrop-blur-2xl rounded-[2.5rem] p-8 sm:p-10 shadow-[0_20px_50px_rgba(31,38,135,0.05)] border border-white/80">
                         
@@ -304,7 +299,6 @@ export default function FacilitiesPage() {
                       </div>
                     </div>
 
-                    {/* DATE INPUT WITH INLINE ERROR */}
                     <div className="space-y-2">
                       <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Select Date *</label>
                       <input 

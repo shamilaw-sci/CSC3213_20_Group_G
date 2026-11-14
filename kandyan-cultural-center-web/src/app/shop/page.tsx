@@ -37,7 +37,6 @@ export default async function ShopPage() {
   return (
     <main className="relative min-h-screen bg-[#F8F9FA]">
       
-      {/* --- FIXED BACKGROUND FOR GLASS BLUR EFFECT --- */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-[#F8F9FA] to-rose-50 opacity-80"></div>
         <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-amber-200/30 rounded-full blur-[120px] animate-pulse"></div>
@@ -45,10 +44,8 @@ export default async function ShopPage() {
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
       </div>
 
-      {/* --- MAIN SCROLLING CONTENT --- */}
       <div className="relative z-10 w-full pb-24">
         
-        {/* Shop Hero Header (Glassmorphism) */}
         <section className="flex flex-col justify-center items-center px-4 md:px-12 pt-32 pb-16 top-0">
           <div className="bg-white/40 backdrop-blur-xl border border-white/60 p-8 md:p-14 rounded-[3rem] shadow-[0_20px_50px_rgba(31,38,135,0.05)] max-w-4xl w-full text-center relative overflow-hidden">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-amber-400/20 blur-[50px] rounded-full pointer-events-none"></div>

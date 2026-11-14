@@ -13,8 +13,7 @@ interface CurrencyContextType {
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
-// 1. SECURE FALLBACK RATES
-// We keep these in case the API goes down, the user loses internet, or you hit your free tier limit.
+// secure fallback rates in case the API fails or is unavailable
 const FALLBACK_RATES: Record<CurrencyCode, number> = {
   LKR: 1,
   USD: 0.0033, 
@@ -84,13 +83,13 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('kcc_currency', c);
   };
 
-  // 2. USE THE DYNAMIC 'rates' STATE FOR MATH
+  // dynamically convert price based on selected currency
   const convertPrice = (priceInLKR: number) => {
     return priceInLKR * rates[currency];
   };
 
   const formatPrice = (priceInLKR: number) => {
-    // Prevent Next.js hydration mismatch by returning raw LKR until mounted on the client
+    
     if (!isMounted) return `LKR ${priceInLKR.toLocaleString()}`;
 
     const converted = convertPrice(priceInLKR);

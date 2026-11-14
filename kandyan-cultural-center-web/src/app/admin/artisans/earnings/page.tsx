@@ -27,7 +27,7 @@ export default function ArtisanEarningsPage() {
     async function loadArtisanEarnings() {
       setLoading(true);
       try {
-        // 1. Fetch artisans, workshops, and confirmed bookings simultaneously
+        // Fetch artisans, workshops, and confirmed bookings simultaneously
         const [
           { data: artisans },
           { data: workshops },
@@ -40,7 +40,7 @@ export default function ArtisanEarningsPage() {
 
         if (!artisans || !workshops) return;
 
-        // 2. Map revenue and guests by workshop_id
+        // Map revenue and guests by workshop_id
         const workshopStatsMap = new Map<string, { bookings: number; guests: number; revenue: number }>();
 
         (bookings || []).forEach((b) => {
@@ -58,13 +58,11 @@ export default function ArtisanEarningsPage() {
           });
         });
 
-        // 3. Aggregate totals per Artisan and FILTER OUT anyone without active workshops
         const resultList: ArtisanPerformance[] = [];
 
         artisans.forEach((artisan) => {
           const artisanWorkshops = workshops.filter((w) => w.artisan_id === artisan.id);
 
-          // Skip artisans who do not host any workshops
           if (artisanWorkshops.length === 0) return;
 
           let totalBookings = 0;
@@ -80,7 +78,6 @@ export default function ArtisanEarningsPage() {
             }
           });
 
-          // Only display artisans who have workshops assigned to them
           resultList.push({
             id: artisan.id,
             name: artisan.name,
@@ -90,7 +87,7 @@ export default function ArtisanEarningsPage() {
             totalBookings,
             totalGuests,
             grossRevenue,
-            artisanPayout: grossRevenue * 0.85, // 85% Guild/Instructor Payout Share
+            artisanPayout: grossRevenue * 0.85,
           });
         });
 
@@ -198,7 +195,7 @@ export default function ArtisanEarningsPage() {
     <main className="min-h-screen bg-slate-50 p-6 md:p-12 text-slate-900">
       <div className="max-w-6xl mx-auto space-y-10">
         
-        {/* Header Navigation */}
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-black tracking-tight">Artisan Earnings & Payouts</h1>

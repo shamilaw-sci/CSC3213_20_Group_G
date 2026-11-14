@@ -5,13 +5,12 @@ export default function Footer() {
   return (
     <footer className="bg-white/30 backdrop-blur-xl text-slate-600 pt-16 pb-8 border-t border-white/60 relative overflow-hidden mt-0 shadow-[0_-10px_40px_rgba(0,0,0,0.02)]">
       
-      {/* Background Decorative Element */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-px bg-gradient-to-r from-transparent via-amber-400/40 to-transparent"></div>
       
       <div className="container mx-auto px-6 max-w-7xl relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-16 border-b border-slate-200/60 pb-12">
           
-          {/* Brand & Address (Spans 5 columns) */}
+          {/* Brand & Address */}
           <div className="md:col-span-12 lg:col-span-5 space-y-6">
             <div className="flex items-center space-x-3">
                <div className="relative w-12 h-12">
@@ -32,7 +31,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Quick Links (Spans 3 columns) */}
+          {/* Quick Links */}
           <div className="md:col-span-6 lg:col-span-3">
             <h4 className="text-sm font-bold text-slate-900 mb-6 tracking-widest uppercase border-b border-white/60 pb-3 inline-block">Digital Services</h4>
             <ul className="space-y-4 text-sm font-medium text-slate-600">
@@ -42,7 +41,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Discover & Contact (Spans 4 columns) */}
+          {/* Discover & Contact */}
           <div className="md:col-span-6 lg:col-span-4">
             <h4 className="text-sm font-bold text-slate-900 mb-6 tracking-widest uppercase border-b border-white/60 pb-3 inline-block">Discover</h4>
             <ul className="space-y-4 text-sm font-medium mb-8 text-slate-600">

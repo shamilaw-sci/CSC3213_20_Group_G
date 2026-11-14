@@ -142,7 +142,7 @@ export default function OrdersPage() {
                       LKR {order.total_amount?.toLocaleString() || 0}
                     </td>
                     <td className="px-6 py-5 pr-8 align-top">
-                      {/* DYNAMIC STATUS SELECTOR */}
+                      {/* dynamic status selector */}
                       <div className="relative">
                         <select
                           value={order.status.toLowerCase()}

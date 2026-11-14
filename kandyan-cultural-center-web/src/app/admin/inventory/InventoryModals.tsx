@@ -108,7 +108,7 @@ export default function InventoryModals({
 
         <form onSubmit={handleSubmit} className="p-6 sm:p-8 overflow-y-auto space-y-8 flex-1 no-scrollbar">
           
-          {/* BASE ARTIFACT DETAILS */}
+          {/* base artifact details */}
           {(mode === 'parent' || mode === 'edit') && (
             <div className="border border-white/80 rounded-[2rem] p-6 sm:p-8 bg-white/50 backdrop-blur-md shadow-sm space-y-5">
               <h3 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest border-b border-white/60 pb-3">Base Artifact Details</h3>
@@ -142,7 +142,7 @@ export default function InventoryModals({
             </div>
           )}
 
-          {/* VARIANT DETAILS */}
+          {/* variant details */}
           {(mode === 'variant' || mode === 'edit') && (
             <div className="border border-white/80 rounded-[2rem] p-6 sm:p-8 bg-white/50 backdrop-blur-md shadow-sm space-y-5">
               <h3 className="text-[10px] font-extrabold text-amber-600 uppercase tracking-widest border-b border-amber-200/50 pb-3">Variant SKU Details</h3>

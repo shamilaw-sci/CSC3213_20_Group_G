@@ -88,7 +88,6 @@ export default function AdminPOSSessionsPage() {
   const [sessions, setSessions] = useState<POSSession[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // 🚨 NEW: PAGINATION STATE
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 15;
 
@@ -128,7 +127,7 @@ export default function AdminPOSSessionsPage() {
     return { active, totalShortage, totalOverage };
   }, [sessions]);
 
-  // 🚨 NEW: Calculate Pagination
+  // Calculate Pagination
   const totalPages = Math.max(1, Math.ceil(sessions.length / ITEMS_PER_PAGE));
   const paginatedSessions = sessions.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -226,7 +225,7 @@ export default function AdminPOSSessionsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
-                  {/* 🚨 Maps over paginatedSessions instead of sessions */}
+
                   {paginatedSessions.map((row) => {
                     const isClosed = row.status !== 'active';
                     const variance = row.variance || 0;
@@ -278,7 +277,7 @@ export default function AdminPOSSessionsPage() {
                 </tbody>
               </table>
               
-              {/* 🚨 NEW: POS Table Pagination Controls */}
+              {/* POS Table Pagination Controls */}
               {sessions.length > 0 && (
                 <div className="flex justify-between items-center p-6 border-t border-slate-100 bg-slate-50">
                   <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">

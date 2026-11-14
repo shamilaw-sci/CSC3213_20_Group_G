@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import Image from 'next/image';
 
-// --- INTERFACES ---
+// interfaces for type safety
 interface OrderItem {
   quantity: number;
   selling_price_at_sale: number;
@@ -59,7 +59,7 @@ export default function Profile() {
   const [isLoading, setIsLoading] = useState(true);
   const [imgError, setImgError] = useState(false);
 
-  // Pagination Toggles ("Show More" for > 5 items)
+  // Pagination Toggles
   const [showAllOrders, setShowAllOrders] = useState(false);
   const [showAllUpcomingWorkshops, setShowAllUpcomingWorkshops] = useState(false);
   const [showAllPastWorkshops, setShowAllPastWorkshops] = useState(false);
@@ -79,7 +79,7 @@ export default function Profile() {
         return;
       }
 
-      // 1. Fetch Profile
+      // Fetch Profile
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
@@ -87,7 +87,7 @@ export default function Profile() {
         .single();
       setProfile(profileData);
 
-      // 2. Fetch Orders WITH nested items
+      // Fetch Orders with nested items
       const { data: ordersData } = await supabase
         .from('orders')
         .select(`
@@ -107,7 +107,7 @@ export default function Profile() {
 
       if (ordersData) setOrders(ordersData as any);
 
-      // 3. Fetch Workshop Bookings
+      // Fetch Workshop Bookings
       const { data: wsBookingsData } = await supabase
         .from('workshop_bookings')
         .select('*')
@@ -116,7 +116,7 @@ export default function Profile() {
 
       if (wsBookingsData) setWorkshopBookings(wsBookingsData as any);
 
-      // 4. Fetch Hall Bookings
+      // Fetch Hall Bookings
       const { data: bookingsData } = await supabase
         .from('hall_bookings')
         .select('*')
@@ -131,7 +131,6 @@ export default function Profile() {
     load();
   }, []);
 
-  // 🚨 NEW: Maps the exact order status keys to their labels and colors
   const getOrderBadgeInfo = (status: string) => {
     const s = (status || '').toLowerCase();
     switch (s) {
@@ -147,7 +146,6 @@ export default function Profile() {
     }
   };
 
-  // 🚨 NEW: Calculates the step number (1 to 5) for the modal progress bar
   const getOrderStep = (status: string) => {
     const s = (status || '').toLowerCase();
     if (s === 'completed') return 1; 
@@ -201,7 +199,6 @@ export default function Profile() {
   return (
     <main className="relative min-h-screen pt-32 md:pt-40 pb-24 px-4 sm:px-8 bg-[#F8F9FA]">
       
-      {/* --- FIXED BACKGROUND FOR GLASS BLUR EFFECT --- */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-[#F8F9FA] to-rose-50 opacity-80"></div>
         <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-amber-200/30 rounded-full blur-[120px] animate-pulse"></div>
@@ -210,7 +207,6 @@ export default function Profile() {
 
       <div className="relative z-10 max-w-4xl mx-auto space-y-12">
 
-        {/* --- PROFILE HEADER CARD --- */}
         <div className="bg-white/60 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(31,38,135,0.05)] border border-white/80 overflow-hidden relative mt-12 sm:mt-16">
           <div className="px-6 sm:px-10 pb-10 relative">
             {hasValidAvatar ? (
@@ -233,7 +229,7 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* --- 1. ARTIFACT ORDERS SECTION --- */}
+        {/* artifacts orders */}
         <div>
           <h3 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-4">
             <span className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-sm border border-amber-200/50">
@@ -294,7 +290,7 @@ export default function Profile() {
           )}
         </div>
 
-        {/* --- 2. UPCOMING WORKSHOP BOOKINGS --- */}
+        {/* upcomming workshops */}
         <div>
           <h3 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-4">
             <span className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-sm border border-amber-200/50">
@@ -353,7 +349,7 @@ export default function Profile() {
           )}
         </div>
 
-        {/* --- 3. PAST WORKSHOP HISTORY --- */}
+        {/* past workshops */}
         {pastWorkshops.length > 0 && (
           <div>
             <h3 className="text-xl font-bold text-slate-500 mb-4 flex items-center gap-2">
@@ -392,7 +388,7 @@ export default function Profile() {
           </div>
         )}
 
-        {/* --- 4. HALL BOOKINGS SECTION --- */}
+        {/* hall booking */}
         <div className="pt-4">
           <h3 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-4">
             <span className="w-12 h-12 rounded-2xl bg-white text-slate-900 flex items-center justify-center shadow-sm border border-slate-200">
@@ -448,9 +444,7 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* ========================================= */}
-      {/* MODAL: ORDER DETAILS                      */}
-      {/* ========================================= */}
+      {/* order details */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white/80 backdrop-blur-3xl border border-white rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.15)] animate-in zoom-in-95 duration-200">
@@ -475,7 +469,6 @@ export default function Profile() {
                   <div className="relative flex justify-between items-center px-2">
                     <div className="absolute top-1/2 left-0 w-full h-1.5 bg-white -translate-y-1/2 rounded-full z-0 shadow-inner"></div>
                     
-                    {/* 🚨 Progress Bar logic updated for 5 steps (divides by 25% increments) */}
                     <div className="absolute top-1/2 left-0 h-1.5 bg-amber-500 -translate-y-1/2 rounded-full z-0 transition-all duration-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" 
                          style={{ width: `${Math.max(0, getOrderStep(selectedOrder.status) - 1) * 25}%` }}></div>
                     
@@ -542,9 +535,7 @@ export default function Profile() {
         </div>
       )}
 
-      {/* ========================================= */}
-      {/* MODAL: WORKSHOP BOOKING DETAILS           */}
-      {/* ========================================= */}
+      {/* workshop booking details */}
       {selectedWorkshopBooking && (
         <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white/80 backdrop-blur-3xl border border-white rounded-[2.5rem] w-full max-w-lg overflow-hidden flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.15)] animate-in zoom-in-95 duration-200">
@@ -601,9 +592,7 @@ export default function Profile() {
         </div>
       )}
 
-      {/* ========================================= */}
-      {/* MODAL: HALL BOOKING DETAILS               */}
-      {/* ========================================= */}
+      {/* hall booking details */}
       {selectedHallBooking && (
         <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white/80 backdrop-blur-3xl border border-white rounded-[2.5rem] w-full max-w-lg overflow-hidden flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.15)] animate-in zoom-in-95 duration-200">

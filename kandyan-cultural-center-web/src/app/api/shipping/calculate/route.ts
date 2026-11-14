@@ -8,12 +8,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
-    // 1. LOCAL SHIPPING RULE: Flat LKR 500 within Sri Lanka
+    // LOCAL SHIPPING RULE: Flat LKR 500 within Sri Lanka
     if (country.toLowerCase() === 'sri lanka') {
       return NextResponse.json({ shippingFee: 500, carrier: 'Local Courier' });
     }
 
-    // 2. INTERNATIONAL SHIPPING RULE (DHL Express Integration)
+    // INTERNATIONAL SHIPPING RULE (DHL Express Integration)
     // Calculate total volumetric/physical weight from the cart items
     const totalWeightKg = cartItems.reduce((sum: number, item: any) => {
       // Safely parse item weight string (e.g., "1.2 kg" -> 1.2)
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // 3. SECURE FALLBACK LOGISTICS CALCULATION (If credentials are empty during Sandbox phase)
+    // If credentials are empty during Sandbox phase, or if DHL API fails, fallback to a simple calculation
     // Base international shipment cost LKR 4,500 + LKR 1,500 per Kilogram
     const calculatedFallback = 4500 + Math.ceil(totalWeightKg) * 1500;
     return NextResponse.json({ 

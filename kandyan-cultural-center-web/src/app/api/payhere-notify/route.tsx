@@ -1,5 +1,3 @@
-// app/api/payhere-notify/route.tsx
-
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
@@ -38,17 +36,15 @@ export async function POST(request: Request) {
 
     const isEvalMode = process.env.NEXT_PUBLIC_EVAL_MODE === 'true';
 
-    // 🚨 ALLOW DUMMY BYPASS IF EVAL_MODE IS ACTIVE
+    // allow eval mode to bypass signature check for testing purposes
     if (!isEvalMode && md5sig !== expectedLocalSignature) {
       console.error(`🚨 Signature Mismatch! PayHere sent: ${md5sig}, We expected: ${expectedLocalSignature}`);
       return NextResponse.json({ error: 'Signature mismatch.' }, { status: 400 });
     }
 
     if (statusCode === '2') { 
-      
-      // ==========================================
-      // FLOW A: WORKSHOP BOOKING
-      // ==========================================
+    
+      // -------------FLOW A: WORKSHOP BOOKING------------------
       if (isWorkshopBooking && bookingId) {
         await supabase.from('workshop_bookings').update({ status: 'confirmed' }).eq('id', bookingId);
         await supabase.from('transactions').insert({ booking_id: bookingId, gateway_reference: paymentId, status: 'success', amount_paid: parseFloat(payhereAmount) });
@@ -68,9 +64,7 @@ export async function POST(request: Request) {
           ).catch(console.error);
         }
 
-      // ==========================================
-      // FLOW B: PHYSICAL SHOP ORDER
-      // ==========================================
+      // --------------FLOW B: PHYSICAL SHOP ORDER------------------
       } else {
         const { data: rpcRes, error: rpcError } = await supabase.rpc('complete_shop_order_atomic', { p_order_id: orderId, p_payment_id: paymentId, p_amount: parseFloat(payhereAmount) });
 

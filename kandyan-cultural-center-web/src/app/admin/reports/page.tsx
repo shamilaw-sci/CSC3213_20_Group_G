@@ -62,11 +62,11 @@ export default function FinancialReportsPage() {
     let totalItemsSold = 0;
 
     rawData.forEach(order => {
-      // 🚨 FIXED: Filter by Month
+      // Filter by Month
       const orderMonth = order.created_at.slice(0, 7);
       if (selectedMonth !== 'all' && orderMonth !== selectedMonth) return;
 
-      // 🚨 FIXED: Filter by Sales Channel (Online vs In-Store)
+      // Filter by Sales Channel
       if (selectedChannel !== 'all' && order.sales_channel !== selectedChannel) return;
 
       order.order_items?.forEach((item: any) => {
@@ -102,9 +102,9 @@ export default function FinancialReportsPage() {
       rows: Array.from(reportMap.values()).sort((a, b) => b.profit - a.profit), 
       summary: { totalRevenue, totalProfit, totalItemsSold }
     };
-  }, [rawData, selectedMonth, selectedChannel]); // 🚨 Added selectedChannel to dependencies
+  }, [rawData, selectedMonth, selectedChannel]);
 
-  // EXPORT TO EXCEL
+  // export to Excel
   const exportToExcel = () => {
     const exportData = processedReport.rows.map(row => ({
       'Artifact / Variant': row.name,
@@ -126,13 +126,13 @@ export default function FinancialReportsPage() {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Financial Report");
     
-    // Clean filename
+    // filename
     const channelName = selectedChannel === 'all' ? 'All_Channels' : selectedChannel;
     const fileName = `KCC_Financials_${selectedMonth === 'all' ? 'All_Time' : selectedMonth}_${channelName}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   };
 
-  // EXPORT TO PDF
+  // export to pdf
   const exportToPDF = () => {
     const doc = new jsPDF();
     const periodLabel = selectedMonth === 'all' ? 'All Time' : availableMonths.find(m => m.value === selectedMonth)?.label;
@@ -248,7 +248,7 @@ export default function FinancialReportsPage() {
         <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-slate-200 border-t-amber-500 rounded-full animate-spin"></div></div>
       ) : (
         <>
-          {/* Summary KPI Cards (Glassmorphism) */}
+          {/* Summary KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10 animate-in slide-in-from-bottom-4 duration-500">
             <div className="bg-white/60 backdrop-blur-xl p-6 sm:p-8 rounded-[2rem] border border-white/80 shadow-sm">
               <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">Gross Revenue</p>
@@ -266,7 +266,7 @@ export default function FinancialReportsPage() {
             </div>
           </div>
 
-          {/* ================== MOBILE CARD LAYOUT (< md) ================== */}
+          {/* mobile cards */}
           <div className="md:hidden space-y-4 animate-in fade-in duration-700">
             {processedReport.rows.length === 0 ? (
               <div className="bg-white/60 backdrop-blur-md p-10 text-center font-bold text-slate-500 rounded-[2rem] border border-white/80 shadow-sm">
@@ -298,7 +298,7 @@ export default function FinancialReportsPage() {
             )}
           </div>
 
-          {/* ================== DESKTOP TABLE LAYOUT (>= md) ================== */}
+          {/* desktop table */}
           <div className="hidden md:block bg-white/60 backdrop-blur-2xl border border-white/80 rounded-[2.5rem] shadow-[0_20px_50px_rgba(31,38,135,0.05)] overflow-hidden animate-in fade-in duration-700">
             <div className="overflow-x-auto no-scrollbar">
               <table className="w-full text-left text-sm whitespace-nowrap">

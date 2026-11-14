@@ -4,7 +4,6 @@ import DeleteArtisanButton from "./DeleteArtisanButton";
 
 export const revalidate = 0;
 
-// 1. Define the exact shape of an Artisan row from Supabase
 type Artisan = {
   id: string;
   name: string;
@@ -31,7 +30,6 @@ export default async function AdminArtisansPage() {
     <main className="min-h-screen bg-slate-50 p-6 md:p-12 space-y-10 text-slate-900">
       <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-sm border border-slate-200/60 p-6 md:p-10">
         
-        {/* Header Action Strip */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-100">
           <div>
             <h1 className="text-3xl font-black tracking-tight">Artisans Directory</h1>
@@ -74,7 +72,6 @@ export default async function AdminArtisansPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* 2. Explicitly type the parameter here: (artisan: Artisan) */}
             {artisans?.map((artisan: Artisan) => (
               <div
                 key={artisan.id}

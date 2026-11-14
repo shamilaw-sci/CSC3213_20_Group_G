@@ -27,7 +27,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: `Missing required fields: ${missing.join(', ')}` }, { status: 400 });
     }
 
-    // 🚨 ATOMIC RPC CALL: PostgreSQL locks the row and prevents double-booking
+    // PostgreSQL locks the row and prevents double-booking (atomic function)
     const { data: rpcResult, error: rpcError } = await supabase.rpc('create_workshop_booking_atomic', {
       p_user_id: body.user_id ?? null,
       p_workshop_id: body.workshop_id ?? body.experience_id ?? null,

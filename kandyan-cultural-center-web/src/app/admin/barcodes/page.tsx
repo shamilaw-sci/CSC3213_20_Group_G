@@ -26,7 +26,6 @@ export default function BarcodesPage() {
   const [variants, setVariants] = useState<VariantWithArtifact[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Selection State: Map of Variant ID -> Number of Copies to Print
   const [selectedToPrint, setSelectedToPrint] = useState<Map<string, number>>(new Map());
 
   // FILTER & SORT STATE
@@ -42,7 +41,7 @@ export default function BarcodesPage() {
 
   const fetchVariants = async () => {
     setLoading(true);
-    // Fetch all variants (up to a safe cap) to allow instant client-side filtering
+    // Fetch all variants
     const { data, error } = await supabase
       .from('artifact_variants')
       .select(`
@@ -74,13 +73,12 @@ export default function BarcodesPage() {
     return Array.from(new Set(cats));
   }, [variants]);
 
-  // 🚨 MASTER FILTER ENGINE WITH "STICKY SELECTION"
   const processedVariants = useMemo(() => {
-    // 1. Separate the "Sticky" selected items from the rest
+    // Separate selected items (sticky) from unselected items
     const selectedItems = variants.filter(v => selectedToPrint.has(v.id));
     let unselectedItems = variants.filter(v => !selectedToPrint.has(v.id));
 
-    // 2. Apply Filters ONLY to the unselected items
+    // Apply Filters
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       unselectedItems = unselectedItems.filter(v => 
@@ -103,7 +101,7 @@ export default function BarcodesPage() {
       if (filterPrice === '>15000') unselectedItems = unselectedItems.filter(v => v.price > 15000);
     }
 
-    // 3. Apply Sorting
+    // Apply Sorting
     const sortLogic = (a: VariantWithArtifact, b: VariantWithArtifact) => {
       switch (sortBy) {
         case 'Newest': return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
@@ -119,9 +117,8 @@ export default function BarcodesPage() {
     };
 
     unselectedItems.sort(sortLogic);
-    selectedItems.sort(sortLogic); // Keep sticky items organized too
+    selectedItems.sort(sortLogic);
 
-    // 4. Merge them back together! Sticky items ALWAYS stay at the top.
     return [...selectedItems, ...unselectedItems];
   }, [variants, searchQuery, filterCategory, filterStock, filterPrice, sortBy, selectedToPrint]);
 
@@ -183,7 +180,6 @@ export default function BarcodesPage() {
       
       <div className="max-w-7xl mx-auto space-y-6 print:hidden">
         
-        {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-black tracking-tight">Barcode & Label Generator</h1>
@@ -340,9 +336,7 @@ export default function BarcodesPage() {
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 2. PRINT UI (Visible ONLY when printing, calibrated for 50x25mm thermal)  */}
-      {/* ========================================================================= */}
+      {/* 2. PRINT UI (50x25mm) */}
       <div className="hidden print:block print-container">
         {printQueue.map((item, index) => {
           const activePrice = item.discounted_price || item.price;
@@ -371,18 +365,18 @@ export default function BarcodesPage() {
 
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
-          /* 1. PAPER SIZE */
+          /* paper size */
           @page { 
             margin: 0; 
             size: 50mm 25mm; 
           }
 
-          /* 2. HIDE ALL ADMIN UI */
+          /* 2. hide ui */
           .print\\:hidden, header, nav, aside, footer { 
             display: none !important; 
           }
 
-          /* 3. NUCLEAR DOM RESET */
+          /* nuclear dom reset */
           html, body, div, main, section, article {
             display: block !important;
             position: static !important;
@@ -398,21 +392,20 @@ export default function BarcodesPage() {
             background: white !important;
           }
 
-          /* 4. SETUP PRINT CONTAINER */
+          /* setup print container */
           .print-container {
             display: block !important;
             width: 50mm !important;
             margin: 0 auto !important;
           }
           
-          /* 5. INDIVIDUAL LABEL STRICT BOUNDARIES */
+          /* individual label strict boundaries */
           .thermal-label {
             width: 50mm !important;
             height: 25mm !important; 
             box-sizing: border-box !important;
             margin: 0 !important;
             
-            /* 🚨 HARDWARE OFFSET CORRECTION: Push content 2.5mm left */
             padding-top: 1mm !important;
             padding-bottom: 1mm !important;
             padding-left: 0!important;
@@ -439,7 +432,6 @@ export default function BarcodesPage() {
             break-after: auto !important;
           }
           
-          /* 🚨 UPSCALED TYPOGRAPHY */
           .store-name { 
             font-size: 8px !important; 
             font-weight: 900 !important; 

@@ -20,7 +20,7 @@ export default async function Home() {
       {/* Main Content Wrapper - Relative z-10 puts it above the background */}
       <main className="relative z-10 w-full">
         
-        {/* 1. HERO SECTION (Glassmorphic) */}
+        {/* hero */}
         <section className="min-h-screen flex flex-col justify-center items-center px-4 md:px-12 top-0 bg-white/10">
           <div className="glass-panel p-8 md:p-16 rounded-[3rem] max-w-4xl w-full text-center mt-20">
             <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 text-xs font-bold tracking-widest uppercase mb-8 shadow-sm">
@@ -46,12 +46,12 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* 2. ABOUT SECTION (Sticky scroll effect with Photo) */}
+        {/* about */}
         <section className="min-h-screen flex items-center px-4 py-24 top-0 bg-white/30 backdrop-blur-lg border-t border-white/60">
           <div className="container mx-auto max-w-7xl">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
               
-              {/* Left Side: Content & Stats (Spans 7 columns) */}
+              {/* Left Side */}
               <div className="lg:col-span-7 flex flex-col gap-6">
                 <div className="glass-panel p-8 sm:p-12 md:p-14 rounded-[3rem]">
                   <h2 className="text-amber-600 font-bold tracking-widest uppercase text-xs mb-4 flex items-center gap-4">
@@ -81,17 +81,15 @@ export default async function Home() {
                 </div>
               </div>
 
-              {/* Right Side: Photo (Spans 5 columns) */}
+              {/* Right Side photo */}
               <div className="lg:col-span-5 h-full min-h-[400px] lg:min-h-[500px] relative">
                 <div className="glass-panel w-full h-full rounded-[3rem] p-3 relative overflow-hidden flex items-center justify-center group">
-                  {/* Suggestion: Use a warm, natural-light photo of an artisan carving wood or a beautifully lit traditional dancer preparing for a show. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src="/story-master-artisan.png"
                     alt="Master Kandyan Artisan at Work" 
                     className="w-full h-full object-cover rounded-[2.2rem] shadow-inner opacity-90 group-hover:opacity-100 transition-opacity duration-700"
                   />
-                  {/* Soft inner glow overlay */}
                   <div className="absolute inset-0 rounded-[2.2rem] shadow-[inset_0_0_40px_rgba(255,255,255,0.4)] pointer-events-none"></div>
                 </div>
               </div>
@@ -100,7 +98,7 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* 3. E-COMMERCE SECTION */}
+        {/* e-commerce */}
         <section className="min-h-screen flex flex-col justify-center px-4 py-24 top-0 bg-[#F8F9FA]/80 backdrop-blur-xl border-t border-white/60">
           <div className="container mx-auto max-w-7xl">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
@@ -114,7 +112,6 @@ export default async function Home() {
               </div>
             </div>
             
-            {/* Carousel naturally sits inside the glass environment */}
             <div className="-mx-4 md:mx-0">
               <FeaturedCarousel artifacts={featuredArtifacts || []} />
             </div>
@@ -122,9 +119,8 @@ export default async function Home() {
         </section>
 
 
-        {/* 4. CORE MODULES TEASER GRID (Light Glass Cards) */}
         <section className="min-h-screen flex flex-col justify-center py-24 top-0 bg-white/40 backdrop-blur-lg border-t border-white/60 relative overflow-hidden">
-          {/* Subtle grid pattern background for texture */}
+
           <div className="absolute inset-0 opacity-30 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
           
           <div className="container mx-auto px-4 max-w-7xl relative z-10">
@@ -184,12 +180,12 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* 5. CONTACT & LOCATION SECTION (Light Glass Design) */}
+        {/* contact */}
         <section id="contact" className="min-h-screen flex items-center justify-center py-24 top-0 bg-[#F8F9FA]/80 backdrop-blur-2xl border-t border-white/60 relative overflow-hidden">
           <div className="container mx-auto px-4 max-w-7xl relative z-10">
             <div className="glass-panel rounded-[3rem] overflow-hidden flex flex-col lg:flex-row min-h-[600px] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border-white">
               
-              {/* Left: Contact Information */}
+              {/* Left: Contact Info */}
               <div className="w-full lg:w-5/12 bg-white/40 p-10 lg:p-14 flex flex-col justify-center relative border-r border-white/60">
                 <div className="relative z-10">
                   <h2 className="text-amber-600 font-bold tracking-widest uppercase text-xs mb-4 flex items-center gap-3">
@@ -264,7 +260,7 @@ export default async function Home() {
                     title="Kandy Cultural Center Location"
                   ></iframe>
 
-                  {/* Floating Glass Map Label */}
+                  {/* Floating Glass Map */}
                   <div className="absolute bottom-6 left-6 right-6 sm:right-auto sm:w-[320px] bg-white/80 backdrop-blur-xl border border-white p-4 rounded-2xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] z-20">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0 shadow-sm border border-emerald-200">

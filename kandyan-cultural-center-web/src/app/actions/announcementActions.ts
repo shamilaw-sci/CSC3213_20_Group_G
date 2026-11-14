@@ -4,16 +4,6 @@ import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import type { ActionResult, AnnouncementInput, AnnouncementType } from '@/types/announcement.types';
 
-/**
- * AUTH MODEL
- * The app keeps the Supabase session in the browser (no auth cookies), so a
- * server action can't see who is calling. Every action therefore takes the
- * caller's access token and builds a per-request client that sends it as the
- * Authorization header. Postgres then evaluates RLS (is_admin()) for that user.
- *
- * Do NOT swap this for supabaseServer (service role): that key bypasses RLS,
- * and server actions are public POST endpoints, so anyone could write.
- */
 function getAuthedClient(accessToken: string) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();

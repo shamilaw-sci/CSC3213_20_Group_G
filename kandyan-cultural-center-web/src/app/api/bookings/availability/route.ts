@@ -24,7 +24,7 @@ export async function GET(req: Request) {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // 🚨 FIXED: Ignore failed/cancelled bookings so they don't eat up slots
+    // Ignore failed/cancelled bookings
     const { data: bookings, error } = await supabase
       .from('workshop_bookings')
       .select('booked_time, guests')
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
         capacityQuery = capacityQuery.eq('craftsman', craftsman);
       }
       
-      // 🚨 FIXED: Ignore failed/cancelled bookings in POST check as well
+      // Ignore failed/cancelled bookings in POST check as well
       capacityQuery = capacityQuery
         .eq('booked_date', booked_date)
         .eq('booked_time', booked_time)

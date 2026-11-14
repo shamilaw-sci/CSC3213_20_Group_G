@@ -208,7 +208,7 @@ export default function AdminBookingsPage() {
           </div>
         </div>
 
-        {/* SECTION 1: ACTIVE / UPCOMING RESERVATIONS */}
+        {/* active bookings */}
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 p-6">
           <h2 className="text-xl font-black mb-6 text-amber-700 flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-amber-600 inline-block animate-pulse"></span>
@@ -262,7 +262,7 @@ export default function AdminBookingsPage() {
           )}
         </div>
 
-        {/* SECTION 2: PAST / ARCHIVED HISTORY */}
+        {/* past history */}
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 p-6 opacity-75">
           <h2 className="text-xl font-black mb-6 text-slate-500 flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-slate-400 inline-block"></span>

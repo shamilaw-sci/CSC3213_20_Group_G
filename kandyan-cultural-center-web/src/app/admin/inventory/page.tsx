@@ -57,7 +57,7 @@ export default function InventoryPage() {
   const processedVariants = useMemo(() => {
     let result = [...variants];
 
-    // 1. Apply Search
+    // Apply Search
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(v => 
@@ -67,7 +67,7 @@ export default function InventoryPage() {
       );
     }
     
-    // 2. Apply Filters
+    // Apply Filters
     if (filterCategory !== 'All') {
       result = result.filter(v => v.artifacts?.category === filterCategory);
     }
@@ -109,7 +109,7 @@ export default function InventoryPage() {
     return result;
   }, [variants, searchQuery, filterCategory, filterStock, filterPrice, sortBy]);
 
-  // Calculate Pagination (After Filtering & Sorting)
+  // Calculate Pagination
   const totalPages = Math.max(1, Math.ceil(processedVariants.length / ITEMS_PER_PAGE));
   const paginatedVariants = processedVariants.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -170,7 +170,6 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      {/* FILTER & SORT BAR */}
       <div className="bg-white/40 backdrop-blur-xl p-5 rounded-[2rem] border border-white/80 shadow-sm mb-8 flex flex-col md:flex-row gap-4 flex-wrap">
         
         {/* Search */}
@@ -204,7 +203,7 @@ export default function InventoryPage() {
           <option value=">15000" className="bg-white">Over LKR 15,000</option>
         </select>
 
-        {/* 🚨 NEW: Sort Dropdown */}
+        {/* Sort Dropdown */}
         <div className="w-px bg-white/60 mx-1 hidden md:block"></div> {/* Separator */}
         
         <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className={`${dropdownClass} !border-amber-200 !text-amber-700 !bg-amber-50/50`}>

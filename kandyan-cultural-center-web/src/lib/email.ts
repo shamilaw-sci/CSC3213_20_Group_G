@@ -1,5 +1,3 @@
-// src/lib/email.ts
-
 import nodemailer from 'nodemailer';
 
 // Configure Nodemailer for Resend SMTP
@@ -32,7 +30,7 @@ const wrapEmail = (title: string, content: string) => `
   </div>
 `;
 
-// 1. Workshop Booking Confirmation
+// Workshop Booking Confirmation
 export const sendWorkshopEmail = async (email: string, name: string, title: string, date: string, time: string, guests: number, ref: string, amountPaid: number) => {
   if (process.env.NEXT_PUBLIC_EVAL_MODE === 'true' || !process.env.SMTP_PASS) {
     console.log("====================================");
@@ -58,7 +56,7 @@ export const sendWorkshopEmail = async (email: string, name: string, title: stri
   return transporter.sendMail({ from: SENDER_EMAIL, to: email, subject: `🎟️ Booking Confirmed: ${title}`, html: wrapEmail('Your Experience is Booked!', content) });
 };
 
-// 2. Physical Shop Order Confirmation
+// Physical Shop Order Confirmation
 export const sendOrderEmail = async (email: string, orderId: string, address: string, totalAmount: number, items: any[]) => {
   if (process.env.NEXT_PUBLIC_EVAL_MODE === 'true' || !process.env.SMTP_PASS) {
     console.log("====================================");
@@ -108,7 +106,7 @@ export const sendOrderEmail = async (email: string, orderId: string, address: st
   return transporter.sendMail({ from: SENDER_EMAIL, to: email, subject: `📦 Order Confirmed - Kandyan Cultural Centre`, html: wrapEmail('Payment Successful!', content) });
 };
 
-// 3. Hall Booking Status Updates
+// Hall Booking Status Updates
 export const sendHallEmail = async (email: string, name: string, date: string, status: 'received' | 'approved' | 'rejected') => {
   if (process.env.NEXT_PUBLIC_EVAL_MODE === 'true' || !process.env.SMTP_PASS) {
     console.log("====================================");

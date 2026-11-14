@@ -44,7 +44,6 @@ export default function AdminEventsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Announcement | null>(null);
 
-  // Browser client => the admin's own session => RLS (is_admin()) returns active AND inactive rows.
   const fetchAll = useCallback(async () => {
     const { data, error } = await supabase
       .from('announcements')

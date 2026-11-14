@@ -9,7 +9,7 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const checkUserAndRedirect = async () => {
-      // 1. Get the newly logged-in user
+      // Get the newly logged-in user
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
@@ -17,14 +17,14 @@ export default function AuthCallback() {
         return;
       }
 
-      // 2. Check if they have a completed profile in the database
+      // Check if they have a completed profile in the database
       const { data: profile } = await supabase
         .from('profiles')
         .select('phone, full_name')
         .eq('id', user.id)
         .single();
 
-      // 3. Routing Logic: If they have a phone number, they are done!
+      // If they have a phone number
       if (profile && profile.phone) {
         router.push('/');
       } else {

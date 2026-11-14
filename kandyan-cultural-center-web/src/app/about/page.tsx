@@ -1,6 +1,5 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import InteractiveBackground from "@/components/InteractiveBackground";
 
 export const metadata = {
   title: 'Our History | Kandyan Cultural Center',
@@ -19,8 +18,6 @@ export default function AboutPage() {
         {/* Subtle Background Orbs */}
         <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-amber-200/30 rounded-full blur-[120px] animate-pulse"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-rose-200/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
-        
-        {/* Optional: Very subtle texture overlay */}
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
       </div>
 
@@ -47,7 +44,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* 2. THE GOLDEN ERA (Royal Patronage) */}
+        {/* 2. THE GOLDEN ERA */}
         <section className="min-h-screen flex items-center px-4 py-24 top-0 bg-white/20 backdrop-blur-md border-t border-white/50">
           <div className="container mx-auto max-w-7xl">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
@@ -185,7 +182,7 @@ export default function AboutPage() {
                   {/* Desktop Spacer (Hidden on Mobile) */}
                   <div className="hidden md:block w-[calc(50%-4rem)]"></div>
 
-                  {/* Card (Right side on desktop) - Emphasized Design */}
+                  {/* Card (Right side on desktop)*/}
                   <div className="w-[calc(100%-6rem)] md:w-[calc(50%-4rem)] bg-white/90 backdrop-blur-2xl p-8 md:p-10 rounded-[2.5rem] shadow-[0_25px_50px_rgba(217,119,6,0.1)] border border-amber-300 hover:-translate-y-2 hover:shadow-[0_30px_60px_rgba(217,119,6,0.2)] hover:border-amber-400 transition-all duration-500 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-amber-400/20 blur-[50px] rounded-full pointer-events-none"></div>
                     <div className="absolute -right-4 -top-8 text-[10rem] text-amber-900/[0.04] font-black pointer-events-none select-none">3</div>
@@ -225,7 +222,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* 6. EMPOWERING THE ARTISANS (Glass Cards) */}
+        {/* 6. EMPOWERING THE ARTISANS */}
         <section className="min-h-screen flex flex-col justify-center px-4 py-24 top-0 bg-white/30 backdrop-blur-xl border-t border-white/60">
           <div className="container mx-auto max-w-7xl">
             <div className="text-center mb-16 max-w-3xl mx-auto bg-white/50 backdrop-blur-md p-10 rounded-[3rem] border border-white/80 shadow-sm">

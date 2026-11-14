@@ -51,10 +51,8 @@ export default function RoleManagementPage() {
       .limit(50);
 
     if (search.trim()) {
-      // If typing in search, show EVERYONE (including customers)
       query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`);
     } else {
-      // If NO search, ONLY show Staff (Super Admins, Admins, Cashiers)
       query = query.in('role', ['super_admin', 'admin', 'cashier']);
     }
 
@@ -93,19 +91,18 @@ export default function RoleManagementPage() {
     setUpdatingId(null);
   };
 
-  // Helper to determine if the ENTIRE dropdown should be locked
+  // Helper to determine if the dropdown should be locked
   const isDropdownDisabled = (targetUserRole: string, targetUserId: string) => {
-    if (targetUserId === currentUserId) return true; // Can't edit yourself
-    if (targetUserRole === 'super_admin' && currentUserRole !== 'super_admin') return true; // Normal admin can't touch SA
-    if (targetUserRole === 'admin' && currentUserRole !== 'super_admin') return true; // Normal admin can't touch Admins
-    return false; // Otherwise, go ahead (Normal admin editing cashier/customer)
+    if (targetUserId === currentUserId) return true;
+    if (targetUserRole === 'super_admin' && currentUserRole !== 'super_admin') return true;
+    if (targetUserRole === 'admin' && currentUserRole !== 'super_admin') return true;
+    return false;
   };
 
   return (
     <main className="min-h-screen bg-slate-50 p-6 md:p-12 text-slate-900">
       <div className="max-w-6xl mx-auto space-y-8">
         
-        {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-black tracking-tight flex items-center gap-3">
@@ -192,12 +189,12 @@ export default function RoleManagementPage() {
                             <option value="customer">Customer</option>
                             <option value="cashier">Cashier (POS Access)</option>
                             
-                            {/* 🚨 Normal Admins see this option as disabled */}
+                            {/* Normal Admins see this option as disabled */}
                             <option value="admin" disabled={currentUserRole !== 'super_admin'}>
                               Admin
                             </option>
                             
-                            {/* 🚨 Only Super Admins can see the Super Admin option */}
+                            {/* Only Super Admins can see the Super Admin option */}
                             {(currentUserRole === 'super_admin' || user.role === 'super_admin') && (
                               <option value="super_admin" disabled={currentUserRole !== 'super_admin'}>
                                 Super Admin

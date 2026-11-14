@@ -12,7 +12,6 @@ export async function POST(request: Request) {
   }
 
   try {
-    // 🚨 Extract the new fields: customerPhone & shippingCost
     const { profileId, cartItems, items, shippingAddress, customerPhone, shippingCost } = await request.json();
     
     let payhereOrderId = '';
@@ -23,7 +22,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
     }
 
-    // 1. Authoritative Server-Side Pricing & Stock Check
+    // Authoritative Server-Side Pricing & Stock Check
     const variantIds = itemsToProcess.map((item: any) => item.id);
     const { data: dbVariants } = await supabase
       .from('artifact_variants')
@@ -48,12 +47,12 @@ export async function POST(request: Request) {
       calculatedSubtotal += actualPrice * item.quantity;
     }
 
-    // 🚨 Add Server-Side Shipping & Gateway Fee Calculation
+    // Add Server-Side Shipping & Gateway Fee Calculation
     const secureShippingCost = Number(shippingCost) || 0;
     const gatewayFee = Math.ceil((calculatedSubtotal + secureShippingCost) * 0.033);
     authoritativeTotalAmount = calculatedSubtotal + secureShippingCost + gatewayFee;
 
-    // 🚨 GENERATE SECURE INVOICE NUMBER (Format: INV-123456-ABCD)
+    // generate a unique invoice number
     const now = new Date();
     const yy = String(now.getFullYear()).slice(-2);
     const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -62,7 +61,7 @@ export async function POST(request: Request) {
     const randomPart = crypto.randomBytes(2).toString('hex').toUpperCase(); // 4 random hex chars
     const invoiceNumber = `ON-${timestampPart}-${randomPart}`;
 
-    // 2. Create the Order securely
+    // create the Order securely
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -94,7 +93,7 @@ export async function POST(request: Request) {
     const { error: itemsError } = await supabase.from('order_items').insert(orderItemsData);
     if (itemsError) throw itemsError;
 
-    // 3. Generate PayHere Hash
+    // Generate PayHere Hash
     const merchantId = process.env.NEXT_PUBLIC_PAYHERE_MERCHANT_ID!;
     const merchantSecret = process.env.PAYHERE_MERCHANT_SECRET!;
     const currency = 'LKR'; 

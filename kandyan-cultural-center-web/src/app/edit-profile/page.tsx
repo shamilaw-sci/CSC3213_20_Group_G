@@ -212,13 +212,11 @@ export default function EditProfile() {
     );
   }
 
-  // --- REUSABLE GLASS CLASSES ---
   const glassInputClass = "w-full bg-white/50 backdrop-blur-md border border-white/80 text-slate-900 text-sm rounded-2xl px-4 py-3.5 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400 transition-all shadow-sm placeholder:text-slate-400 font-medium";
 
   return (
     <main className="relative min-h-screen pt-32 md:pt-40 pb-24 px-4 sm:px-8 bg-[#F8F9FA]">
       
-      {/* --- FIXED BACKGROUND FOR GLASS BLUR EFFECT --- */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-[#F8F9FA] to-rose-50 opacity-80"></div>
         <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-amber-200/30 rounded-full blur-[120px] animate-pulse"></div>
@@ -291,7 +289,7 @@ export default function EditProfile() {
                 />
               </div>
 
-              {/* Email (Read-only) */}
+              {/* Email */}
               <div className="space-y-2">
                 <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest pl-1 block">
                   Email <span className="text-[8px] font-medium lowercase">(Read Only)</span>

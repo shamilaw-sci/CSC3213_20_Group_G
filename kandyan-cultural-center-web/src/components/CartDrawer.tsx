@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase';
 export default function CartDrawer() {
   const router = useRouter();
   const { cart, isDrawerOpen, setIsDrawerOpen, removeFromCart, cartCount, updateQuantity } = useCart();
-  const { formatPrice } = useCurrency(); // <-- Brought in for dynamic currency formatting
+  const { formatPrice } = useCurrency();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   if (!isDrawerOpen) return null;
@@ -117,7 +117,6 @@ export default function CartDrawer() {
                     </span>
                     <button 
                       onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      // ADDED: Disable the button if at max stock
                       disabled={item.stock !== undefined && item.quantity >= item.stock}
                       className={`px-3 py-1.5 font-bold transition-colors ${
                         item.stock !== undefined && item.quantity >= item.stock 

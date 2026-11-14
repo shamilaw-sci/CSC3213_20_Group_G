@@ -19,7 +19,6 @@ type WorkshopBooking = {
   customer_phone: string | null;
   guests: number;
   notes: string | null;
-  // Joined from the workshops table
   workshops?: {
     id: string;
     title?: string;
@@ -49,7 +48,6 @@ export default function WorkshopFinancialReportsPage() {
   const fetchFinancialData = async () => {
     setIsLoading(true);
     try {
-      // Query bookings while joining the related workshop's price and title
       const { data: bookings, error } = await supabase
         .from('workshop_bookings')
         .select(`

@@ -14,7 +14,7 @@ export default function InventoryList({ variants, setVariants, onSaveRow, onEdit
 
   return (
     <>
-      {/* MOBILE VIEW */}
+      {/* mobile view */}
       <div className="md:hidden space-y-4">
         {variants.map((v: any) => (
           <div key={v.id} className="bg-white/60 backdrop-blur-xl border border-white/80 rounded-[2rem] shadow-[0_10px_30px_rgba(31,38,135,0.03)] p-5">
@@ -35,7 +35,7 @@ export default function InventoryList({ variants, setVariants, onSaveRow, onEdit
                   <span className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0 shadow-inner" style={{ backgroundColor: v.hex_code }}></span>
                   <span className="text-[10px] text-slate-600 font-extrabold uppercase tracking-widest truncate">{v.color_name}</span>
                 </div>
-                {/* BARCODE MOBILE */}
+                {/* barcode mobile */}
                 <div className="mt-2 scale-75 origin-left opacity-70 mix-blend-multiply">
                   <Barcode 
                     value={v.barcode || v.id.substring(0,8)} 
@@ -82,7 +82,7 @@ export default function InventoryList({ variants, setVariants, onSaveRow, onEdit
         </div>
       </div>
 
-      {/* DESKTOP VIEW */}
+      {/* desktop view */}
       <div className="hidden md:block bg-white/60 backdrop-blur-2xl border border-white/80 rounded-[2.5rem] shadow-[0_20px_50px_rgba(31,38,135,0.05)] overflow-hidden">
         <div className="overflow-x-auto no-scrollbar">
           <table className="w-full text-left text-sm whitespace-nowrap">
@@ -106,7 +106,7 @@ export default function InventoryList({ variants, setVariants, onSaveRow, onEdit
                       </div>
                       <div className="flex flex-col gap-1.5">
                         <p className="font-black text-slate-900 text-base">{v.artifacts?.name} <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-2 bg-white/50 px-2 py-1 rounded-md border border-white/60">{v.color_name}</span></p>
-                        {/* BARCODE DESKTOP */}
+                        {/* barcode desktop */}
                         <div className="scale-75 origin-left -mt-1 opacity-70 mix-blend-multiply">
                           <Barcode 
                             value={v.barcode || v.id.substring(0,8)} 

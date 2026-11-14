@@ -79,7 +79,7 @@ export default function FeaturedCarousel({ artifacts }: { artifacts: any[] }) {
             className="w-[220px] sm:w-[260px] flex-shrink-0 snap-center sm:snap-start bg-white/40 backdrop-blur-xl border border-white/60 rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden shadow-[0_8px_32px_rgba(31,38,135,0.07)] hover:shadow-[0_12px_40px_rgba(31,38,135,0.12)] hover:-translate-y-1 transition-all duration-300 flex flex-col group/card cursor-pointer"
           >
             
-            {/* PHOTO SECTION: Reverted to old look (object-cover, bg-slate-50, edge-to-edge) but kept 1:1 aspect-square */}
+            {/* photos */}
             <div className="aspect-square w-full relative overflow-hidden bg-slate-50">
               <Image
                 src={item.image_url}
@@ -88,7 +88,6 @@ export default function FeaturedCarousel({ artifacts }: { artifacts: any[] }) {
                 className="object-cover w-full h-full group-hover/card:scale-105 transition-transform duration-700"
                 loading="lazy"
               />
-              {/* Old Tag Designs (rounded-md, original padding) */}
               <div className="absolute top-3 left-3 sm:top-4 sm:left-4 flex flex-col gap-1.5 sm:gap-2">
                 {item.stock === 0 ? (
                   <span className="bg-slate-900 text-white text-[9px] font-black px-2.5 py-1.5 rounded-md uppercase tracking-widest shadow-sm">Sold Out</span>
@@ -102,7 +101,6 @@ export default function FeaturedCarousel({ artifacts }: { artifacts: any[] }) {
               </div>
             </div>
             
-            {/* GLASSMORPHISM BOTTOM SECTION */}
             <div className="p-4 sm:p-5 flex flex-col flex-grow bg-white/20 backdrop-blur-sm border-t border-white/40">
               <span className="text-[9px] sm:text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-1.5 line-clamp-1">
                 {item.category}

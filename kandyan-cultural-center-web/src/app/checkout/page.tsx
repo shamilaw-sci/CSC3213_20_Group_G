@@ -147,7 +147,7 @@ export default function CheckoutPage() {
         if (response.ok) {
           const origin = typeof window !== 'undefined' ? window.location.origin : '';
           
-          // 🚨 EVALUATION MODE INTERCEPTOR
+          // eval mode: Redirect to dummy payment page for testing
           if (process.env.NEXT_PUBLIC_EVAL_MODE === 'true') {
             const queryParams = new URLSearchParams({
               order_id: paymentConfig.orderId,
@@ -158,7 +158,7 @@ export default function CheckoutPage() {
             return;
           }
 
-          // --- ACTUAL PAYHERE LOGIC (Preserved for Production) ---
+          // actual logic for Production
           const form = document.createElement('form');
           form.method = 'POST';
           form.action = process.env.NEXT_PUBLIC_PAYHERE_ENV === 'live' 
@@ -236,13 +236,12 @@ export default function CheckoutPage() {
     );
   }
 
-  // --- REUSABLE GLASS INPUT CLASS ---
+
   const glassInputClass = "w-full bg-white/50 backdrop-blur-md border border-white/80 rounded-2xl px-4 py-3.5 text-sm text-slate-900 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400 transition-all shadow-sm placeholder:text-slate-400";
 
   return (
     <main className="relative min-h-screen pb-24 pt-28 bg-[#F8F9FA]">
       
-      {/* --- FIXED BACKGROUND FOR GLASS BLUR EFFECT --- */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-[#F8F9FA] to-rose-50 opacity-80"></div>
         <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-amber-200/30 rounded-full blur-[120px] animate-pulse"></div>
@@ -264,10 +263,10 @@ export default function CheckoutPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           
-          {/* LEFT COLUMN: Forms & Items */}
+          {/* left col, Forms & Items */}
           <div className="lg:col-span-7 space-y-8">
             
-            {/* 1. Shipping Details */}
+            {/* Shipping Details */}
             <div className="bg-white/60 backdrop-blur-xl rounded-[2.5rem] p-6 sm:p-10 shadow-[0_10px_40px_rgba(31,38,135,0.05)] border border-white/80">
               <h2 className="text-2xl font-black text-slate-900 flex items-center gap-4 mb-8">
                 <span className="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600 border border-amber-200/50 text-base shadow-sm">1</span>
@@ -318,7 +317,7 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* 2. Review Items */}
+            {/* Review Items */}
             <div className="bg-white/60 backdrop-blur-xl rounded-[2.5rem] p-6 sm:p-10 shadow-[0_10px_40px_rgba(31,38,135,0.05)] border border-white/80">
               <h2 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-4">
                 <span className="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600 border border-amber-200/50 text-base shadow-sm">2</span>
@@ -378,7 +377,7 @@ export default function CheckoutPage() {
 
           </div>
 
-          {/* RIGHT COLUMN: Order Summary */}
+          {/* right col, order Summary */}
           <div className="lg:col-span-5 lg:sticky lg:top-32">
             <div className="bg-white/60 backdrop-blur-2xl rounded-[2.5rem] p-8 sm:p-10 shadow-[0_20px_50px_rgba(31,38,135,0.05)] border border-white/80">
               <h2 className="text-2xl font-black text-slate-900 mb-8 pb-6 border-b border-white/60">Order Summary</h2>

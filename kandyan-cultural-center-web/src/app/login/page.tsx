@@ -65,7 +65,7 @@ export default function LoginPage() {
     setTimeout(() => setShowCheckboxError(false), 2000);
   };
 
-  // --- 1. LOGIN ---
+  // login 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -84,7 +84,7 @@ export default function LoginPage() {
     }
   };
 
-  // --- 2. SIGNUP ---
+  // signup
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAgreed) return triggerErrorAnimation();
@@ -121,7 +121,7 @@ export default function LoginPage() {
     }
   };
 
-  // --- 3. VERIFY OTP ---
+  // verify otp
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -141,7 +141,7 @@ export default function LoginPage() {
     }
   };
 
-  // --- 4. GOOGLE AUTH ---
+  // google auth
   const handleGoogleLogin = async () => {
     if (view === 'signup' && !isAgreed) return triggerErrorAnimation();
     
@@ -154,7 +154,7 @@ export default function LoginPage() {
     });
   };
 
-  // --- 5. COMPLETE PROFILE ---
+  // complete profile
   const handleCompleteProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId) return;
@@ -173,11 +173,9 @@ export default function LoginPage() {
     }
   };
 
-  // --- REUSABLE GLASS CLASSES ---
   const glassInputClass = "w-full bg-white/50 backdrop-blur-md border border-white/80 text-slate-900 text-sm rounded-2xl px-4 py-3.5 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400 transition-all shadow-sm placeholder:text-slate-400";
   const primaryBtnClass = "w-full bg-amber-600 hover:bg-amber-500 text-white py-3.5 rounded-[1.25rem] font-bold text-sm transition-all shadow-[0_8px_20px_rgba(217,119,6,0.25)] hover:shadow-[0_12px_25px_rgba(217,119,6,0.35)] hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed";
 
-  // Reusable Eye Icons
   const EyeIcon = () => (
     <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
       <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
@@ -194,7 +192,6 @@ export default function LoginPage() {
   return (
     <main className="relative min-h-screen flex flex-col justify-center items-center p-24 md:pt-32 sm:p-8 bg-[#F8F9FA]">
       
-      {/* --- FIXED BACKGROUND FOR GLASS BLUR EFFECT --- */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-[#F8F9FA] to-rose-50 opacity-80"></div>
         <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-amber-200/30 rounded-full blur-[120px] animate-pulse"></div>
@@ -230,7 +227,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* VIEW: LOGIN */}
+        {/* view: login */}
         {view === 'login' && (
           <div className="space-y-6">
             <button onClick={handleGoogleLogin} className="w-full flex items-center justify-center gap-3 bg-white/60 backdrop-blur-md border border-white/80 px-6 py-3.5 rounded-[1.25rem] font-bold text-slate-700 hover:bg-white hover:border-amber-300 transition-all shadow-sm group cursor-pointer">
@@ -294,7 +291,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* VIEW: SIGNUP */}
+        {/* view: signup */}
         {view === 'signup' && (
           <div className="space-y-6">
             
@@ -401,7 +398,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* VIEW: VERIFY OTP */}
+        {/* view: verify otp */}
         {view === 'otp' && (
           <form onSubmit={handleVerifyOTP} className="space-y-4 animate-in fade-in slide-in-from-right-4">
             <div>
@@ -425,7 +422,7 @@ export default function LoginPage() {
           </form>
         )}
 
-        {/* VIEW: COMPLETE GOOGLE PROFILE */}
+        {/* view complete profile */}
         {view === 'complete' && (
           <form onSubmit={handleCompleteProfile} className="space-y-4 animate-in fade-in slide-in-from-right-4">
             <div>

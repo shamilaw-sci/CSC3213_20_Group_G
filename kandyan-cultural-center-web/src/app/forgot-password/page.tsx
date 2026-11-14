@@ -18,7 +18,7 @@ export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // 1. Request Reset OTP
+  // Request otp
   const handleRequestReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -35,7 +35,7 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  // 2. Verify the 6-digit OTP
+  // Verify
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -52,11 +52,11 @@ export default function ForgotPasswordPage() {
       setIsLoading(false);
     } else {
       setIsLoading(false);
-      setStep('reset'); // Verification succeeded, user is now "authenticated" to reset
+      setStep('reset'); // Verification succeeded, can reset
     }
   };
 
-  // 3. Update to the New Password
+  // Update to the New Password
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
@@ -74,19 +74,17 @@ export default function ForgotPasswordPage() {
       setErrorMsg(error.message);
       setIsLoading(false);
     } else {
-      // Password updated successfully! Send them back to login.
+      // Password updated successfully.. Send them back to login.
       window.location.href = '/login';
     }
   };
 
-  // --- REUSABLE GLASS CLASSES ---
   const glassInputClass = "w-full bg-white/50 backdrop-blur-md border border-white/80 text-slate-900 text-sm rounded-2xl px-4 py-3.5 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400 transition-all shadow-sm placeholder:text-slate-400 font-medium";
   const primaryBtnClass = "w-full bg-amber-600 hover:bg-amber-500 text-white py-3.5 sm:py-4 rounded-[1.25rem] font-bold text-sm sm:text-base transition-all shadow-[0_8px_20px_rgba(217,119,6,0.25)] hover:shadow-[0_12px_25px_rgba(217,119,6,0.35)] hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed";
 
   return (
     <main className="relative min-h-screen flex flex-col justify-center items-center px-4 sm:px-8 pt-32 md:pt-40 pb-12 bg-[#F8F9FA]">
       
-      {/* --- FIXED BACKGROUND FOR GLASS BLUR EFFECT --- */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-[#F8F9FA] to-rose-50 opacity-80"></div>
         <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-amber-200/30 rounded-full blur-[120px] animate-pulse"></div>
@@ -120,7 +118,7 @@ export default function ForgotPasswordPage() {
           </div>
         )}
 
-        {/* STEP 1: REQUEST OTP */}
+        {/* step 1: request otp */}
         {step === 'request' && (
           <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
             <form onSubmit={handleRequestReset} className="space-y-6">
@@ -138,7 +136,7 @@ export default function ForgotPasswordPage() {
           </div>
         )}
 
-        {/* STEP 2: VERIFY OTP */}
+        {/* step 2: verify otp */}
         {step === 'verify' && (
           <form onSubmit={handleVerifyOTP} className="space-y-6 animate-in fade-in slide-in-from-right-4">
             <div>
@@ -151,7 +149,7 @@ export default function ForgotPasswordPage() {
           </form>
         )}
 
-        {/* STEP 3: NEW PASSWORD */}
+        {/* step 3: reset password */}
         {step === 'reset' && (
           <form onSubmit={handleUpdatePassword} className="space-y-6 animate-in fade-in slide-in-from-right-4">
             <div className="space-y-4">

@@ -16,12 +16,12 @@ function DummyPaymentTerminal() {
   const handlePayment = async (status: 'success' | 'failed') => {
     setIsProcessing(true);
 
-    // 1. Identify if this is a workshop booking early
+    // Identify if this is a workshop booking early
     const isWorkshop = custom1?.startsWith('booking:');
     const bookingId = isWorkshop ? custom1.split(':')[1] : '';
 
     if (status === 'success') {
-      // 2. Fire the webhook locally to trigger database updates
+      // Fire the webhook locally to trigger database updates
       const formData = new FormData();
       formData.append('merchant_id', 'DUMMY_MERCHANT');
       formData.append('order_id', orderId || '');
@@ -41,7 +41,7 @@ function DummyPaymentTerminal() {
         console.error("Local webhook simulation failed", err);
       }
 
-      // 3. Redirect to the correct Success page
+      // Redirect to the correct Success page
       if (isWorkshop) {
         router.push(`/workshops/success?booking=${bookingId}&order=${orderId}`);
       } else {
@@ -49,7 +49,7 @@ function DummyPaymentTerminal() {
       }
       
     } else {
-      // 4. Redirect to the correct Cancelled page
+      // Redirect to the correct Cancelled page
       if (isWorkshop) {
         router.push('/workshops/payment-cancelled'); 
       } else {

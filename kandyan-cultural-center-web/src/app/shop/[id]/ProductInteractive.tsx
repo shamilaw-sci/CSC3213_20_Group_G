@@ -13,7 +13,7 @@ export default function ProductInteractive({ artifact, variants = [] }: { artifa
   const { addToCart, setIsDrawerOpen } = useCart();
   const { formatPrice } = useCurrency(); 
   
-  // 1. VARIANT LOGIC
+  // variety of states for the interactive component
   const urlVariantId = searchParams.get('variant');
   const initialVariant = variants.find(v => v.id === urlVariantId) || variants[0];
   
@@ -22,7 +22,7 @@ export default function ProductInteractive({ artifact, variants = [] }: { artifa
   const [copied, setCopied] = useState(false);
   const [mainImage, setMainImage] = useState(initialVariant?.image_url || '');
 
-  // 2. UNIFIED IMAGE GALLERY LOGIC
+  // unified image gallery
   const allImages = useMemo(() => {
     const safeGallery = Array.isArray(artifact.gallery_images) ? artifact.gallery_images : [];
     const variantImages = variants.map(v => v.image_url).filter(Boolean);
@@ -98,7 +98,7 @@ export default function ProductInteractive({ artifact, variants = [] }: { artifa
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 mt-6 pb-32">
       
-      {/* LEFT COLUMN: Image Gallery (Spans 6 columns) */}
+      {/* left col: Image Gallery */}
       <div className="lg:col-span-6 flex flex-col gap-5">
         <div className="bg-white/50 backdrop-blur-xl p-3 sm:p-4 rounded-[3rem] border border-white/80 shadow-[0_15px_40px_rgba(31,38,135,0.05)] transition-all duration-300">
           <div className="aspect-square relative overflow-hidden rounded-[2.5rem] bg-slate-50 border border-slate-100/50 shadow-inner">
@@ -125,7 +125,7 @@ export default function ProductInteractive({ artifact, variants = [] }: { artifa
         )}
       </div>
 
-      {/* RIGHT COLUMN: Details (Spans 6 columns) */}
+      {/* right col: details */}
       <div className="lg:col-span-6 flex flex-col justify-start">
         
         <div className="flex justify-between items-start gap-4 mb-3">
@@ -147,11 +147,10 @@ export default function ProductInteractive({ artifact, variants = [] }: { artifa
           )}
         </div>
 
-        {/* --- RE-DESIGNED VARIANT SELECTOR FOR HIGH VOLUMES --- */}
         {variants.length > 0 && (
           <div className="mb-8 bg-white/60 backdrop-blur-md border border-white/80 rounded-[2rem] shadow-sm flex flex-col overflow-hidden">
             
-            {/* Header Area with Count Badge */}
+
             <div className="px-5 py-4 border-b border-white/40 flex justify-between items-center bg-white/40">
               <span className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Available Colors</span>
               <span className="text-[10px] font-black text-amber-600 bg-amber-100 px-2.5 py-1 rounded-lg uppercase tracking-widest border border-amber-200/50 shadow-sm">
@@ -159,13 +158,12 @@ export default function ProductInteractive({ artifact, variants = [] }: { artifa
               </span>
             </div>
 
-            {/* Scrollable Constrained Grid Area */}
             <div className="p-4 sm:p-5 max-h-[260px] overflow-y-auto no-scrollbar relative">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                 {variants.map((v) => (
                   <button
                     key={v.id}
-                    title={v.color_name} // Show full name on hover if truncated
+                    title={v.color_name}
                     onClick={() => handleVariantChange(v)}
                     className={`relative px-3 py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm w-full text-left overflow-hidden ${
                       selectedVariant.id === v.id
@@ -182,7 +180,6 @@ export default function ProductInteractive({ artifact, variants = [] }: { artifa
               </div>
             </div>
             
-            {/* Optional gradient fade to indicate scrollability at bottom */}
             {variants.length > 9 && (
               <div className="h-6 w-full bg-gradient-to-t from-white/90 to-transparent absolute bottom-0 left-0 pointer-events-none rounded-b-[2rem]"></div>
             )}
@@ -203,7 +200,7 @@ export default function ProductInteractive({ artifact, variants = [] }: { artifa
           {artifact.description}
         </p>
 
-        {/* ARTISAN DISPLAY */}
+        {/* artisan display */}
         <div className="bg-white/60 backdrop-blur-xl border border-white/80 rounded-[2.5rem] p-6 flex items-center gap-5 mb-10 shadow-[0_10px_30px_rgba(31,38,135,0.03)] hover:shadow-[0_15px_40px_rgba(31,38,135,0.06)] transition-all group">
           <div className="w-16 h-16 bg-white rounded-[1.25rem] flex items-center justify-center overflow-hidden border border-white shadow-sm shrink-0 text-amber-500">
             {artisanAvatar ? (
@@ -264,7 +261,6 @@ export default function ProductInteractive({ artifact, variants = [] }: { artifa
 
       </div>
 
-      {/* --- STICKY FLOATING ACTION DOCK (Glassmorphism) --- */}
       {selectedVariant.stock > 0 && (
         <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-[700px] bg-white/80 backdrop-blur-2xl border border-white/80 p-3 sm:p-4 rounded-[2.5rem] shadow-[0_20px_50px_-10px_rgba(31,38,135,0.15)] z-40 flex flex-col sm:flex-row items-center gap-4 animate-in slide-in-from-bottom-8 duration-500">
           

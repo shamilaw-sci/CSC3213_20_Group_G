@@ -22,7 +22,7 @@ export default function Header() {
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   // --- EFFECTS ---
-  // 1. Fetch User Data
+  // Fetch User Data
   useEffect(() => {
     const loadUser = async () => {
       const { data } = await supabase.auth.getUser();
@@ -31,14 +31,14 @@ export default function Header() {
     loadUser();
   }, []);
 
-  // 2. Shrink/Adjust header on scroll
+  // Shrink/Adjust header on scroll
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 3. Welcome Back Dialog Logic
+  // Welcome Back Dialog Logic
   useEffect(() => {
     const hasSeen = sessionStorage.getItem('kcc_welcome_seen');
     if (!hasSeen && cartCount > 0) {
@@ -48,7 +48,7 @@ export default function Header() {
     }
   }, [cartCount]);
 
-  // 4. Lock body scroll when mobile menu is open
+  // Lock body scroll when mobile menu is open
   useEffect(() => {
     if (isMobileMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -58,7 +58,7 @@ export default function Header() {
     return () => { document.body.style.overflow = 'unset'; };
   }, [isMobileMenuOpen]);
 
-  // 5. Click outside handler for Desktop User Dropdown
+  // Click outside handler for Desktop User Dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
@@ -83,7 +83,7 @@ export default function Header() {
 
   const hasValidAvatar = user?.user_metadata?.avatar_url && !imgError;
 
-  // --- REUSABLE COMPONENTS ---
+  // REUSABLE COMPONENTS
   const CurrencySelector = () => (
     <div className="relative flex items-center">
       <select
@@ -201,7 +201,7 @@ export default function Header() {
               {showWelcome && <WelcomePopup />}
             </div>
             
-            {/* DESKTOP USER MENU (Modern Integrated) */}
+            {/* desktop user menu */}
             <div className="relative" ref={userMenuRef}>
               {user ? (
                 <>
@@ -303,7 +303,7 @@ export default function Header() {
         </div>
       </header>
 
-      {/* MODERN FULL-PAGE MOBILE MENU OVERLAY */}
+      {/* mobile menu */}
       <div 
         className={`lg:hidden fixed inset-0 z-[100] bg-white/90 backdrop-blur-3xl transition-all duration-500 ease-in-out flex flex-col ${
           isMobileMenuOpen ? 'opacity-100 pointer-events-auto translate-y-0' : 'opacity-0 pointer-events-none -translate-y-8'
@@ -351,7 +351,7 @@ export default function Header() {
             {/* Subtle Divider */}
             <div className="w-16 h-px bg-slate-300 my-4"></div>
 
-            {/* INTEGRATED MOBILE USER SECTION */}
+            {/* mobile user section */}
             {user ? (
               <div className="flex flex-col items-center gap-5 w-full px-6">
                 

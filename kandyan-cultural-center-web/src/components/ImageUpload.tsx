@@ -59,29 +59,28 @@ export default function ImageUpload({ currentImageUrl, onUploadSuccess, bucketNa
     setError('');
 
     try {
-      // 1. Show immediate local preview
+      // Show immediate local preview
       const objectUrl = URL.createObjectURL(file);
       setPreview(objectUrl);
 
-      // 2. Compress the image to WebP
+      // Compress the image to WebP
       const compressedBlob = await compressImage(file);
 
-      // 3. Upload to Supabase Storage (Using .webp extension)
+      // Upload to Supabase Storage (Using .webp extension)
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.webp`;
       const { data, error: uploadError } = await supabase.storage
         .from(bucketName)
-        // 🚨 FIXED: Ensure Supabase serves it with the correct WebP content type
         .upload(fileName, compressedBlob, { contentType: 'image/webp' });
 
       if (uploadError) throw uploadError;
 
-      // 4. Get the public URL and pass it to the parent form
+      // Get the public URL and pass it to the parent form
       const { data: publicData } = supabase.storage.from(bucketName).getPublicUrl(fileName);
       onUploadSuccess(publicData.publicUrl);
 
     } catch (err: any) {
       setError(err.message || 'Failed to upload image.');
-      setPreview(currentImageUrl || ''); // Revert on failure
+      setPreview(currentImageUrl || '');
     } finally {
       setIsUploading(false);
     }

@@ -45,7 +45,6 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
   }, [initialArtifacts]);
 
   const processedArtifacts = useMemo(() => {
-    // 🚨 Tag with an original index as a bulletproof fallback for sorting
     let result = initialArtifacts.map((item, index) => ({
       ...item,
       _originalIndex: index
@@ -73,7 +72,6 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
       if (sortBy === 'price-high') return priceB - priceA;
       if (sortBy === 'name') return a.product_name.localeCompare(b.product_name);
       
-      // 🚨 FIX: Explicit logic for Newest Arrivals
       if (sortBy === 'newest') {
         // If we have actual timestamps from Supabase, use them
         if (a.created_at && b.created_at) {
@@ -162,7 +160,6 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
   return (
     <div ref={catalogTopRef} className="scroll-mt-32">
       
-      {/* --- Controls Bar (Glassmorphism) --- */}
       <div className="flex flex-col gap-6 mb-10">
         
         <div className="flex flex-col md:flex-row justify-between gap-4">
@@ -182,7 +179,6 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
           <div className="flex items-center gap-3 self-end md:self-auto">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider hidden sm:block">Sort By:</label>
             
-            {/* 🚨 WRAPPED IN RELATIVE CONTAINER FOR THE ARROW */}
             <div className="relative w-full md:w-auto">
               <select 
                 value={sortBy}
@@ -195,7 +191,6 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
                 <option value="name">Alphabetical (A-Z)</option>
               </select>
               
-              {/* 🚨 CUSTOM DOWN ARROW */}
               <svg 
                 className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none transition-transform" 
                 fill="none" 
@@ -208,7 +203,6 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
           </div>
         </div>
         
-        {/* Category Filter Pills (Glassmorphism) */}
         <div className="relative w-full overflow-hidden rounded-2xl">
           <div ref={categoryScrollRef} className="flex overflow-x-auto pb-4 gap-3 w-full snap-x scroll-smooth no-scrollbar pr-16 pt-1">
             {categories.map((category) => (
@@ -238,7 +232,7 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
         </div>
       </div>
 
-      {/* --- Product Grid --- */}
+      {/* Product Grid */}
       {visibleArtifacts.length === 0 ? (
         <div className="text-center py-24 bg-white/50 backdrop-blur-xl rounded-[3rem] border border-white/80 shadow-sm">
           <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-slate-100">
@@ -252,7 +246,7 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
         </div>
       ) : (
         <>
-          {/* GRID: 2 on mobile, 3 on tablet, 4 on desktop, 5 on ultra-wide */}
+          {/* grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6">
             {visibleArtifacts.map((item) => (
               <div 
@@ -260,7 +254,7 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
                 onClick={() => handleCardClick(item)}
                 className="group bg-white/40 backdrop-blur-xl border border-white/60 rounded-[1.25rem] sm:rounded-[2rem] overflow-hidden shadow-[0_8px_32px_rgba(31,38,135,0.05)] hover:shadow-[0_12px_40px_rgba(31,38,135,0.1)] hover:-translate-y-1 transition-all duration-300 flex flex-col cursor-pointer"
               >
-                {/* Image Container (1:1 Ratio) */}
+                {/* Image Container */}
                 <div className="aspect-square w-full relative overflow-hidden bg-slate-50">
                   <Image src={item.image_url} alt={item.product_name} fill className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-700" loading="lazy" />
                   
@@ -278,7 +272,6 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
                   </div>
                 </div>
                 
-                {/* Glassmorphism Bottom Section (Tightened for Mobile) */}
                 <div className="p-3 sm:p-5 flex flex-col flex-grow bg-white/20 backdrop-blur-sm border-t border-white/40">
                   <span className="text-[9px] sm:text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-1 sm:mb-1.5 line-clamp-1">
                     {item.category}
@@ -309,7 +302,6 @@ export default function ArtifactCatalog({ initialArtifacts }: ArtifactCatalogPro
                     )}
                   </div>
 
-                  {/* ACTION BUTTONS (Optimized for Mobile Grid) */}
                   <div className="flex flex-col gap-1.5 sm:gap-2">
                     <div className="flex gap-1.5 sm:gap-2">
                       <button 

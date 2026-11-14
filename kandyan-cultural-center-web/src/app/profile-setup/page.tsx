@@ -65,13 +65,13 @@ const COUNTRY_DATA = [
 export default function ProfileSetup() {
   const router = useRouter();
   
-  // --- User & Form State ---
+  // User & Form State
   const [user, setUser] = useState<any>(null);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [country, setCountry] = useState('Sri Lanka');
   
-  // --- Verification State ---
+  // Verification State
   const [step, setStep] = useState<'details' | 'verify'>('details');
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -183,7 +183,6 @@ export default function ProfileSetup() {
   return (
     <main className="relative min-h-screen flex flex-col justify-center items-center p-24 md:pt-32 sm:p-8 bg-[#F8F9FA]">
       
-      {/* --- FIXED BACKGROUND FOR GLASS BLUR EFFECT --- */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-[#F8F9FA] to-rose-50 opacity-80"></div>
         <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-amber-200/30 rounded-full blur-[120px] animate-pulse"></div>
@@ -207,7 +206,7 @@ export default function ProfileSetup() {
         )}
 
         {step === 'details' ? (
-          /* --- STEP 1: ENTER DETAILS --- */
+          /* step 1: enter details */
           <form onSubmit={handleSendVerification} className="space-y-6 sm:space-y-7">
             
             <div className="space-y-2">
@@ -264,7 +263,7 @@ export default function ProfileSetup() {
 
         ) : (
 
-          /* --- STEP 2: VERIFY OTP --- */
+          /* step 2: verify otp */
           <form onSubmit={handleVerifyAndSave} className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-right-4">
             <div className="text-center mb-6">
               <p className="text-sm sm:text-base text-slate-600 font-medium leading-relaxed">

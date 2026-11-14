@@ -24,8 +24,6 @@ export default function NewArtisanPage() {
       const fileExt = file.name.split(".").pop();
       const fileName = `artisan-${Date.now()}.${fileExt}`;
       const filePath = `artisans/${fileName}`;
-
-      // 🚨 UPDATED TO NEW artisan-images BUCKET
       const { error: uploadError } = await supabase.storage
         .from("artisan-images")
         .upload(filePath, file);
