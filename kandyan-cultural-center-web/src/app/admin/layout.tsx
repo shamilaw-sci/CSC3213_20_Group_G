@@ -177,6 +177,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             onClick={() => setIsMobileMenuOpen(false)} 
           />
 
+          {/* --- EVENTS SECTION --- */}
+          <div className="pt-6 pb-2">
+            <p className="px-4 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+              Events
+            </p>
+          </div>
+          <SidebarLink 
+            href="/admin/events" 
+            icon="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" 
+            label="Events" 
+            pathname={pathname} 
+            onClick={() => setIsMobileMenuOpen(false)} 
+          />
+          
           {/* --- NEW: ARTISANS & GUILD SECTION --- */}
           <div className="pt-6 pb-2">
             <p className="px-4 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
