@@ -174,7 +174,7 @@ export default function Header() {
             <Link href="/about" className="text-slate-600 hover:text-amber-600 transition-colors">Our Story</Link>
             <Link href="/shop" className="text-slate-600 hover:text-amber-600 transition-colors">Crafts Shop</Link>
             <Link href="/workshops" className="text-slate-600 hover:text-amber-600 transition-colors">Workshops</Link>
-            <Link href="/facilities" className="text-slate-600 hover:text-amber-600 transition-colors">Book Hall</Link>
+            <Link href="/facilities" className="text-slate-600 hover:text-amber-600 transition-colors">Hall Booking</Link>
             <Link href="/#contact" className="text-slate-600 hover:text-amber-600 transition-colors">Contact</Link>
           </nav>
 
@@ -334,7 +334,7 @@ export default function Header() {
             <Link href="/about" onClick={closeMenu} className="text-3xl font-black text-slate-900 hover:text-amber-600 transition-colors">Our Story</Link>
             <Link href="/shop" onClick={closeMenu} className="text-3xl font-black text-slate-900 hover:text-amber-600 transition-colors">Crafts Shop</Link>
             <Link href="/workshops" onClick={closeMenu} className="text-3xl font-black text-slate-900 hover:text-amber-600 transition-colors">Workshops</Link>
-            <Link href="/facilities" onClick={closeMenu} className="text-3xl font-black text-slate-900 hover:text-amber-600 transition-colors">Book Hall</Link>
+            <Link href="/facilities" onClick={closeMenu} className="text-3xl font-black text-slate-900 hover:text-amber-600 transition-colors">Hall Booking</Link>
             <Link href="/#contact" onClick={closeMenu} className="text-3xl font-black text-slate-900 hover:text-amber-600 transition-colors">Contact Us</Link>
             
             {/* View Cart Button */}
