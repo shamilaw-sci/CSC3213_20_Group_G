@@ -175,6 +175,7 @@ export default function Header() {
             <Link href="/shop" className="text-slate-600 hover:text-amber-600 transition-colors">Crafts Shop</Link>
             <Link href="/workshops" className="text-slate-600 hover:text-amber-600 transition-colors">Workshops</Link>
             <Link href="/facilities" className="text-slate-600 hover:text-amber-600 transition-colors">Hall Booking</Link>
+            <Link href="/events" className="text-slate-600 hover:text-amber-600 transition-colors">Events</Link>
             <Link href="/#contact" className="text-slate-600 hover:text-amber-600 transition-colors">Contact</Link>
           </nav>
 
@@ -335,6 +336,7 @@ export default function Header() {
             <Link href="/shop" onClick={closeMenu} className="text-3xl font-black text-slate-900 hover:text-amber-600 transition-colors">Crafts Shop</Link>
             <Link href="/workshops" onClick={closeMenu} className="text-3xl font-black text-slate-900 hover:text-amber-600 transition-colors">Workshops</Link>
             <Link href="/facilities" onClick={closeMenu} className="text-3xl font-black text-slate-900 hover:text-amber-600 transition-colors">Hall Booking</Link>
+            <Link href="/events" onClick={closeMenu} className="text-3xl font-black text-slate-900 hover:text-amber-600 transition-colors">Events</Link>
             <Link href="/#contact" onClick={closeMenu} className="text-3xl font-black text-slate-900 hover:text-amber-600 transition-colors">Contact Us</Link>
             
             {/* View Cart Button */}
