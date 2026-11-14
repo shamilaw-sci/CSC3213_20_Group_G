@@ -33,13 +33,14 @@ export default function EditArtisanForm({ artisan }: { artisan: Artisan }) {
       const fileName = `artisan-${Date.now()}.${fileExt}`;
       const filePath = `artisans/${fileName}`;
 
+      // 🚨 UPDATED TO NEW artisan-images BUCKET
       const { error: uploadError } = await supabase.storage
-        .from("workshop-images")
+        .from("artisan-images")
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      const { data } = supabase.storage.from("workshop-images").getPublicUrl(filePath);
+      const { data } = supabase.storage.from("artisan-images").getPublicUrl(filePath);
       setAvatarUrl(data.publicUrl);
     } catch (err: any) {
       alert("Error uploading avatar: " + err.message);

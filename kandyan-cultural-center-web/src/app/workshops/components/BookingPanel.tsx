@@ -3,6 +3,8 @@
 import { forwardRef, ForwardedRef, useEffect, useImperativeHandle, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useCurrency } from '@/context/CurrencyContext';
+// 🚨 ADDED: Need useRouter for the dummy payment redirect
+import { useRouter } from 'next/navigation'; 
 
 // Check if a date is a Sunday
 function isSunday(dateString: string): boolean {
@@ -89,6 +91,7 @@ function BookingPanel(
   { workshop, initialName = '', initialEmail = '', initialPhone = '', onBookingChange, showSubmitButton = true, showBookingSummary = true }: BookingPanelProps,
   ref: ForwardedRef<BookingPanelRef>
 ) {
+  const router = useRouter(); // 🚨 ADDED
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [guests, setGuests] = useState(1);
@@ -259,12 +262,10 @@ function BookingPanel(
       setAvailability(null);
 
       try {
-        // 🚨 FIXED: Total now correctly charges for ALL selected guests
         const subtotal = workshop.price * guests;
         const gatewayFee = Math.round(subtotal * 0.033);
         const totalAmount = subtotal + gatewayFee;
 
-        // 🚨 FIXED: Dedicated workshop endpoint (Zero contact with orders table)
         const checkoutRes = await fetch('/api/workshop-checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -277,6 +278,18 @@ function BookingPanel(
         const paymentConfig = await checkoutRes.json();
         if (!checkoutRes.ok) throw new Error(paymentConfig.error || 'Failed to initialize payment');
 
+        // 🚨 EVALUATION MODE INTERCEPTOR ADDED HERE
+        if (process.env.NEXT_PUBLIC_EVAL_MODE === 'true') {
+          const queryParams = new URLSearchParams({
+            order_id: paymentConfig.orderId,
+            amount: paymentConfig.amount || String(totalAmount),
+            custom_1: `booking:${json.booking.id}`,
+          });
+          router.push(`/dummy-payment?${queryParams.toString()}`);
+          return;
+        }
+
+        // --- ACTUAL PAYHERE LOGIC (Preserved for Production) ---
         const form = document.createElement('form');
         form.method = 'POST';
         
@@ -562,7 +575,7 @@ function BookingPanel(
         </div>
       )}
 
-      {error && <div className="mb-4 text-sm text-rose-700 bg-amber-600">{error}</div>}
+      {error && <div className="mb-4 text-sm text-white px-4 py-3 rounded-xl bg-amber-600 font-semibold">{error}</div>}
 
       {showSubmitButton && (
         <button

@@ -11,11 +11,19 @@ export default function HallBookingsAdminPage() {
 
   const fetchBookings = async () => {
     setIsLoading(true);
-    // 🚨 UPDATED: Added a join to fetch the customer's email from the profiles table
-    const { data } = await supabase
+    
+    const { data, error } = await supabase
       .from('hall_bookings')
-      .select('*, profiles:user_id(email)')
+      .select(`
+        *,
+        profiles ( email )
+      `)
       .order('booking_date', { ascending: false });
+      
+    if (error) {
+      console.error("Failed to fetch hall bookings:", error);
+      alert("Error loading bookings: " + error.message);
+    }
       
     if (data) setBookings(data);
     setIsLoading(false);

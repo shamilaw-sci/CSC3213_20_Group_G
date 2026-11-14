@@ -25,13 +25,14 @@ export default function NewArtisanPage() {
       const fileName = `artisan-${Date.now()}.${fileExt}`;
       const filePath = `artisans/${fileName}`;
 
+      // 🚨 UPDATED TO NEW artisan-images BUCKET
       const { error: uploadError } = await supabase.storage
-        .from("workshop-images")
+        .from("artisan-images")
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      const { data } = supabase.storage.from("workshop-images").getPublicUrl(filePath);
+      const { data } = supabase.storage.from("artisan-images").getPublicUrl(filePath);
       setAvatarUrl(data.publicUrl);
     } catch (err: any) {
       alert("Error uploading avatar: " + err.message);
@@ -49,7 +50,6 @@ export default function NewArtisanPage() {
 
     setLoading(true);
 
-    // Enforce smart default fallbacks when fields are left blank
     const payload = {
       name: name.trim(),
       guild: guild.trim() || "Kandyan Heritage Guild",
@@ -117,7 +117,6 @@ export default function NewArtisanPage() {
             </div>
           </div>
 
-          {/* Avatar Upload Block */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
               Profile Avatar Image
