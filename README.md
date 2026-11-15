@@ -72,7 +72,7 @@ To evaluate the system, please log in using the following test credentials (acce
 
 **2. POS Cashier (Restricted to Terminal & Order Processing):**
 - **Email:** `cashier@kcc-eval.test`
-- **Password:** `password123`
+- **Password:** `password456`
 
 ---
 
