@@ -93,9 +93,8 @@ export default function CalculatorModal({ onClose }: CalculatorModalProps) {
     setDisplay(display.length > 1 ? display.slice(0, -1) : '0');
   };
 
-  // Save to Cache & Listen for Keyboard events
   useEffect(() => {
-    // 1. Save current state to local storage cache
+    // Save current state to local storage cache
     localStorage.setItem('kaa_calc_display', display);
     if (previousValue !== null) localStorage.setItem('kaa_calc_prev', previousValue.toString());
     else localStorage.removeItem('kaa_calc_prev');
@@ -103,36 +102,35 @@ export default function CalculatorModal({ onClose }: CalculatorModalProps) {
     else localStorage.removeItem('kaa_calc_op');
     localStorage.setItem('kaa_calc_waiting', String(waitingForNewValue));
 
-    // 2. Map physical keyboard presses to calculator functions
+    // Map physical keyboard
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key;
       
-      // Numbers
       if (/[0-9]/.test(key)) {
         e.preventDefault();
         inputDigit(key);
       } 
-      // Decimals
+
       else if (key === '.') {
         e.preventDefault();
         inputDot();
       } 
-      // Math Operators
+
       else if (key === '+' || key === '-' || key === '*' || key === '/') {
         e.preventDefault();
         performOperation(key);
       } 
-      // Equals / Enter
+
       else if (key === 'Enter' || key === '=') {
         e.preventDefault();
         handleEqual();
       } 
-      // Backspace
+ 
       else if (key === 'Backspace') {
         e.preventDefault();
         handleBackspace();
       } 
-      // Close Modal (Escape key)
+
       else if (key === 'Escape') {
         e.preventDefault();
         onClose();
@@ -143,7 +141,6 @@ export default function CalculatorModal({ onClose }: CalculatorModalProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [display, previousValue, operator, waitingForNewValue]);
 
-  // STYLING: Updated for Monochrome Theme
   const buttonClass = "h-14 text-xl font-bold rounded-xl transition-all active:scale-95 shadow-sm";
   const numClass = `${buttonClass} bg-white hover:bg-stone-100 text-stone-800 border border-stone-200`;
   const opClass = `${buttonClass} bg-stone-100 hover:bg-stone-200 text-stone-600 border border-stone-200`;
@@ -197,7 +194,6 @@ export default function CalculatorModal({ onClose }: CalculatorModalProps) {
           <button onClick={() => inputDigit('2')} className={numClass}>2</button>
           <button onClick={() => inputDigit('3')} className={numClass}>3</button>
           
-          {/* Highlighted Equals Button */}
           <button 
             onClick={handleEqual} 
             className={`${buttonClass} bg-stone-800 hover:bg-stone-900 text-white row-span-2 shadow-md border border-stone-800`}

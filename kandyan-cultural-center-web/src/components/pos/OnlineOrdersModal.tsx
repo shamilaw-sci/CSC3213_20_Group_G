@@ -7,7 +7,7 @@ import { supabase } from '../../lib/supabase';
 
 interface OnlineOrdersModalProps {
   onClose: () => void;
-  onOrderProcessed: () => void; //Callback prop
+  onOrderProcessed: () => void; 
 }
 
 
@@ -20,7 +20,6 @@ export default function OnlineOrdersModal({ onClose, onOrderProcessed }: OnlineO
   useEffect(() => {
     const fetchPendingOnlineOrders = async () => {
       try {
-        // STEP 1: Fetch the orders (without the profiles join)
         const { data: ordersData, error: ordersError } = await supabase
           .from('orders')
           .select(`
@@ -48,13 +47,11 @@ export default function OnlineOrdersModal({ onClose, onOrderProcessed }: OnlineO
           return;
         }
 
-        // STEP 2: Extract all unique user_ids from those orders
         const userIds = [...new Set(ordersData
           .map(order => order.user_id)
           .filter(id => id !== null)
         )];
 
-        // STEP 3: Fetch the matching profiles
         let profilesMap: Record<string, string> = {};
         if (userIds.length > 0) {
           const { data: profilesData, error: profilesError } = await supabase
@@ -63,7 +60,6 @@ export default function OnlineOrdersModal({ onClose, onOrderProcessed }: OnlineO
             .in('id', userIds);
 
           if (!profilesError && profilesData) {
-            // Quick lookup dictionary:
             profilesMap = profilesData.reduce((acc, profile) => {
               acc[profile.id] = profile.full_name;
               return acc;
@@ -71,10 +67,8 @@ export default function OnlineOrdersModal({ onClose, onOrderProcessed }: OnlineO
           }
         }
 
-        // STEP 4: Attach the names manually to the orders
         const ordersWithNames = ordersData.map(order => ({
           ...order,
-          // Name is attached here so the receipt code can easily read it
           customer_name: order.user_id ? profilesMap[order.user_id] : null
         }));
 
@@ -106,7 +100,6 @@ export default function OnlineOrdersModal({ onClose, onOrderProcessed }: OnlineO
 
       if (error) throw error;
 
-      // Tell the parent page to instantly decrement the badge
       onOrderProcessed();
 
       setOnlineOrders(prev => prev.filter(o => o.id !== orderId));
@@ -122,7 +115,7 @@ export default function OnlineOrdersModal({ onClose, onOrderProcessed }: OnlineO
     }
   };
 
-  // VIEW 1: THE THERMAL RECEIPT OVERLAY (SINGLE PRINT)
+  // THERMAL RECEIPT 
   if (printingOrder) {
     const orderTimestamp = new Date(printingOrder.created_at);
     const finalTotal = printingOrder.total_amount || 0;
@@ -165,7 +158,7 @@ export default function OnlineOrdersModal({ onClose, onOrderProcessed }: OnlineO
                   <span className="font-bold">#{printingOrder.invoice_number || printingOrder.id.substring(0,8)}</span>
                 </div>
                 
-                {/* UPDATED: Customer Name and Shipping Details */}
+                {/* Customer Name and Shipping Details */}
                 <div className="mt-3 bg-stone-50 p-2 border border-stone-200 rounded">
                   <span className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Ship To:</span>
                   <span className="block font-black text-stone-900 text-[13px] mb-0.5 tracking-tight uppercase">
@@ -263,7 +256,7 @@ export default function OnlineOrdersModal({ onClose, onOrderProcessed }: OnlineO
     );
   }
 
-  // VIEW 2: THE QUEUE LIST
+  // QUEUE LIST
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
