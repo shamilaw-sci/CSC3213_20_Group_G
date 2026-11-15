@@ -166,6 +166,7 @@ export default function AdminBookingsPage() {
   const StatusBadge = ({ status }: { status?: string }) => {
     if (status === 'confirmed') return <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-700 border border-emerald-200 uppercase tracking-widest">Confirmed</span>;
     if (status === 'failed') return <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-100 text-rose-700 border border-rose-200 uppercase tracking-widest">Failed</span>;
+    if(status === 'cancelled') return <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-black bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-widest">Cancelled</span>;
     return <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-100 text-amber-700 border border-amber-200 uppercase tracking-widest">Pending</span>;
   };
 
