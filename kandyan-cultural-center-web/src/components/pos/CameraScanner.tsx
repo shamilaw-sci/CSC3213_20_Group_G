@@ -13,12 +13,12 @@ export default function CameraScanner({ onScanSuccess, onScanError }: CameraScan
   const [permissionError, setPermissionError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 1. Initialize scanner targeting standard retail barcode formats
+    // initialize scanner 
     scannerRef.current = new Html5QrcodeScanner(
       "camera-scanner-view",
       {
-        fps: 10, // Frames per second (keeps the device from overheating)
-        qrbox: { width: 250, height: 150 }, // Box framing for the barcode
+        fps: 10,
+        qrbox: { width: 250, height: 150 }, 
         formatsToSupport: [
           Html5QrcodeSupportedFormats.EAN_13,
           Html5QrcodeSupportedFormats.EAN_8,
@@ -26,22 +26,19 @@ export default function CameraScanner({ onScanSuccess, onScanError }: CameraScan
           Html5QrcodeSupportedFormats.UPC_A
         ]
       },
-      false // verbose mode off
+      false
     );
 
-    // 2. Start rendering the camera UI
     scannerRef.current.render(
       (decodedText) => {
-        // Successful scan!
+
         onScanSuccess(decodedText);
       },
       (error) => {
-        // Pass down error callback (mostly triggers on blurry frames while aiming)
         if (onScanError) onScanError(error);
       }
     );
 
-    // 3. Clean up the camera stream when the component unmounts
     return () => {
       if (scannerRef.current) {
         scannerRef.current.clear().catch((err) => {
@@ -58,7 +55,7 @@ export default function CameraScanner({ onScanSuccess, onScanError }: CameraScan
         <p className="text-xs text-stone-400">Position the product barcode cleanly inside the scanner boundaries</p>
       </div>
       
-      {/* The library injects the live camera video feedback element directly here */}
+      {/* live camera video */}
       <div id="camera-scanner-view" className="overflow-hidden rounded-xl bg-black"></div>
       
       {permissionError && (

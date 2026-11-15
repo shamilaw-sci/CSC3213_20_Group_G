@@ -89,7 +89,6 @@ export default function CartSidebar() {
                     {/* --- Image & Details Layout --- */}
                     <div className="flex items-start gap-3 pr-2 flex-1 min-w-0">
                       
-                      {/* 1. Image Thumbnail */}
                       <div className="w-12 h-12 rounded-lg bg-white border border-stone-200 overflow-hidden shrink-0 relative flex items-center justify-center shadow-sm text-lg">
                         {item.imageUrl ? (
                           <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
@@ -98,7 +97,6 @@ export default function CartSidebar() {
                         )}
                       </div>
 
-                      {/* 2. Stacked Text Details */}
                       <div className="flex flex-col gap-1.5 flex-1 min-w-0 pt-0.5">
                         <span className="font-bold text-stone-800 text-sm leading-tight truncate">
                           {item.name}
@@ -132,7 +130,7 @@ export default function CartSidebar() {
                       </div>
                     </div>
 
-                    {/* 🚨 RESTORED: Edit Custom Price & Remove Buttons */}
+                    {/* Custom Price & Remove Buttons */}
                     {!isEditing && (
                       <div className="flex gap-1 flex-shrink-0">
                         <button 

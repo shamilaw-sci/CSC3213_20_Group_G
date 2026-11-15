@@ -62,7 +62,7 @@ export default function HistoryModal({ onClose }: HistoryModalProps) {
     return sum + itemsCount;
   }, 0);
 
-  // VIEW 1: THE THERMAL REPRINT OVERLAY
+  // THERMAL REPRINT OVERLAY
   if (reprintOrder) {
     const orderTimestamp = new Date(reprintOrder.created_at);
     const finalTotal = reprintOrder.total_amount || 0;
@@ -190,12 +190,12 @@ export default function HistoryModal({ onClose }: HistoryModalProps) {
     );
   }
 
-  // VIEW 2: THE STANDARD HISTORY LIST
+  // HISTORY LIST
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
         
-        {/* Header - EMERALD THEME */}
+        {/* Header */}
         <div className="bg-emerald-800 p-6 flex justify-between items-center shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-emerald-700 text-emerald-100 rounded-full flex items-center justify-center">
@@ -213,7 +213,7 @@ export default function HistoryModal({ onClose }: HistoryModalProps) {
           </button>
         </div>
 
-        {/* Body / List */}
+        {/* Body */}
         <div className="p-6 overflow-y-auto bg-stone-50 flex-1">
           {loading ? (
             <div className="flex justify-center items-center h-32">
@@ -309,6 +309,7 @@ export default function HistoryModal({ onClose }: HistoryModalProps) {
                             Print Receipt
                           </button>
 
+                          {/* Calculation Box */}
                           <div className="w-1/2 bg-white border border-stone-200 p-3 rounded-lg shadow-inner">
                             {(() => {
                               const finalTotal = order.total_amount || 0;
@@ -331,10 +332,18 @@ export default function HistoryModal({ onClose }: HistoryModalProps) {
                                     <span className="font-black text-stone-800">Final Total</span>
                                     <span className="font-black font-mono text-emerald-700">Rs. {finalTotal.toLocaleString()}</span>
                                   </div>
+                                  
+                                  {/* Commission (for Admins) */}
+                                  {order.commission > 0 && (
+                                    <div className="flex justify-between text-sm mt-3 pt-2 border-t border-dashed border-stone-200 text-blue-600">
+                                      <span className="font-bold">Guide Commission Paid</span>
+                                      <span className="font-mono font-bold">Rs. {(order.commission || 0).toLocaleString()}</span>
+                                    </div>
+                                  )}
                                 </>
                               );
                             })()}
-                          </div> 
+                          </div>
                         </div>
                       </div>
                     )}

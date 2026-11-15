@@ -24,21 +24,21 @@ export default function POSPage() {
   const [userId, setUserId] = useState<string>(''); 
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
 
-  // --- REAL-TIME NETWORK STATE ---
+  // REAL-TIME NETWORK STATE
   const [networkStatus, setNetworkStatus] = useState<'Connected' | 'Limited Connection' | 'Disconnected'>('Connected');
   
-  // --- UI & POS STATE ---
+  // UI & POS STATE
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [isCameraActive, setIsCameraActive] = useState(false); 
   const [searchQuery, setSearchQuery] = useState('');
   const [isOnline, setIsOnline] = useState(true); 
 
-  // --- MOBILE UI STATE ---
+  // MOBILE UI STATE
   const [isMobileSearchActive, setIsMobileSearchActive] = useState(false);
   const [lastCartTotal, setLastCartTotal] = useState(cartTotal); // Tracks add-to-cart events
 
-  // --- SORTING & FILTERING STATE ---
+  // SORTING & FILTERING STATE
   const [sortBy, setSortBy] = useState<string>('name-asc');
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('All');
@@ -51,7 +51,7 @@ export default function POSPage() {
   const [unsyncedCount, setUnsyncedCount] = useState(0);
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
   
-  // --- SESSION & BLIND CLOSEOUT STATE ---
+  // SESSION & BLIND CLOSEOUT STATE
   const [sessionId, setSessionId] = useState<string | null>(null); 
   const [startingCash, setStartingCash] = useState<string>(''); 
   const [declaredCash, setDeclaredCash] = useState<string>('');
@@ -62,10 +62,13 @@ export default function POSPage() {
   const [isVerifyingCash, setIsVerifyingCash] = useState(false);
   const [isCashVerified, setIsCashVerified] = useState(false);
 
-  // --- REALTIME ONLINE ORDERS STATE ---
+  // REALTIME ONLINE ORDERS STATE
   const [pendingOnlineCount, setPendingOnlineCount] = useState(0);
   const [showNewOrderBubble, setShowNewOrderBubble] = useState(false);
   const [hasInitiallyChecked, setHasInitiallyChecked] = useState(false);
+
+  // Admin Role check
+  const isAdmin = userRole === 'admin' || userRole === 'super_admin' || userRole === 'super admin';
 
   const highestPrice = cachedProducts && cachedProducts.length > 0 
     ? Math.max(...cachedProducts.map(p => p.price || 0)) 
@@ -86,7 +89,7 @@ export default function POSPage() {
     setMaxPrice('');
   };
 
-  // --- 1. SUPABASE AUTH, RBAC, & SESSION RECOVERY ---
+  // SUPABASE AUTH, RBAC, & SESSION RECOVERY
   useEffect(() => {
     const checkAccess = async () => {
       try {
@@ -159,7 +162,7 @@ export default function POSPage() {
     checkAccess();
   }, [setCashierId]);
 
-  // --- REAL-TIME NETWORK MONITOR ---
+  // REAL-TIME NETWORK MONITOR 
   useEffect(() => {
     const checkConnection = async () => {
       if (!navigator.onLine) {
@@ -197,7 +200,7 @@ export default function POSPage() {
     };
   }, []);
 
-  // --- REALTIME ONLINE ORDERS LISTENER ---
+  // REALTIME ONLINE ORDERS LISTENER
   useEffect(() => {
     if (!disclaimerAccepted) return;
 
@@ -248,39 +251,36 @@ export default function POSPage() {
     };
   }, [disclaimerAccepted, hasInitiallyChecked]);
 
-  // --- AUTO-CLOSE MOBILE GRID ON ADD TO CART ---
+  // AUTO-CLOSE MOBILE GRID ON ADD TO CART 
   useEffect(() => {
     if (isMobileSearchActive && cartTotal > lastCartTotal) {
-      setIsMobileSearchActive(false); // Snap grid closed so they can see the cart
+      setIsMobileSearchActive(false);
     }
     setLastCartTotal(cartTotal);
   }, [cartTotal, isMobileSearchActive, lastCartTotal]);
 
-// --- REAL-TIME HARDWARE BARCODE SCANNER LISTENER ---
+// HW BARCODE SCANNER LISTENER 
   useEffect(() => {
     let barcodeBuffer = '';
     let barcodeTimeout: NodeJS.Timeout;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // If 'Enter' is pressed and we have a captured barcode string
       if (e.key === 'Enter' && barcodeBuffer.length > 3) {
         e.preventDefault();
         const scannedCode = barcodeBuffer.trim();
-        barcodeBuffer = ''; // Reset buffer
+        barcodeBuffer = '';
 
-        // Find the product in your cached inventory
         const matchedProduct = cachedProducts?.find(
           (p: any) => p.barcode === scannedCode || p.id.substring(0,8) === scannedCode
         );
 
         if (matchedProduct && addToCart) {
           
-          // 🚨 ADDED: Stock Verification for Barcode Scanner
+          // Stock Verification for Barcode Scanner
           const existingCartItem = cart.find((item: any) => item.id === matchedProduct.id);
           const currentQty = existingCartItem ? existingCartItem.quantity : 0;
           const maxStock = matchedProduct.stock || 0;
 
-          // Block the scan if it exceeds inventory
           if (currentQty >= maxStock) {
             alert(`⚠️ Cannot add item. Only ${maxStock} in stock!`);
             setSearchQuery('');
@@ -293,15 +293,12 @@ export default function POSPage() {
           console.warn(`Scanned barcode ${scannedCode} not found in inventory.`);
         }
       } else if (e.key.length === 1) { 
-        // Capture single characters
         barcodeBuffer += e.key;
         clearTimeout(barcodeTimeout);
         
-        // Hardware scanners type incredibly fast (<20ms per char).
-        // If 50ms pass without a keypress, it's a human typing, so clear the buffer.
+        // to identify human typing
         barcodeTimeout = setTimeout(() => {
           const target = document.activeElement as HTMLElement;
-          // Don't clear the buffer if they are intentionally typing in the search input
           if (target.tagName !== 'INPUT') {
              barcodeBuffer = ''; 
           }
@@ -316,7 +313,7 @@ export default function POSPage() {
     };
   }, [cachedProducts, addToCart, cart]);
 
-  // --- 2. HANDLERS ---
+  // --- HANDLERS ---
   const handleStartSession = async () => {
     if (!startingCash) return;
     try {
@@ -351,20 +348,24 @@ export default function POSPage() {
       startOfToday.setHours(0, 0, 0, 0);
       const isoStartOfToday = startOfToday.toISOString();
 
+      // Commission
       const { data, error } = await supabase
         .from('orders')
-        .select('total_amount, payment_method')
+        .select('total_amount, payment_method, commission')
         .eq('sales_channel', 'in-store')
         .gte('created_at', isoStartOfToday);
 
       if (error) throw error;
 
       const initialFloat = parseFloat(startingCash) || 0;
+      
       const cashSales = data
         .filter(o => o.payment_method === 'cash')
         .reduce((sum, o) => sum + (o.total_amount || 0), 0);
 
-      const expectedCash = initialFloat + cashSales;
+      const totalCommissionsPaid = data.reduce((sum, o) => sum + (o.commission || 0), 0);
+
+      const expectedCash = initialFloat + cashSales - totalCommissionsPaid;
       const declared = parseFloat(declaredCash);
       const variance = declared - expectedCash;
 
@@ -374,7 +375,7 @@ export default function POSPage() {
       if (variance === 0) {
         setVarianceMessage({ 
           type: 'success', 
-          text: `Perfect match! (Float: Rs. ${initialFloat.toLocaleString()} + Sales: Rs. ${cashSales.toLocaleString()})` 
+          text: `Perfect match! (Float: Rs. ${initialFloat.toLocaleString()} + Sales: Rs. ${cashSales.toLocaleString()} - Comm: Rs. ${totalCommissionsPaid.toLocaleString()})` 
         });
       } else if (variance > 0) {
         setVarianceMessage({ 
@@ -717,10 +718,10 @@ export default function POSPage() {
                </button>
              </div>
 
-             {userRole === 'admin' && (
+             {isAdmin && (
                <button onClick={() => setIsHistoryOpen(true)} className="flex items-center justify-center gap-2 p-2 xl:px-4 xl:py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 text-sm font-semibold rounded-xl border border-stone-200 transition-colors shadow-sm">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg> 
-                  <span className="hidden lg:inline">History</span>
+                  <span className="hidden xl:inline">History</span>
                </button>
              )}
              <button onClick={() => setIsCalculatorOpen(true)} className="flex items-center justify-center gap-2 p-2 xl:px-4 xl:py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 text-sm font-semibold rounded-xl border border-stone-200 transition-colors shadow-sm">
@@ -735,7 +736,7 @@ export default function POSPage() {
         {/* --- MAIN CONTENT FLEX BOX --- */}
         <div className="flex flex-1 overflow-hidden relative">
           
-          {/* NEW: FLOATING CLOSE BUTTON (Mobile Only) */}
+          {/* FLOATING CLOSE BUTTON (Mobile Only) */}
           {isMobileSearchActive && (
             <button 
               onClick={() => setIsMobileSearchActive(false)}
@@ -748,7 +749,7 @@ export default function POSPage() {
             </button>
           )}
 
-          {/* PRODUCT GRID AREA (Hidden on mobile unless Search/Filter/Camera is active) */}
+          {/* PRODUCT GRID AREA */}
           <div className={`
             ${isMobileSearchActive ? 'absolute inset-0 z-40 flex flex-col bg-stone-100 p-2 overflow-y-auto animate-in slide-in-from-bottom-4' : 'hidden'}
             md:block md:static md:flex-1 md:bg-white md:p-6 md:rounded-2xl md:shadow-sm md:border md:border-stone-200 md:overflow-y-auto md:animate-none
@@ -820,7 +821,7 @@ export default function POSPage() {
                   </div>
                 )}
 
-                {userRole === 'admin' && (
+                {isAdmin && (
                   <div className="mt-4 pt-4 border-t border-stone-200">
                     <button onClick={() => setIsHistoryOpen(true)} className="w-full py-2 bg-white border border-stone-200 hover:border-amber-400 hover:bg-amber-50 text-stone-700 font-bold rounded-lg transition-colors flex items-center justify-center shadow-sm text-sm">
                       <svg className="w-4 h-4 mr-2 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>

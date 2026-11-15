@@ -16,13 +16,14 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
   
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [discountPercent, setDiscountPercent] = useState<string>('');
+  const [commissionType, setCommissionType] = useState<'fixed' | 'percent'>('fixed');
+  const [commissionInput, setCommissionInput] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const [showReceipt, setShowReceipt] = useState(false);
   const [orderTimestamp, setOrderTimestamp] = useState<Date | null>(null);
 
-  // State to ensure the Portal only renders on the client side
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -32,6 +33,11 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
   const discountValue = parseFloat(discountPercent) || 0;
   const discountAmount = cartTotal * (discountValue / 100);
   const finalTotal = cartTotal - discountAmount;
+
+  const commInputVal = parseFloat(commissionInput) || 0;
+  const commissionAmount = commissionType === 'percent' 
+    ? finalTotal * (commInputVal / 100) 
+    : commInputVal;
 
   const handleConfirmOrder = async () => {
     setIsSubmitting(true);
@@ -45,6 +51,7 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
         invoice_number: orderNumber,    
         total_amount: finalTotal,        
         discount_percentage: discountValue, 
+        commission: commissionAmount,
         payment_method: paymentMethod,
         status: 'completed',
         created_at: new Date().toISOString(), 
@@ -83,10 +90,9 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
     onClose();
   };
 
-  // Wait until mounted on client to render the Portal
   if (!mounted) return null;
 
-  // VIEW 1: THE THERMAL RECEIPT PREVIEW (Wrapped in createPortal)
+  // THERMAL RECEIPT PREVIEW
   if (showReceipt) {
     return createPortal(
       <div className="fixed inset-0 z-[100] overflow-y-auto bg-stone-900/80 backdrop-blur-sm">
@@ -206,7 +212,7 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
     );
   }
 
-  // VIEW 2: THE STANDARD CHECKOUT MODAL 
+  //STANDARD CHECKOUT MODAL 
   const paymentMethodsConfig = [
     { 
       id: 'cash', 
@@ -237,12 +243,11 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
     }
   ];
 
-  // (Wrapped in createPortal)
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
         
-        {/* --- RESPONSIVE HEADER --- */}
+        {/* RESPONSIVE HEADER */}
         <div className="flex justify-between items-center px-4 md:px-6 py-4 border-b border-stone-200 bg-stone-50 shrink-0">
           <div className="flex items-center flex-wrap gap-2 md:gap-3 pr-2">
             <h2 className="text-xl md:text-2xl font-black text-stone-800 whitespace-nowrap">Checkout</h2>
@@ -257,9 +262,10 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
           </button>
         </div>
 
-        {/* --- RESPONSIVE BODY (STACKS ON MOBILE) --- */}
+        {/* RESPONSIVE BODY  */}
         <div className="flex flex-col md:flex-row flex-1 overflow-y-auto overflow-x-hidden md:overflow-hidden">
           
+          {/* LEFT COLUMN: Order Details */}
           <div className="w-full md:w-1/2 p-4 md:p-6 border-b md:border-b-0 md:border-r border-stone-200 overflow-y-visible md:overflow-y-auto bg-white shrink-0 md:shrink">
             <h3 className="font-bold text-stone-500 uppercase tracking-wider text-sm mb-4">Order Details</h3>
             <div className="space-y-3">
@@ -278,9 +284,9 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
             </div>
           </div>
 
-          <div className="w-full md:w-1/2 p-4 md:p-6 bg-stone-50 flex flex-col shrink-0 md:shrink">
-            
-            <div className="mb-6 md:mb-8">
+          {/* RIGHT COLUMN */}
+          <div className="w-full md:w-1/2 p-4 md:p-6 bg-stone-50 flex flex-col shrink-0 md:shrink md:overflow-y-auto">
+            <div className="mb-4 md:mb-5">
               <label className="block text-sm font-bold text-stone-700 mb-2">Total Bill Discount (%)</label>
               <div className="flex items-center gap-2">
                 <input 
@@ -289,21 +295,57 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
                   max="100"
                   value={discountPercent}
                   onChange={(e) => setDiscountPercent(e.target.value)}
-                  className="w-full px-4 py-3 text-lg font-bold bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full px-4 py-2.5 text-lg font-bold bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                   placeholder="e.g. 10"
                 />
                 <span className="text-stone-500 font-bold text-xl">%</span>
               </div>
             </div>
 
-            <div className="mb-6 md:mb-8">
+            <div className="mb-4 md:mb-5 bg-blue-50/50 p-3.5 rounded-xl border border-blue-100 shrink-0">
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-bold text-blue-800">Guide Commission</label>
+                <div className="flex bg-white rounded-lg p-0.5 border border-blue-200">
+                  <button 
+                    type="button"
+                    onClick={() => setCommissionType('fixed')} 
+                    className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${commissionType === 'fixed' ? 'bg-blue-600 shadow-sm text-white' : 'text-blue-500 hover:text-blue-700'}`}
+                  >Fixed (Rs)</button>
+                  <button 
+                    type="button"
+                    onClick={() => setCommissionType('percent')} 
+                    className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${commissionType === 'percent' ? 'bg-blue-600 shadow-sm text-white' : 'text-blue-500 hover:text-blue-700'}`}
+                  >Percent (%)</button>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="number"
+                  min="0"
+                  value={commissionInput}
+                  onChange={(e) => setCommissionInput(e.target.value)}
+                  className="w-full px-4 py-2 text-base font-bold bg-white border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder={`e.g. ${commissionType === 'percent' ? '10' : '500'}`}
+                />
+                <span className="text-blue-500 font-bold text-xl">{commissionType === 'percent' ? '%' : 'Rs'}</span>
+              </div>
+              {commissionAmount > 0 && (
+                <div className="mt-2 text-xs font-black text-blue-700 text-right uppercase tracking-wider">
+                  Cash Payout: Rs. {commissionAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </div>
+              )}
+            </div>
+
+            {/* Payment Method */}
+            <div className="mb-4 md:mb-5 shrink-0">
               <label className="block text-sm font-bold text-stone-700 mb-2">Payment Method</label>
               <div className="grid grid-cols-3 gap-2">
                 {paymentMethodsConfig.map((method) => (
                   <button
                     key={method.id}
+                    type="button"
                     onClick={() => setPaymentMethod(method.id as PaymentMethod)}
-                    className={`py-3 px-1 rounded-xl text-xs md:text-sm font-bold border-2 transition-all flex items-center justify-center ${
+                    className={`py-2.5 px-1 rounded-xl text-xs md:text-sm font-bold border-2 transition-all flex items-center justify-center ${
                       paymentMethod === method.id 
                         ? 'border-amber-600 bg-amber-50 text-amber-800' 
                         : 'border-stone-200 bg-white text-stone-500 hover:border-amber-300'
@@ -316,7 +358,8 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
               </div>
             </div>
 
-            <div className="mt-auto bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-2 mb-6">
+            {/* Totals Summary Box */}
+            <div className="mt-auto bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-2 mb-4 shrink-0">
               <div className="flex justify-between text-stone-500 font-medium text-sm md:text-base">
                 <span>Subtotal:</span>
                 <span>Rs. {cartTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
@@ -335,12 +378,12 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
               </div>
             </div>
 
-            {error && <div className="text-red-500 text-sm font-bold mb-4 text-center bg-red-50 p-2 rounded">{error}</div>}
+            {error && <div className="text-red-500 text-sm font-bold mb-4 text-center bg-red-50 p-2 rounded shrink-0">{error}</div>}
 
             <button 
               onClick={handleConfirmOrder}
               disabled={isSubmitting}
-              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-stone-400 text-white text-lg md:text-xl font-black rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-stone-400 text-white text-lg md:text-xl font-black rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 shrink-0"
             >
               {isSubmitting ? 'PROCESSING...' : 'CONFIRM & COMPLETE'}
             </button>
