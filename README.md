@@ -62,14 +62,17 @@ Inside the provided `.env.local` file, you will find the following flag:
 
 ---
 
-## 🔐 Admin Testing Credentials
+## 🔐 Testing Credentials
 
-To evaluate the POS system, Barcode Scanner, Inventory Management, and Admin Dashboard, please log in using the following test credentials:
+To evaluate the system, please log in using the following test credentials (accessible via the `/admin` route):
 
+**1. Master Admin (Full Dashboard & Settings Access):**
 - **Email:** `admin@kcc-eval.test`
 - **Password:** `password123`
 
-You can access the admin login via the `/admin` route or through the "Admin Portal" link in the footer.
+**2. POS Cashier (Restricted to Terminal & Order Processing):**
+- **Email:** `cashier@kcc-eval.test`
+- **Password:** `password123`
 
 ---
 
